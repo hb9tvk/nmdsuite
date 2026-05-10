@@ -1,0 +1,24 @@
+{% load i18n static %}
+{# Leaflet + map JS bootstrap. Required context: form, registrations_url (string),
+   swisstopo_height_api, swisstopo_identify_api. #}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script>
+    window.NMDMapConfig = {
+        elementId: "reg-map",
+        eInputId: "{{ form.coord_input_e.id_for_label }}",
+        nInputId: "{{ form.coord_input_n.id_for_label }}",
+        altitudeInputId: "{{ form.altitude_m.id_for_label }}",
+        cantonInputId: "{{ form.canton.id_for_label }}",
+        registrationsUrl: "{{ registrations_url|default:''|escapejs }}",
+        heightApi: "{{ swisstopo_height_api|escapejs }}",
+        identifyApi: "{{ swisstopo_identify_api|escapejs }}",
+        youLabel: "{% trans 'Your station' %}",
+        warnInvalid: "{% trans 'Coordinates could not be parsed.' %}",
+        warnOutOfBounds: "{% trans 'Coordinates are outside Switzerland.' %}",
+        warnLowAltitude: "{% trans 'Below 800 m — contest rules require minimum 800 m a.s.l.' %}",
+        altitudeFromSwisstopo: "{% trans 'Altitude from Swisstopo: {n} m' %}"
+    };
+</script>
+<script src="{% static 'js/registration_map.js' %}"></script>

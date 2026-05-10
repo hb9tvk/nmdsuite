@@ -1,17 +1,20 @@
 {% extends "base.html" %}
-{% load i18n static %}
-{% block title %}{% trans "Register for the NMD" %}{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Edit registration" %} — NMD{% endblock %}
 
 {% block extra_head %}{% include "partials/_location_head.html" %}{% endblock %}
 
 {% block content %}
-    <h1>{% blocktrans with year=contest.year %}Register for NMD {{ year }}{% endblocktrans %}</h1>
+    <h1>{% trans "Edit your registration" %}</h1>
 
-    <p>
-        {% blocktrans with date=contest.contest_date %}
-            The contest takes place on {{ date }}, 06:00–09:59 UTC.
-        {% endblocktrans %}
+    <p class="hint">
+        {% trans "Callsign, first name, and email cannot be changed after registration." %}
     </p>
+    <dl class="kv">
+        <dt>{% trans "Callsign" %}</dt><dd>{{ participant.callsign }}</dd>
+        <dt>{% trans "First name" %}</dt><dd>{{ participant.first_name }}</dd>
+        <dt>{% trans "Email" %}</dt><dd>{{ participant.email }}</dd>
+    </dl>
 
     <form method="post" novalidate class="reg-form">
         {% csrf_token %}
@@ -19,13 +22,6 @@
         {% if form.non_field_errors %}
             <div class="form-errors">{{ form.non_field_errors }}</div>
         {% endif %}
-
-        <fieldset>
-            <legend>{% trans "Operator" %}</legend>
-            {% include "registration/_field.html" with field=form.callsign %}
-            {% include "registration/_field.html" with field=form.first_name %}
-            {% include "registration/_field.html" with field=form.email %}
-        </fieldset>
 
         {% include "partials/_location_fieldset.html" %}
 
@@ -46,7 +42,10 @@
             {% include "registration/_field.html" with field=form.remarks %}
         </fieldset>
 
-        <button type="submit">{% trans "Submit registration" %}</button>
+        <p class="actions">
+            <button type="submit">{% trans "Save changes" %}</button>
+            <a href="{% url 'portal:dashboard' %}">{% trans "Cancel" %}</a>
+        </p>
     </form>
 {% endblock %}
 

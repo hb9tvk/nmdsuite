@@ -57,14 +57,16 @@ def index(request):
     else:
         form = RegistrationForm()
 
+    from core.picker import map_picker_context
+
     return render(
         request,
         "registration/index.html",
         {
             "form": form,
             "contest": contest,
-            "swisstopo_height_api": settings.SWISSTOPO_HEIGHT_API,
-            "swisstopo_identify_api": settings.SWISSTOPO_IDENTIFY_API,
+            "registrations_url": reverse("registration:registrations_json"),
+            **map_picker_context(request),
         },
     )
 

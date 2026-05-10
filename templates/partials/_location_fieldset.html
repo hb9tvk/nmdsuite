@@ -1,0 +1,22 @@
+{% load i18n %}
+{# Shared Location fieldset — Swisstopo map + auto-detection of system / altitude / canton. #}
+{# Required context: form (must expose coord_input_e, coord_input_n, altitude_m, canton). #}
+<fieldset class="location-fieldset">
+    <legend>{% trans "Location" %}</legend>
+    <p class="hint">
+        {% blocktrans %}
+            Pick your station on the map — or enter coordinates directly
+            in WGS84, CH1903, or CH1903+. The system is detected automatically.
+            Existing registrations are shown in green.
+        {% endblocktrans %}
+    </p>
+    <div id="reg-map" class="reg-map"></div>
+    <div id="reg-map-status" class="reg-map-status" role="status" aria-live="polite"></div>
+    <div class="form-row-pair">
+        {% include "registration/_field.html" with field=form.coord_input_e %}
+        {% include "registration/_field.html" with field=form.coord_input_n %}
+    </div>
+    {% include "registration/_field.html" with field=form.altitude_m %}
+    <div id="altitude-info" class="altitude-info" role="status" aria-live="polite"></div>
+    {% include "registration/_field.html" with field=form.canton %}
+</fieldset>
