@@ -1,0 +1,7 @@
+{% load i18n %}
+<div class="form-row {% if field.errors %}has-error{% endif %}">
+    {{ field.label_tag }}
+    {{ field }}
+    {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+    {% if field.errors %}<div class="errorlist">{{ field.errors }}</div>{% endif %}
+</div>

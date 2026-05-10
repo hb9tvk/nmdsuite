@@ -145,6 +145,9 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Whitenoise warns at startup if STATIC_ROOT is missing — make sure the
+# directory exists even before the first `collectstatic` (incl. during tests).
+STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 # Manifest storage hashes filenames and requires `collectstatic` first;
 # only worth the trade in production. Dev/test use the plain compressing storage.
 STORAGES = {

@@ -77,3 +77,30 @@ button[type="submit"], input[type="submit"] {
 .flash-success { background: #d6f5dc; }
 
 footer { color: var(--muted); padding-bottom: 2rem; }
+
+.reg-form fieldset {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+.reg-form legend { font-weight: 600; padding: 0 0.5rem; }
+.reg-form .form-row-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.reg-form .hint { display: block; color: var(--muted); margin-top: 0.25rem; }
+.reg-form .has-error input,
+.reg-form .has-error select,
+.reg-form .has-error textarea { border-color: #c0392b; }
+.reg-form input[type="checkbox"], .reg-form input[type="radio"] {
+    width: auto;
+    margin-right: 0.4rem;
+}
+.reg-form select, .reg-form textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+}
