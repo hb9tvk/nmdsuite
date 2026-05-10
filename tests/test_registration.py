@@ -132,6 +132,17 @@ def test_invalid_callsign_rejected(client, seeded_contest):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("altitude", ["799", "0", "100"])
+def test_post_rejects_altitude_below_800m(client, seeded_contest, altitude):
+    bad = {**VALID_FORM, "altitude_m": altitude}
+    response = client.post("/anmeldung/", bad)
+    assert response.status_code == 200
+    assert User.objects.count() == 0
+    # The translatable error string is what the form re-renders with.
+    assert b"800 m" in response.content
+
+
+@pytest.mark.django_db
 def test_returning_participant_keeps_password(client, seeded_contest):
     """Same callsign, different year: account reused, password unchanged, no new password emailed."""
     # Pre-existing user with a known password from a prior contest.

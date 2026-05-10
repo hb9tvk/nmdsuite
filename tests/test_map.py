@@ -85,3 +85,24 @@ def test_index_template_embeds_map_container(client, seeded_contest):
     assert b"leaflet.js" in response.content
     assert b"NMDMapConfig" in response.content
     assert b"registrations.json" in response.content
+
+
+@pytest.mark.django_db
+def test_index_template_includes_altitude_lookup_wiring(client, seeded_contest):
+    response = client.get("/anmeldung/")
+    assert response.status_code == 200
+    # The altitude info DOM node and the height-API URL must both be present
+    # for the client-side altitude lookup to work.
+    assert b'id="altitude-info"' in response.content
+    assert b"altitudeInputId" in response.content
+    assert b"heightApi" in response.content
+    assert b"api3.geo.admin.ch" in response.content
+
+
+@pytest.mark.django_db
+def test_index_template_includes_canton_lookup_wiring(client, seeded_contest):
+    response = client.get("/anmeldung/")
+    assert response.status_code == 200
+    assert b"cantonInputId" in response.content
+    assert b"identifyApi" in response.content
+    assert b"MapServer/identify" in response.content

@@ -59,6 +59,28 @@
         return { lat: latSec * 100 / 36, lon: lonSec * 100 / 36 };
     }
 
+    /** Swisstopo approximate formula, WGS84 → LV95. ~1 m precision in CH.
+     *  Used to query Swisstopo's height service, which only takes Swiss grid
+     *  coordinates. */
+    function wgs84ToLV95(lat, lon) {
+        const phi = (lat * 3600 - 169_028.66) / 10_000;
+        const lam = (lon * 3600 - 26_782.5)   / 10_000;
+        const e =
+            2_600_072.37
+            + 211_455.93 * lam
+            - 10_938.51  * lam * phi
+            - 0.36       * lam * phi * phi
+            - 44.54      * lam * lam * lam;
+        const n =
+            1_200_147.07
+            + 308_807.95 * phi
+            + 3_745.25   * lam * lam
+            + 76.63      * phi * phi
+            - 194.56     * lam * lam * phi
+            + 119.79     * phi * phi * phi;
+        return { e, n };
+    }
+
     /**
      * Detect the coordinate system from the two raw inputs and return
      * { lat, lon } if the location falls inside Switzerland, otherwise:
@@ -114,15 +136,154 @@
 
     const eInput = document.getElementById(config.eInputId);
     const nInput = document.getElementById(config.nInputId);
+    const altInput = config.altitudeInputId ? document.getElementById(config.altitudeInputId) : null;
+    const cantonInput = config.cantonInputId ? document.getElementById(config.cantonInputId) : null;
     const status = document.getElementById("reg-map-status");
+    const altInfo = document.getElementById("altitude-info");
+
+    const MIN_ALTITUDE_M = 800;
+    const HEIGHT_DEBOUNCE_MS = 350;
+    const CANTON_DEBOUNCE_MS = 350;
+
+    // FSO canton numbering (Bundesamt für Statistik) → ISO 3166-2:CH 2-letter code.
+    // Swisstopo's swissBOUNDARIES3D layer returns the FSO number as `ktnr`.
+    const CANTON_BY_FSO = {
+         1: "ZH",  2: "BE",  3: "LU",  4: "UR",  5: "SZ",  6: "OW",  7: "NW",
+         8: "GL",  9: "ZG", 10: "FR", 11: "SO", 12: "BS", 13: "BL", 14: "SH",
+        15: "AR", 16: "AI", 17: "SG", 18: "GR", 19: "AG", 20: "TG", 21: "TI",
+        22: "VD", 23: "VS", 24: "NE", 25: "GE", 26: "JU",
+    };
 
     let pickedMarker = null;
-    let writingFromMap = false;  // suppress the input-listener loop
+    let writingFromMap = false;       // suppress coord input-listener loop
+    let altitudeFetchTimer = null;
+    let altitudeFetchSeq = 0;         // discard stale altitude responses
+    let cantonFetchTimer = null;
+    let cantonFetchSeq = 0;           // discard stale canton responses
+    let userTouchedCanton = false;    // once true, never auto-fill canton
 
     function setStatus(msg, kind) {
         if (!status) return;
         status.textContent = msg || "";
         status.className = "reg-map-status" + (kind ? " " + kind : "");
+    }
+
+    function setAltitudeInfo(msg, kind) {
+        if (!altInfo) return;
+        altInfo.textContent = msg || "";
+        altInfo.className = "altitude-info" + (kind ? " " + kind : "");
+    }
+
+    function showAltitude(m) {
+        if (!altInput) return;
+        altInput.value = String(m);
+        if (m < MIN_ALTITUDE_M) {
+            setAltitudeInfo(config.warnLowAltitude
+                || `Below ${MIN_ALTITUDE_M} m — contest rules require minimum ${MIN_ALTITUDE_M} m a.s.l.`,
+                "warn");
+        } else {
+            setAltitudeInfo(
+                (config.altitudeFromSwisstopo || "Altitude from Swisstopo: {n} m")
+                    .replace("{n}", m),
+                null);
+        }
+    }
+
+    function fetchAltitude(lat, lon) {
+        if (!config.heightApi || !altInput) return;
+        if (altitudeFetchTimer) clearTimeout(altitudeFetchTimer);
+        altitudeFetchTimer = setTimeout(() => {
+            const seq = ++altitudeFetchSeq;
+            const lv = wgs84ToLV95(lat, lon);
+            const url = `${config.heightApi}?easting=${lv.e}&northing=${lv.n}`;
+            fetch(url, { credentials: "omit" })
+                .then((r) => r.ok ? r.json() : null)
+                .then((data) => {
+                    if (seq !== altitudeFetchSeq) return;          // a newer fetch already won
+                    if (!data || data.height == null) return;
+                    const m = Math.round(parseFloat(data.height));
+                    if (!Number.isFinite(m)) return;
+                    showAltitude(m);
+                })
+                .catch(() => { /* non-fatal — server-side validation will reject empty submits */ });
+        }, HEIGHT_DEBOUNCE_MS);
+    }
+
+    function fetchCanton(lat, lon) {
+        if (!config.identifyApi || !cantonInput) return;
+        if (userTouchedCanton) return;  // operator overrode the auto-fill
+        if (cantonFetchTimer) clearTimeout(cantonFetchTimer);
+        cantonFetchTimer = setTimeout(() => {
+            const seq = ++cantonFetchSeq;
+            const lv = wgs84ToLV95(lat, lon);
+            // Tight mapExtent around the click (1 m per pixel) makes tolerance
+            // semantics predictable: the point lookup is a true point-in-polygon.
+            const m = 100;
+            const params = new URLSearchParams({
+                layers: "all:ch.swisstopo.swissboundaries3d-kanton-flaeche.fill",
+                geometry: `${lv.e},${lv.n}`,
+                geometryType: "esriGeometryPoint",
+                geometryFormat: "geojson",
+                sr: "2056",
+                mapExtent: `${lv.e - m},${lv.n - m},${lv.e + m},${lv.n + m}`,
+                imageDisplay: "200,200,96",
+                tolerance: "5",
+                returnGeometry: "false",
+            });
+            const url = `${config.identifyApi}?${params}`;
+            fetch(url, { credentials: "omit" })
+                .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+                .then((data) => {
+                    if (seq !== cantonFetchSeq) return;
+                    if (userTouchedCanton) return;
+                    const result = data && data.results && data.results[0];
+                    if (!result) {
+                        console.warn("[NMD] canton lookup: empty results", data);
+                        return;
+                    }
+                    const attrs = result.attributes || result.properties || {};
+                    const code = extractCantonCode(attrs);
+                    if (!code) {
+                        console.warn("[NMD] canton lookup: no recognizable canton in attrs", attrs);
+                        return;
+                    }
+                    // Setting .value programmatically does not fire 'change'; the
+                    // `userTouchedCanton` flag stays false so further auto-fills work.
+                    cantonInput.value = code;
+                })
+                .catch((err) => { console.warn("[NMD] canton lookup failed:", err); });
+        }, CANTON_DEBOUNCE_MS);
+    }
+
+    /** Try every plausible attribute key from the Swisstopo identify response. */
+    function extractCantonCode(attrs) {
+        // Common abbreviation keys, lowercased values normalised to upper.
+        const abbrKeys = ["kanton", "abbreviation", "ktkz", "ktz", "code", "abbr"];
+        for (const k of abbrKeys) {
+            const v = attrs[k];
+            if (typeof v === "string" && /^[A-Za-z]{2}$/.test(v)) {
+                return v.toUpperCase();
+            }
+        }
+        // Numeric FSO-number keys.
+        const numKeys = ["ktnr", "kantonsnu", "kantonsnummer", "id", "objectid"];
+        for (const k of numKeys) {
+            const num = parseInt(attrs[k], 10);
+            if (Number.isFinite(num) && CANTON_BY_FSO[num]) return CANTON_BY_FSO[num];
+        }
+        // Last resort: full name → code mapping for the 26 cantons.
+        const name = (attrs.name || attrs.NAME || "").toString().trim().toLowerCase();
+        const NAME_BY_CODE = {
+            zürich:"ZH", zurich:"ZH", bern:"BE", luzern:"LU", uri:"UR", schwyz:"SZ",
+            obwalden:"OW", nidwalden:"NW", glarus:"GL", zug:"ZG", "fribourg":"FR",
+            "freiburg":"FR", solothurn:"SO", "basel-stadt":"BS", "basel-landschaft":"BL",
+            schaffhausen:"SH", "appenzell ausserrhoden":"AR", "appenzell innerrhoden":"AI",
+            "st. gallen":"SG", "sankt gallen":"SG", graubünden:"GR", graubunden:"GR",
+            aargau:"AG", thurgau:"TG", ticino:"TI", tessin:"TI", vaud:"VD", waadt:"VD",
+            valais:"VS", wallis:"VS", "neuchâtel":"NE", neuenburg:"NE", "genève":"GE",
+            "geneve":"GE", genf:"GE", jura:"JU",
+        };
+        return NAME_BY_CODE[name] || "";
     }
 
     function setMarker(lat, lon, options) {
@@ -134,6 +295,8 @@
             pickedMarker.on("dragend", () => {
                 const p = pickedMarker.getLatLng();
                 writeFields(p.lat, p.lng);
+                fetchAltitude(p.lat, p.lng);
+                fetchCanton(p.lat, p.lng);
             });
         } else {
             pickedMarker.setLatLng(latlng);
@@ -141,6 +304,8 @@
         if (options && options.recenter) {
             map.panTo(latlng, { animate: true });
         }
+        fetchAltitude(lat, lon);
+        fetchCanton(lat, lon);
     }
 
     function writeFields(lat, lon) {
@@ -196,6 +361,23 @@
         nInput.addEventListener("change", syncMapFromFields);
         // Initial pass for forms re-rendered with prior values (validation errors).
         syncMapFromFields();
+    }
+
+    if (altInput && altInput.value.trim().length > 0) {
+        // Form re-rendered with a previous altitude value (e.g. validation error
+        // elsewhere); refresh the warning state.
+        const v = parseInt(altInput.value, 10);
+        if (Number.isFinite(v)) showAltitude(v);
+    }
+
+    if (cantonInput) {
+        cantonInput.addEventListener("change", () => {
+            // Manual selection (programmatic .value sets don't fire 'change').
+            userTouchedCanton = !!cantonInput.value;
+        });
+        // If the form was rerendered with a canton already selected, treat that
+        // as user intent — don't auto-overwrite their previous choice.
+        if (cantonInput.value) userTouchedCanton = true;
     }
 
     // --- existing-registration pins -----------------------------------------------------------

@@ -135,3 +135,15 @@ footer { color: var(--muted); padding-bottom: 2rem; }
     color: var(--muted);
 }
 .reg-map-status.warn { color: #b8860b; }
+.altitude-info {
+    min-height: 1.25rem;
+    margin: -0.5rem 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+.altitude-info.warn { color: #b8860b; }
+.reg-form input[readonly] {
+    background: #f5f6f5;
+    color: var(--muted);
+    cursor: not-allowed;
+}

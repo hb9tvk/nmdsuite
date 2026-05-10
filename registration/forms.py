@@ -53,10 +53,21 @@ class RegistrationForm(forms.Form):
         label=_("Altitude (m a.s.l.)"),
         min_value=0,
         max_value=5000,
-        help_text=_("The contest rules require ≥ 800 m above sea level."),
+        help_text=_("Filled automatically from Swisstopo when you pick a location on the map."),
+        widget=forms.TextInput(
+            attrs={
+                "readonly": "readonly",
+                "tabindex": "-1",
+                "inputmode": "numeric",
+            }
+        ),
     )
 
-    canton = forms.ChoiceField(label=_("Canton"), choices=SWISS_CANTONS)
+    canton = forms.ChoiceField(
+        label=_("Canton"),
+        choices=[("", _("— select —"))] + list(SWISS_CANTONS),
+        help_text=_("Filled automatically from Swisstopo when you pick a location on the map."),
+    )
 
     mode_cw = forms.BooleanField(label=_("CW"), required=False)
     mode_ssb = forms.BooleanField(label=_("SSB"), required=False)
@@ -81,6 +92,14 @@ class RegistrationForm(forms.Form):
         if not is_valid_callsign(normalized):
             raise forms.ValidationError(_("Not a recognizable callsign."))
         return normalized
+
+    def clean_altitude_m(self) -> int:
+        v = self.cleaned_data["altitude_m"]
+        if v < 800:
+            raise forms.ValidationError(
+                _("Below 800 m — contest rules require minimum 800 m a.s.l.")
+            )
+        return v
 
     # --- form-level cleaning ----------------------------------------------------------------
 
