@@ -104,3 +104,34 @@ footer { color: var(--muted); padding-bottom: 2rem; }
     border: 1px solid var(--border);
     border-radius: 3px;
 }
+
+.reg-map {
+    height: 400px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+/* Override Leaflet's default `grab` cursor — clicking is the primary action
+   here, so signal that with a crosshair on the map background and a `move`
+   cursor on the draggable marker itself. Specificity has to beat Leaflet's
+   single-class .leaflet-grab rule, hence the .reg-map prefix. */
+.reg-map.leaflet-container,
+.reg-map .leaflet-grab,
+.reg-map .leaflet-interactive {
+    cursor: crosshair;
+}
+.reg-map .leaflet-marker-draggable {
+    cursor: move;
+}
+.reg-map.leaflet-dragging,
+.reg-map.leaflet-dragging .leaflet-grab,
+.reg-map .leaflet-marker-dragging {
+    cursor: grabbing;
+}
+.reg-map-status {
+    min-height: 1.25rem;
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+.reg-map-status.warn { color: #b8860b; }

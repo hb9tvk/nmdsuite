@@ -1,6 +1,13 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n static %}
 {% block title %}{% trans "Register for the NMD" %}{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
+{% endblock %}
 
 {% block content %}
     <h1>{% blocktrans with year=contest.year %}Register for NMD {{ year }}{% endblocktrans %}</h1>
@@ -25,26 +32,29 @@
             {% include "registration/_field.html" with field=form.email %}
         </fieldset>
 
-        <fieldset>
-            <legend>{% trans "Station type" %}</legend>
-            {% include "registration/_field.html" with field=form.multi_op %}
-            {% include "registration/_field.html" with field=form.station_chief %}
-        </fieldset>
-
-        <fieldset>
+        <fieldset class="location-fieldset">
             <legend>{% trans "Location" %}</legend>
             <p class="hint">
                 {% blocktrans %}
-                    Enter coordinates in WGS84 (e.g. 8.2275 / 46.8182), CH1903
-                    or CH1903+. The system is detected automatically.
+                    Pick your station on the map — or enter coordinates directly
+                    in WGS84, CH1903, or CH1903+. The system is detected automatically.
+                    Existing registrations are shown in green.
                 {% endblocktrans %}
             </p>
+            <div id="reg-map" class="reg-map"></div>
+            <div id="reg-map-status" class="reg-map-status" role="status" aria-live="polite"></div>
             <div class="form-row-pair">
                 {% include "registration/_field.html" with field=form.coord_input_e %}
                 {% include "registration/_field.html" with field=form.coord_input_n %}
             </div>
             {% include "registration/_field.html" with field=form.altitude_m %}
             {% include "registration/_field.html" with field=form.canton %}
+        </fieldset>
+
+        <fieldset>
+            <legend>{% trans "Station type" %}</legend>
+            {% include "registration/_field.html" with field=form.multi_op %}
+            {% include "registration/_field.html" with field=form.station_chief %}
         </fieldset>
 
         <fieldset>
@@ -60,4 +70,22 @@
 
         <button type="submit">{% trans "Submit registration" %}</button>
     </form>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script>
+        window.NMDMapConfig = {
+            elementId: "reg-map",
+            eInputId: "{{ form.coord_input_e.id_for_label }}",
+            nInputId: "{{ form.coord_input_n.id_for_label }}",
+            registrationsUrl: "{% url 'registration:registrations_json' %}",
+            youLabel: "{% trans 'Your station' %}",
+            warnInvalid: "{% trans 'Coordinates could not be parsed.' %}",
+            warnOutOfBounds: "{% trans 'Coordinates are outside Switzerland.' %}"
+        };
+    </script>
+    <script src="{% static 'js/registration_map.js' %}"></script>
 {% endblock %}
