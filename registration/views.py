@@ -3,11 +3,13 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.db import IntegrityError
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.views.decorators.http import require_GET
 
-from core.models import Contest
+from core.models import Contest, Participant
 
 from .emails import send_registration_confirmation
 from .forms import RegistrationForm
@@ -71,3 +73,37 @@ def success(request):
         "registration/success.html",
         {"callsign": callsign, "user_was_created": user_was_created},
     )
+
+
+@require_GET
+def registrations_json(request):
+    """Return active-contest participants as map markers.
+
+    Public endpoint — operators see each other's locations on the registration
+    map so they can avoid clustering. Only the callsign and coordinates are
+    exposed; emails / station details stay private.
+    """
+    contest = _active_contest()
+    if contest is None:
+        return JsonResponse({"contest": None, "participants": []})
+
+    qs = (
+        Participant.objects
+        .filter(contest=contest, cancelled_at__isnull=True)
+        .exclude(wgs84_lat__isnull=True)
+        .exclude(wgs84_lon__isnull=True)
+        .values("callsign", "wgs84_lat", "wgs84_lon", "altitude_m", "canton")
+    )
+    return JsonResponse({
+        "contest": contest.year,
+        "participants": [
+            {
+                "callsign": p["callsign"],
+                "lat": p["wgs84_lat"],
+                "lon": p["wgs84_lon"],
+                "altitude_m": p["altitude_m"],
+                "canton": p["canton"],
+            }
+            for p in qs
+        ],
+    })
