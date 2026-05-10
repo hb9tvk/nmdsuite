@@ -72,6 +72,8 @@ def register_participant(*, contest: Contest, form_data: dict[str, Any]) -> Regi
             user.is_active = True
         user.save()
 
+    parsed = form_data["parsed_coords"]
+
     participant = Participant.objects.create(
         contest=contest,
         user=user,
@@ -80,9 +82,13 @@ def register_participant(*, contest: Contest, form_data: dict[str, Any]) -> Regi
         email=form_data["email"],
         multi_op=bool(form_data["multi_op"]),
         station_chief=form_data.get("station_chief", "") or "",
-        coord_system_input=form_data["coord_system_input"],
+        coord_system_input=parsed.detected_system,
         coord_input_e=form_data["coord_input_e"],
         coord_input_n=form_data["coord_input_n"],
+        ch1903p_e=parsed.ch1903p_e,
+        ch1903p_n=parsed.ch1903p_n,
+        wgs84_lat=parsed.wgs84_lat,
+        wgs84_lon=parsed.wgs84_lon,
         altitude_m=form_data["altitude_m"],
         canton=form_data["canton"],
         operating_modes=form_data["operating_modes"],
