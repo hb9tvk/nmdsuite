@@ -185,6 +185,10 @@ NMD_BASE_URL = os.environ.get("NMD_BASE_URL", "http://localhost:8000")
 SWISSTOPO_HEIGHT_API = os.environ.get(
     "SWISSTOPO_HEIGHT_API", "https://api3.geo.admin.ch/rest/services/height"
 )
+SWISSTOPO_IDENTIFY_API = os.environ.get(
+    "SWISSTOPO_IDENTIFY_API",
+    "https://api3.geo.admin.ch/rest/services/api/MapServer/identify",
+)
 
 
 # --- Logging ------------------------------------------------------------------------------------

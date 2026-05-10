@@ -1,6 +1,7 @@
 """Public registration views."""
 from __future__ import annotations
 
+from django.conf import settings
 from django.contrib import messages
 from django.db import IntegrityError
 from django.http import JsonResponse
@@ -59,7 +60,12 @@ def index(request):
     return render(
         request,
         "registration/index.html",
-        {"form": form, "contest": contest},
+        {
+            "form": form,
+            "contest": contest,
+            "swisstopo_height_api": settings.SWISSTOPO_HEIGHT_API,
+            "swisstopo_identify_api": settings.SWISSTOPO_IDENTIFY_API,
+        },
     )
 
 

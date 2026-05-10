@@ -48,6 +48,7 @@
                 {% include "registration/_field.html" with field=form.coord_input_n %}
             </div>
             {% include "registration/_field.html" with field=form.altitude_m %}
+            <div id="altitude-info" class="altitude-info" role="status" aria-live="polite"></div>
             {% include "registration/_field.html" with field=form.canton %}
         </fieldset>
 
@@ -81,10 +82,16 @@
             elementId: "reg-map",
             eInputId: "{{ form.coord_input_e.id_for_label }}",
             nInputId: "{{ form.coord_input_n.id_for_label }}",
+            altitudeInputId: "{{ form.altitude_m.id_for_label }}",
+            cantonInputId: "{{ form.canton.id_for_label }}",
             registrationsUrl: "{% url 'registration:registrations_json' %}",
+            heightApi: "{{ swisstopo_height_api|escapejs }}",
+            identifyApi: "{{ swisstopo_identify_api|escapejs }}",
             youLabel: "{% trans 'Your station' %}",
             warnInvalid: "{% trans 'Coordinates could not be parsed.' %}",
-            warnOutOfBounds: "{% trans 'Coordinates are outside Switzerland.' %}"
+            warnOutOfBounds: "{% trans 'Coordinates are outside Switzerland.' %}",
+            warnLowAltitude: "{% trans 'Below 800 m — contest rules require minimum 800 m a.s.l.' %}",
+            altitudeFromSwisstopo: "{% trans 'Altitude from Swisstopo: {n} m' %}"
         };
     </script>
     <script src="{% static 'js/registration_map.js' %}"></script>
