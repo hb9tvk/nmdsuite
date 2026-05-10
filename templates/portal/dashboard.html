@@ -1,7 +1,61 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% block title %}{% trans "Portal" %} — NMD{% endblock %}
+
 {% block content %}
-    <h1>{% trans "Welcome" %}, {{ callsign }}</h1>
-    <p>{% trans "The participant portal will be implemented in milestone M2." %}</p>
+    <h1>{% blocktrans with callsign=user.username %}Portal — {{ callsign }}{% endblocktrans %}</h1>
+
+    {% if not contest %}
+        <p>{% trans "There is no active contest at the moment." %}</p>
+
+    {% elif not participant %}
+        <p>
+            {% blocktrans with year=contest.year %}
+                You are not registered for NMD {{ year }}.
+            {% endblocktrans %}
+        </p>
+        {% if registration_open %}
+            <p><a href="{% url 'registration:index' %}">{% trans "Register now" %}</a></p>
+        {% else %}
+            <p>{% trans "Registration is closed." %}</p>
+        {% endif %}
+
+    {% else %}
+        <p>
+            {% blocktrans with year=contest.year date=contest.contest_date %}
+                Registered for NMD {{ year }} on {{ date }}.
+            {% endblocktrans %}
+        </p>
+
+        <h2>{% trans "Registration data" %}</h2>
+        <dl class="kv">
+            <dt>{% trans "Callsign" %}</dt><dd>{{ participant.callsign }}</dd>
+            <dt>{% trans "First name" %}</dt><dd>{{ participant.first_name }}</dd>
+            <dt>{% trans "Email" %}</dt><dd>{{ participant.email }}</dd>
+            <dt>{% trans "Multi-operator station" %}</dt>
+            <dd>{% if participant.multi_op %}{% trans "Yes" %} ({{ participant.station_chief }}){% else %}{% trans "No" %}{% endif %}</dd>
+            <dt>{% trans "Canton" %}</dt><dd>{{ participant.canton }}</dd>
+            <dt>{% trans "Altitude" %}</dt><dd>{{ participant.altitude_m }} m</dd>
+            <dt>{% trans "Coordinates (WGS84)" %}</dt>
+            <dd>{{ participant.wgs84_lat|floatformat:5 }}, {{ participant.wgs84_lon|floatformat:5 }}</dd>
+            <dt>{% trans "Operating modes" %}</dt>
+            <dd>{% if participant.operating_modes == 3 %}{% trans "CW + SSB" %}{% elif participant.operating_modes == 1 %}CW{% elif participant.operating_modes == 2 %}SSB{% endif %}</dd>
+            {% if participant.remarks %}
+                <dt>{% trans "Remarks" %}</dt><dd>{{ participant.remarks }}</dd>
+            {% endif %}
+        </dl>
+
+        <p class="actions">
+            <a href="{% url 'portal:edit_profile' %}" class="btn">{% trans "Edit registration" %}</a>
+            <a href="{% url 'portal:cancel' %}" class="btn btn-danger">{% trans "Cancel participation" %}</a>
+        </p>
+
+        <h2>{% trans "Coming soon" %}</h2>
+        <ul class="placeholder-list">
+            <li>{% trans "Log entry — record your QSOs (M2.2)" %}</li>
+            <li>{% trans "Station description — list station components (M2.4)" %}</li>
+            <li>{% trans "Submit log (M2.5)" %}</li>
+            <li>{% trans "Scoring view (M2.6, after results are published)" %}</li>
+        </ul>
+    {% endif %}
 {% endblock %}

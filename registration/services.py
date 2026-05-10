@@ -125,3 +125,36 @@ def cancel_participation(participant: Participant, *, actor: User | None = None)
         target=participant.callsign,
         contest=participant.contest,
     )
+
+
+@transaction.atomic
+def update_participant_profile(*, participant: Participant, form_data: dict[str, Any]) -> Participant:
+    """Apply edited profile fields to an existing Participant.
+
+    Only the fields the spec lists as editable are touched; identity columns
+    (callsign, first_name, email) are deliberately not part of ``form_data``
+    because the edit form omits them.
+    """
+    parsed = form_data["parsed_coords"]
+    participant.multi_op = bool(form_data["multi_op"])
+    participant.station_chief = form_data.get("station_chief", "") or ""
+    participant.coord_system_input = parsed.detected_system
+    participant.coord_input_e = form_data["coord_input_e"]
+    participant.coord_input_n = form_data["coord_input_n"]
+    participant.ch1903p_e = parsed.ch1903p_e
+    participant.ch1903p_n = parsed.ch1903p_n
+    participant.wgs84_lat = parsed.wgs84_lat
+    participant.wgs84_lon = parsed.wgs84_lon
+    participant.altitude_m = form_data["altitude_m"]
+    participant.canton = form_data["canton"]
+    participant.operating_modes = form_data["operating_modes"]
+    participant.remarks = form_data.get("remarks", "") or ""
+    participant.save()
+    audit(
+        action="registration.update",
+        actor=participant.user,
+        target=participant.callsign,
+        contest=participant.contest,
+        payload={"canton": participant.canton, "altitude_m": participant.altitude_m},
+    )
+    return participant
