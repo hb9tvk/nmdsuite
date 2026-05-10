@@ -35,11 +35,10 @@
             <legend>{% trans "Location" %}</legend>
             <p class="hint">
                 {% blocktrans %}
-                    Slice 1 collects coordinates as plain text. The map picker and
-                    automatic CH1903/WGS84 detection arrive in the next iteration.
+                    Enter coordinates in WGS84 (e.g. 8.2275 / 46.8182), CH1903
+                    or CH1903+. The system is detected automatically.
                 {% endblocktrans %}
             </p>
-            {% include "registration/_field.html" with field=form.coord_system_input %}
             <div class="form-row-pair">
                 {% include "registration/_field.html" with field=form.coord_input_e %}
                 {% include "registration/_field.html" with field=form.coord_input_n %}

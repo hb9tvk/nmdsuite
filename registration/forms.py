@@ -4,18 +4,17 @@ from __future__ import annotations
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from core.models import Participant
-
 from .callsigns import is_valid_callsign, normalize_callsign
 from .constants import SWISS_CANTONS
+from .coords import CoordinateError, parse_coordinate_pair
 
 
 class RegistrationForm(forms.Form):
-    """Public registration form (slice 1: text-only coordinate fields).
+    """Public registration form.
 
-    Map picker and coordinate auto-detection are added in slice 2/3; for now
-    we collect the operator's input verbatim into ``Participant.coord_input_*``
-    and fill ``ch1903p_*`` / ``wgs84_*`` server-side once we have the parser.
+    The map picker arrives in slice 3. For now the form collects coordinates
+    as two text fields and infers the system (WGS84 / CH1903 / CH1903+) from
+    the input magnitude — see :mod:`registration.coords`.
     """
 
     callsign = forms.CharField(
@@ -40,20 +39,15 @@ class RegistrationForm(forms.Form):
         help_text=_("Required only for multi-operator stations."),
     )
 
-    coord_system_input = forms.ChoiceField(
-        label=_("Coordinate system"),
-        choices=Participant.CoordSystem.choices,
-        initial=Participant.CoordSystem.WGS84,
-    )
     coord_input_e = forms.CharField(
         label=_("Easting / longitude"),
         max_length=32,
-        help_text=_("WGS84 example: 8.2275; CH1903+ example: 2660000"),
+        help_text=_("WGS84 e.g. 8.2275 — CH1903 e.g. 660000 — CH1903+ e.g. 2660000"),
     )
     coord_input_n = forms.CharField(
         label=_("Northing / latitude"),
         max_length=32,
-        help_text=_("WGS84 example: 46.8182; CH1903+ example: 1190000"),
+        help_text=_("WGS84 e.g. 46.8182 — CH1903 e.g. 190000 — CH1903+ e.g. 1190000"),
     )
     altitude_m = forms.IntegerField(
         label=_("Altitude (m a.s.l.)"),
@@ -105,6 +99,14 @@ class RegistrationForm(forms.Form):
                 "mode_cw",
                 _("Select at least one operating mode (CW or SSB)."),
             )
+
+        e_input = cleaned.get("coord_input_e")
+        n_input = cleaned.get("coord_input_n")
+        if e_input and n_input:
+            try:
+                cleaned["parsed_coords"] = parse_coordinate_pair(e_input, n_input)
+            except CoordinateError as exc:
+                self.add_error("coord_input_e", str(exc))
 
         return cleaned
 

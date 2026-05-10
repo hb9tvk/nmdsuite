@@ -17,7 +17,6 @@ VALID_FORM = {
     "email": "peter@example.org",
     "multi_op": "False",
     "station_chief": "",
-    "coord_system_input": "wgs84",
     "coord_input_e": "8.2275",
     "coord_input_n": "46.8182",
     "altitude_m": "1500",
@@ -89,6 +88,13 @@ def test_post_valid_creates_user_participant_and_email(client, seeded_contest):
     assert participant.callsign == "HB9TVK/P"
     assert participant.canton == "BE"
     assert participant.operating_modes == 1  # CW only
+
+    # Coordinate canonicalization: input was WGS84, all four canonical fields populated.
+    assert participant.coord_system_input == "wgs84"
+    assert participant.wgs84_lat == pytest.approx(46.8182, abs=1e-4)
+    assert participant.wgs84_lon == pytest.approx(8.2275, abs=1e-4)
+    assert participant.ch1903p_e is not None
+    assert participant.ch1903p_n is not None
 
     assert EmailLog.objects.filter(recipient="peter@example.org", status=EmailLog.Status.SENT).exists()
     assert len(mail.outbox) == 1
@@ -169,6 +175,33 @@ def test_registration_closed_state_blocks_new_signups(client, seeded_contest):
 
     response = client.post("/anmeldung/", VALID_FORM)
     assert User.objects.filter(username="HB9TVK").count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "e_input,n_input,expected_system",
+    [
+        ("8.2275", "46.8182", "wgs84"),
+        ("2660000", "1190000", "ch1903plus"),
+        ("660000", "190000", "ch1903"),
+        ("2'660'000", "1'190'000", "ch1903plus"),
+    ],
+)
+def test_post_accepts_each_coordinate_system(client, seeded_contest, e_input, n_input, expected_system):
+    payload = {**VALID_FORM, "coord_input_e": e_input, "coord_input_n": n_input}
+    response = client.post("/anmeldung/", payload, follow=True)
+    assert response.status_code == 200
+    p = Participant.objects.get(user__username="HB9TVK", contest=seeded_contest)
+    assert p.coord_system_input == expected_system
+    assert p.wgs84_lat is not None and p.wgs84_lon is not None
+
+
+@pytest.mark.django_db
+def test_post_rejects_coordinates_outside_switzerland(client, seeded_contest):
+    bad = {**VALID_FORM, "coord_input_e": "2.3522", "coord_input_n": "48.8566"}  # Paris
+    response = client.post("/anmeldung/", bad)
+    assert response.status_code == 200
+    assert User.objects.count() == 0
 
 
 @pytest.mark.django_db
