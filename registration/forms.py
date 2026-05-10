@@ -43,11 +43,13 @@ class RegistrationForm(forms.Form):
         label=_("Easting / longitude"),
         max_length=32,
         help_text=_("WGS84 e.g. 8.2275 — CH1903 e.g. 660000 — CH1903+ e.g. 2660000"),
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
     )
     coord_input_n = forms.CharField(
         label=_("Northing / latitude"),
         max_length=32,
         help_text=_("WGS84 e.g. 46.8182 — CH1903 e.g. 190000 — CH1903+ e.g. 1190000"),
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
     )
     altitude_m = forms.IntegerField(
         label=_("Altitude (m a.s.l.)"),
@@ -59,6 +61,7 @@ class RegistrationForm(forms.Form):
                 "readonly": "readonly",
                 "tabindex": "-1",
                 "inputmode": "numeric",
+                "autocomplete": "off",
             }
         ),
     )
@@ -67,6 +70,10 @@ class RegistrationForm(forms.Form):
         label=_("Canton"),
         choices=[("", _("— select —"))] + list(SWISS_CANTONS),
         help_text=_("Filled automatically from Swisstopo when you pick a location on the map."),
+        # Disable browser autofill — otherwise the browser may repopulate this
+        # field from prior submissions on page load, which the JS then mistakes
+        # for a manual user override and refuses to overwrite.
+        widget=forms.Select(attrs={"autocomplete": "off"}),
     )
 
     mode_cw = forms.BooleanField(label=_("CW"), required=False)

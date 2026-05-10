@@ -373,11 +373,13 @@
     if (cantonInput) {
         cantonInput.addEventListener("change", () => {
             // Manual selection (programmatic .value sets don't fire 'change').
+            // Setting to "" (clearing) re-enables auto-fill on the next map move.
             userTouchedCanton = !!cantonInput.value;
         });
-        // If the form was rerendered with a canton already selected, treat that
-        // as user intent — don't auto-overwrite their previous choice.
-        if (cantonInput.value) userTouchedCanton = true;
+        // We deliberately do NOT pre-set userTouchedCanton from the initial
+        // value: a fresh GET has no value (autocomplete is off on the widget),
+        // and a form-validation re-render keeps the previous selection — but
+        // the operator is mid-edit, so clicking the map should still update.
     }
 
     // --- existing-registration pins -----------------------------------------------------------
