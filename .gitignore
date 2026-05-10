@@ -1,0 +1,36 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3*
+data/
+
+.env
+.env.*
+!.env.example
+
+staticfiles/
+media/
+locale/*/LC_MESSAGES/*.mo
+
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# reference/ holds legacy artefacts (rules PDF, TCL scoring app, legacy Flask
+# log-submission app). Used locally for development context only — not needed
+# to build or run nmdsuite, so it's not pushed to GitHub.
+/reference/

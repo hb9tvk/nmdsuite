@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Portal" %} — NMD{% endblock %}
+{% block content %}
+    <h1>{% trans "Welcome" %}, {{ callsign }}</h1>
+    <p>{% trans "The participant portal will be implemented in milestone M2." %}</p>
+{% endblock %}

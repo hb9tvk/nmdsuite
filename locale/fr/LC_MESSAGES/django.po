@@ -1,0 +1,11 @@
+# NMDSuite French translation.
+# This file is distributed under the same license as the NMDSuite package.
+msgid ""
+msgstr ""
+"Project-Id-Version: nmdsuite 0.1\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"

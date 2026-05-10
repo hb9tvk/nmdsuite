@@ -1,0 +1,57 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'de' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}NMD Contest Suite{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header class="topnav">
+        <a class="brand" href="{% url 'portal:dashboard' %}">NMD</a>
+        <nav>
+            <a href="{% url 'registration:index' %}">{% trans "Registration" %}</a>
+            <a href="{% url 'portal:dashboard' %}">{% trans "Portal" %}</a>
+            {% if user.is_staff %}
+                <a href="{% url 'scoring:index' %}">{% trans "Scoring" %}</a>
+                <a href="{% url 'admin_module:index' %}">{% trans "Administration" %}</a>
+            {% endif %}
+        </nav>
+        <div class="topnav-right">
+            {% include "_language_switcher.html" %}
+            {% if user.is_authenticated %}
+                <span class="callsign">{{ user.username }}</span>
+                <form method="post" action="{% url 'portal:logout' %}" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="link-button">{% trans "Logout" %}</button>
+                </form>
+            {% else %}
+                <a href="{% url 'portal:login' %}">{% trans "Login" %}</a>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if messages %}
+        <ul class="flash">
+            {% for m in messages %}
+                <li class="flash-{{ m.tags }}">{{ m }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+        <small>
+            {% if active_contest %}
+                {% blocktrans with year=active_contest.year date=active_contest.contest_date %}NMD {{ year }} — {{ date }}{% endblocktrans %}
+            {% endif %}
+        </small>
+    </footer>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Normalize line endings to LF in the repo; let working trees use the native
+# line ending of the OS. Keeps Windows clients happy without polluting diffs.
+* text=auto eol=lf
+
+# Always-LF — text files where CRLF would actually break things.
+*.py        text eol=lf
+*.po        text eol=lf
+*.pot       text eol=lf
+*.sh        text eol=lf
+Makefile    text eol=lf
+Dockerfile  text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# Binary — never touch.
+*.pdf       binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.mo        binary
+*.db        binary
+*.sqlite*   binary
+*.s3        binary
+*.ws3       binary

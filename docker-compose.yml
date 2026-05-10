@@ -1,0 +1,19 @@
+services:
+  nmdsuite:
+    build: .
+    image: nmdsuite:latest
+    container_name: nmdsuite
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Override .env so the in-container DB lives on the persisted volume,
+      # regardless of what NMD_DB_PATH is set to on the host.
+      NMD_DB_PATH: /data/nmdsuite.sqlite3
+    volumes:
+      - nmd_data:/data
+    restart: unless-stopped
+
+volumes:
+  nmd_data:

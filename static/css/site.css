@@ -1,0 +1,79 @@
+:root {
+    --bg: #f5f6f5;
+    --fg: #1a1a1a;
+    --accent: #1f5f3f;
+    --accent-fg: #ffffff;
+    --border: #d4d6d4;
+    --muted: #6b6e6b;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+}
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1rem 1.25rem;
+}
+.topnav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 1.25rem;
+    background: var(--accent);
+    color: var(--accent-fg);
+}
+.topnav a, .topnav .link-button {
+    color: var(--accent-fg);
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+}
+.topnav a:hover, .topnav .link-button:hover { background: rgba(255,255,255,0.15); }
+.topnav .brand { font-weight: 700; font-size: 1.1rem; }
+.topnav nav { display: flex; gap: 0.25rem; }
+.topnav-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+.topnav-right .callsign { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.lang-switcher select {
+    background: rgba(255,255,255,0.12);
+    color: var(--accent-fg);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+}
+.inline-form { display: inline; margin: 0; }
+.link-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+}
+
+h1 { color: var(--accent); margin-top: 0; }
+.form-row { margin-bottom: 0.9rem; }
+.form-row label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+.form-row input { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 3px; }
+button[type="submit"], input[type="submit"] {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    padding: 0.55rem 1.1rem;
+    border-radius: 3px;
+    cursor: pointer;
+}
+.form-errors, .errorlist { color: #c0392b; }
+
+.flash { list-style: none; padding: 0; margin: 0; }
+.flash li {
+    padding: 0.5rem 1.25rem;
+    background: #fff7c2;
+    border-bottom: 1px solid var(--border);
+}
+.flash-error { background: #ffd6d6; }
+.flash-success { background: #d6f5dc; }
+
+footer { color: var(--muted); padding-bottom: 2rem; }

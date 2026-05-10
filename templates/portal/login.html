@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Login" %} — NMD{% endblock %}
+{% block content %}
+    <h1>{% trans "Login" %}</h1>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="form-row">
+            <label for="id_username">{% trans "Callsign" %}</label>
+            <input id="id_username" name="username" type="text" required autofocus
+                   value="{{ form.username.value|default_if_none:'' }}">
+            {{ form.username.errors }}
+        </div>
+        <div class="form-row">
+            <label for="id_password">{% trans "Password" %}</label>
+            <input id="id_password" name="password" type="password" required>
+            {{ form.password.errors }}
+        </div>
+        <button type="submit">{% trans "Sign in" %}</button>
+        <p><a href="{% url 'portal:password_reset' %}">{% trans "Forgot your password?" %}</a></p>
+    </form>
+{% endblock %}
