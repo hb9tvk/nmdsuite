@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Registration submitted" %}{% endblock %}
+
+{% block content %}
+    <h1>{% trans "Thank you!" %}</h1>
+    <p>
+        {% blocktrans with callsign=callsign %}
+            <strong>{{ callsign }}</strong> is registered for the upcoming NMD.
+        {% endblocktrans %}
+    </p>
+
+    {% if user_was_created %}
+        <p>{% trans "We've sent a confirmation email containing your portal credentials." %}</p>
+    {% else %}
+        <p>{% trans "We've sent a confirmation email. Use your existing password to sign in to the portal — or request a reset if you've forgotten it." %}</p>
+    {% endif %}
+
+    <p><a href="{% url 'portal:login' %}">{% trans "Go to the participant portal" %}</a></p>
+{% endblock %}

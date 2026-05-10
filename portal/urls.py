@@ -2,12 +2,16 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from . import views
+from .forms import CallsignAuthenticationForm
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path(
         "login/",
-        auth_views.LoginView.as_view(template_name="portal/login.html"),
+        auth_views.LoginView.as_view(
+            template_name="portal/login.html",
+            authentication_form=CallsignAuthenticationForm,
+        ),
         name="login",
     ),
     path(

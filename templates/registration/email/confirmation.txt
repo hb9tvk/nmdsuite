@@ -1,0 +1,53 @@
+{% load i18n %}{# Trilingual body, mirroring the legacy invitation email format. #}
+=== Deutsch ===
+
+Hallo {{ participant.first_name }}
+
+Deine Anmeldung als {{ participant.callsign }} für den NMD {{ contest.year }} ({{ contest.contest_date }}) ist eingegangen. Vielen Dank!
+
+Teilnehmer-Portal: {{ portal_url }}
+Rufzeichen (Login): {{ participant.user.username }}{% if generated_password %}
+Passwort:           {{ generated_password }}
+
+Bitte ändere das Passwort beim ersten Login oder bewahre es sicher auf.{% else %}
+
+Du hast bereits ein Konto im NMD-Portal. Bitte melde dich mit deinem bestehenden Passwort an.
+Falls du es vergessen hast, kannst du es hier zurücksetzen: {{ reset_url }}{% endif %}
+
+Bei Fragen: nmd@uska.ch
+
+=== Français ===
+
+Bonjour {{ participant.first_name }}
+
+Votre inscription en tant que {{ participant.callsign }} au NMD {{ contest.year }} ({{ contest.contest_date }}) a bien été enregistrée. Merci !
+
+Portail des participants : {{ portal_url }}
+Identifiant : {{ participant.user.username }}{% if generated_password %}
+Mot de passe : {{ generated_password }}
+
+Veuillez changer ce mot de passe lors de votre première connexion ou le conserver en lieu sûr.{% else %}
+
+Vous avez déjà un compte dans le portail NMD. Connectez-vous avec votre mot de passe habituel,
+ou réinitialisez-le ici si vous l'avez oublié : {{ reset_url }}{% endif %}
+
+Questions : nmd@uska.ch
+
+=== Italiano ===
+
+Ciao {{ participant.first_name }}
+
+La tua iscrizione come {{ participant.callsign }} al NMD {{ contest.year }} ({{ contest.contest_date }}) è stata registrata. Grazie!
+
+Portale partecipanti: {{ portal_url }}
+Nominativo (login): {{ participant.user.username }}{% if generated_password %}
+Password:           {{ generated_password }}
+
+Per favore cambia la password al primo accesso o conservala in luogo sicuro.{% else %}
+
+Hai già un account nel portale NMD. Accedi con la tua password esistente,
+oppure reimpostala qui se l'hai dimenticata: {{ reset_url }}{% endif %}
+
+Domande: nmd@uska.ch
+
+— USKA NMD

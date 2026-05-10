@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Registration closed" %}{% endblock %}
+
+{% block content %}
+    <h1>{% trans "Registration is closed" %}</h1>
+    {% if reason == "no_contest" %}
+        <p>{% trans "There is no active contest at the moment." %}</p>
+    {% else %}
+        <p>
+            {% blocktrans with year=contest.year %}
+                Registration for NMD {{ year }} is no longer accepting new sign-ups.
+            {% endblocktrans %}
+        </p>
+        <p>{% trans "Already registered participants can still update their data via the participant portal." %}</p>
+    {% endif %}
+{% endblock %}
