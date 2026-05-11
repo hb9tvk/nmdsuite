@@ -273,3 +273,33 @@ footer { color: var(--muted); padding-bottom: 2rem; }
     color: var(--fg);
     border-color: var(--border);
 }
+
+.qso-upload {
+    background: #fafbfa;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+.qso-upload h2 { margin: 0 0 0.25rem; font-size: 1rem; }
+.qso-upload .hint { margin: 0 0 0.5rem; }
+.qso-upload-form {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.qso-upload-form input[type="file"] {
+    padding: 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: #fff;
+}
+.qso-upload-form button {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-radius: 3px;
+    cursor: pointer;
+}

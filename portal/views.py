@@ -20,6 +20,7 @@ from registration.services import cancel_participation, update_participant_profi
 
 from . import qso_service
 from .forms import ProfileEditForm, QsoEntryForm
+from .qso_upload import UploadParseError, parse_upload
 
 
 def _active_contest() -> Contest | None:
@@ -236,4 +237,47 @@ def qso_delete(request, pk: int):
         return redirected
     qso = _own_qso(participant, pk)
     qso.delete()
+    return _render_app(request, participant=participant)
+
+
+# --- log upload (M2.3) -----------------------------------------------------------------------
+
+
+@login_required
+@require_http_methods(["POST"])
+def qso_upload(request):
+    """Accept a .nmd / .csv file and atomically replace the participant's QSO list.
+
+    The wire format is the legacy 6-column one (``UTC;CALL;RSTS;TXTS;RSTR;TXTR``,
+    semicolon-delimited, optional ``#;FIELD=;value`` station-info comment lines).
+    Station-info parsing happens but isn't consumed yet — M2.4 will use it
+    to populate the StationDescription side. M2.3 only writes QSOs.
+    """
+    participant, redirected = _participant_or_redirect(request)
+    if redirected is not None:
+        return redirected
+
+    uploaded = request.FILES.get("file")
+    if uploaded is None:
+        messages.error(request, _("Please choose a file to upload."))
+        return _render_app(request, participant=participant)
+
+    name = uploaded.name.lower()
+    if not (name.endswith(".csv") or name.endswith(".nmd")):
+        messages.error(request, _("Only .csv and .nmd files are supported."))
+        return _render_app(request, participant=participant)
+
+    try:
+        parsed = parse_upload(uploaded.read())
+    except UploadParseError as exc:
+        messages.error(request, str(exc))
+        return _render_app(request, participant=participant)
+
+    count = qso_service.replace_qsos_from_upload(
+        participant=participant, rows=parsed.qsos, filename=uploaded.name,
+    )
+    messages.success(
+        request,
+        _("Imported %(count)d QSO entries from %(name)s.") % {"count": count, "name": uploaded.name},
+    )
     return _render_app(request, participant=participant)
