@@ -1,0 +1,49 @@
+{% load i18n %}
+{% comment %}
+Rows inside #qso-list. Re-rendered with each /log/save/ etc. response so
+the listing always reflects the current state of the participant's log.
+{% endcomment %}
+{% for qso in qsos %}
+    <tr id="qso-row-{{ qso.pk }}">
+        <td class="qso-cell qso-utc{% if not qso.is_utc_valid %} invalid-cell{% endif %}">
+            {{ qso.utc_raw }}
+        </td>
+        <td class="qso-cell qso-call{% if not qso.is_remote_call_valid %} invalid-cell{% endif %}">
+            {{ qso.remote_call }}
+        </td>
+        <td class="qso-cell qso-rst{% if not qso.is_rsts_valid %} invalid-cell{% endif %}">
+            {{ qso.rsts }}
+        </td>
+        <td class="qso-cell qso-txt{% if not qso.is_txts_valid %} invalid-cell{% endif %}">
+            {{ qso.txts }}
+        </td>
+        <td class="qso-cell qso-rst{% if not qso.is_rstr_valid or not qso.is_rst_pair_consistent %} invalid-cell{% endif %}">
+            {{ qso.rstr }}
+        </td>
+        <td class="qso-cell qso-txt{% if not qso.is_txtr_valid %} invalid-cell{% endif %}">
+            {{ qso.txtr }}
+        </td>
+        <td class="qso-cell qso-mode">{{ qso.mode|default:"?" }}</td>
+        <td class="qso-cell qso-actions">
+            <button type="button"
+                    class="row-btn"
+                    hx-get="{% url 'portal:qso_edit' qso.pk %}"
+                    hx-target="#qso-app"
+                    hx-swap="outerHTML">
+                {% trans "Edit" %}
+            </button>
+            <button type="button"
+                    class="row-btn row-btn-danger"
+                    hx-post="{% url 'portal:qso_delete' qso.pk %}"
+                    hx-target="#qso-app"
+                    hx-swap="outerHTML"
+                    hx-confirm="{% trans 'Delete this QSO?' %}">
+                ×
+            </button>
+        </td>
+    </tr>
+{% empty %}
+    <tr class="qso-empty">
+        <td colspan="8">{% trans "No QSOs yet — add one using the form above." %}</td>
+    </tr>
+{% endfor %}

@@ -1,4 +1,4 @@
-"""Participant portal views (M2.1: dashboard + profile edit + cancel).
+"""Participant portal views (M2.1 dashboard/edit/cancel + M2.2 log entry).
 
 The login / logout / password-reset views live directly in ``portal.urls``
 via the Django built-ins, so they aren't repeated here.
@@ -8,15 +8,18 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.views.decorators.http import require_http_methods
 
-from core.models import Contest, Participant
+from core.models import Contest, Participant, QsoEntry
 from core.picker import map_picker_context
 from registration.services import cancel_participation, update_participant_profile
 
-from .forms import ProfileEditForm
+from . import qso_service
+from .forms import ProfileEditForm, QsoEntryForm
 
 
 def _active_contest() -> Contest | None:
@@ -123,3 +126,114 @@ def cancel(request):
         return redirect("portal:login")
 
     return render(request, "portal/cancel.html", {"participant": participant, "contest": contest})
+
+
+# --- log entry (M2.2) ------------------------------------------------------------------------
+#
+# Pattern: single form at the top, table below. After every save / edit /
+# delete the server returns BOTH the fresh form AND the up-to-date row list
+# in one response — the form swaps into #qso-form-section (the normal target)
+# and an out-of-band swap replaces the contents of #qso-list. Editing fills
+# the top form (matches the legacy nmdlogsubmission UX).
+
+
+def _participant_or_redirect(request):
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        messages.info(request, _("You are not registered for the current contest."))
+        return None, redirect("portal:dashboard")
+    return participant, None
+
+
+def _own_qso(participant: Participant, pk: int) -> QsoEntry:
+    qso = get_object_or_404(QsoEntry, pk=pk)
+    if qso.participant_id != participant.id:
+        raise Http404
+    return qso
+
+
+def _raw_qso_data(request) -> dict[str, str]:
+    """Read the 6 QSO fields from request.POST verbatim — permissive saves
+    persist exactly what the operator typed."""
+    return {
+        "utc": request.POST.get("utc", ""),
+        "remote_call": request.POST.get("remote_call", ""),
+        "rsts": request.POST.get("rsts", ""),
+        "txts": request.POST.get("txts", ""),
+        "rstr": request.POST.get("rstr", ""),
+        "txtr": request.POST.get("txtr", ""),
+    }
+
+
+def _render_app(request, *, participant, form=None, editing_id=""):
+    """Render the whole #qso-app fragment (form + table). Used as the
+    response to every save / edit / delete so the table always reflects the
+    current state. Simple full-section swap, no OOB complications."""
+    return render(
+        request,
+        "portal/_qso_app.html",
+        {
+            "form": form or QsoEntryForm(),
+            "editing_id": editing_id,
+            "qsos": qso_service.list_qsos(participant),
+        },
+    )
+
+
+@login_required
+def log_entry(request):
+    participant, redirected = _participant_or_redirect(request)
+    if redirected is not None:
+        return redirected
+    return render(
+        request,
+        "portal/log_entry.html",
+        {
+            "participant": participant,
+            "qsos": qso_service.list_qsos(participant),
+            "form": QsoEntryForm(),
+            "editing_id": "",
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def qso_save(request):
+    participant, redirected = _participant_or_redirect(request)
+    if redirected is not None:
+        return redirected
+
+    data = _raw_qso_data(request)
+    if not qso_service.is_all_empty(data):
+        editing_id = (request.POST.get("editing_id") or "").strip()
+        if editing_id:
+            qso = _own_qso(participant, int(editing_id))
+            qso_service.update_qso(qso=qso, data=data)
+        else:
+            qso_service.create_qso(participant=participant, data=data)
+
+    return _render_app(request, participant=participant)
+
+
+@login_required
+def qso_edit(request, pk: int):
+    """Pre-fill the top form with this row's values for inline editing."""
+    participant, redirected = _participant_or_redirect(request)
+    if redirected is not None:
+        return redirected
+    qso = _own_qso(participant, pk)
+    form = QsoEntryForm(initial=qso_service.initial_from_qso(qso))
+    return _render_app(request, participant=participant, form=form, editing_id=qso.pk)
+
+
+@login_required
+@require_http_methods(["DELETE", "POST"])
+def qso_delete(request, pk: int):
+    participant, redirected = _participant_or_redirect(request)
+    if redirected is not None:
+        return redirected
+    qso = _own_qso(participant, pk)
+    qso.delete()
+    return _render_app(request, participant=participant)

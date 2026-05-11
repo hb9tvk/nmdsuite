@@ -1,0 +1,53 @@
+{% load i18n %}
+{% comment %}
+Single top-of-page QSO form. Submitting or pressing Enter replaces the
+whole #qso-app (form + table) with the server's response, which always
+includes the latest row list. Simple, no OOB.
+{% endcomment %}
+<form id="qso-form"
+      hx-post="{% url 'portal:qso_save' %}"
+      hx-target="#qso-app"
+      hx-swap="outerHTML"
+      class="qso-entry-form"
+      autocomplete="off">
+    <input type="hidden" name="editing_id" value="{{ editing_id }}">
+    <div class="qso-entry-grid">
+        <label class="qso-field">
+            <span>{% trans "UTC" %}</span>
+            {{ form.utc }}
+        </label>
+        <label class="qso-field qso-field-call">
+            <span>{% trans "Callsign" %}</span>
+            {{ form.remote_call }}
+        </label>
+        <label class="qso-field">
+            <span>{% trans "RST sent" %}</span>
+            {{ form.rsts }}
+        </label>
+        <label class="qso-field qso-field-text">
+            <span>{% trans "Text sent" %}</span>
+            {{ form.txts }}
+        </label>
+        <label class="qso-field">
+            <span>{% trans "RST recv" %}</span>
+            {{ form.rstr }}
+        </label>
+        <label class="qso-field qso-field-text">
+            <span>{% trans "Text received" %}</span>
+            {{ form.txtr }}
+        </label>
+        <div class="qso-field qso-field-action">
+            <button type="submit">{% if editing_id %}{% trans "Update" %}{% else %}{% trans "Save" %}{% endif %}</button>
+            {% if editing_id %}
+                <button type="button"
+                        class="qso-cancel-edit"
+                        hx-get="{% url 'portal:log_entry' %}"
+                        hx-target="#qso-app"
+                        hx-select="#qso-app"
+                        hx-swap="outerHTML">
+                    {% trans "Cancel" %}
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</form>

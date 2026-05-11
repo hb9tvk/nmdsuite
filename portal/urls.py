@@ -8,6 +8,10 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
     path("profile/cancel/", views.cancel, name="cancel"),
+    path("log/", views.log_entry, name="log_entry"),
+    path("log/save/", views.qso_save, name="qso_save"),
+    path("log/<int:pk>/edit/", views.qso_edit, name="qso_edit"),
+    path("log/<int:pk>/delete/", views.qso_delete, name="qso_delete"),
     path(
         "login/",
         auth_views.LoginView.as_view(
