@@ -8,8 +8,11 @@ otherwise they stay null/blank and the per-field validity properties on
 from __future__ import annotations
 
 from datetime import datetime, time, timezone
-from typing import Any
+from typing import Any, Iterable
 
+from django.db import transaction
+
+from core.audit import audit
 from core.models import Contest, Participant, QsoEntry
 from registration.callsigns import normalize_callsign
 
@@ -74,3 +77,33 @@ def initial_from_qso(qso: QsoEntry) -> dict[str, str]:
         "rstr": qso.rstr,
         "txtr": qso.txtr,
     }
+
+
+@transaction.atomic
+def replace_qsos_from_upload(
+    *, participant: Participant, rows: Iterable[dict[str, Any]], filename: str = "",
+) -> int:
+    """Replace the participant's QSO list with the rows parsed from an upload.
+
+    Atomic: the existing entries are deleted and the new ones inserted in a
+    single transaction so a parse failure mid-stream can't leave a torn log.
+    Returns the number of QSOs inserted.
+    """
+    QsoEntry.objects.filter(participant=participant).delete()
+    inserted = 0
+    contest = participant.contest
+    for row in rows:
+        if not any((row.get(k) or "").strip() for k in ("utc", "remote_call", "rsts", "txts", "rstr", "txtr")):
+            continue
+        entry = QsoEntry(participant=participant)
+        _apply(entry, contest=contest, data=row)
+        entry.save()
+        inserted += 1
+    audit(
+        action="qso.upload",
+        actor=participant.user,
+        target=participant.callsign,
+        contest=contest,
+        payload={"count": inserted, "filename": filename},
+    )
+    return inserted

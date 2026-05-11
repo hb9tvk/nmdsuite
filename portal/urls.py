@@ -10,6 +10,7 @@ urlpatterns = [
     path("profile/cancel/", views.cancel, name="cancel"),
     path("log/", views.log_entry, name="log_entry"),
     path("log/save/", views.qso_save, name="qso_save"),
+    path("log/upload/", views.qso_upload, name="qso_upload"),
     path("log/<int:pk>/edit/", views.qso_edit, name="qso_edit"),
     path("log/<int:pk>/delete/", views.qso_delete, name="qso_delete"),
     path(

@@ -13,6 +13,22 @@
         {% trans "Anything you type is saved as-is. Invalid fields are highlighted in red so you can fix them later. The final submission requires every row to be valid." %}
     </p>
 
+    <section class="qso-upload">
+        <h2>{% trans "Upload .nmd or .csv file" %}</h2>
+        <p class="hint">
+            {% trans "Replaces the entire QSO list below with the file's contents. Format: 6 semicolon-separated columns — UTC;CALL;RSTS;TXTS;RSTR;TXTR." %}
+        </p>
+        <form hx-post="{% url 'portal:qso_upload' %}"
+              hx-target="#qso-app"
+              hx-swap="outerHTML"
+              hx-encoding="multipart/form-data"
+              hx-confirm="{% trans 'This replaces your existing QSO list. Continue?' %}"
+              class="qso-upload-form">
+            <input type="file" name="file" accept=".csv,.nmd" required>
+            <button type="submit">{% trans "Upload" %}</button>
+        </form>
+    </section>
+
     {% include "portal/_qso_app.html" with form=form editing_id=editing_id qsos=qsos %}
 
     <p class="actions">
