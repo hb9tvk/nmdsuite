@@ -75,3 +75,45 @@ class QsoEntryForm(forms.Form):
         label=_("Text received"), max_length=255, required=False,
         widget=forms.TextInput(attrs={"size": "20", "autocomplete": "off"}),
     )
+
+
+class StationDescriptionForm(forms.Form):
+    """Station description header + 11 semantic component slots (M2.4).
+
+    Permissive: blank component rows are skipped on save. The 6 kg contest
+    limit is enforced by the M2.5 submit-log action — here it's only a
+    client-side warning so the operator sees they're over before submitting.
+
+    Slot meaning is positional (STA01 = Transceiver, STA02 = power supply,
+    …) inherited from the legacy nmdlogsubmission app; see
+    ``station_service.COMPONENT_LABELS``.
+    """
+
+    op_name = forms.CharField(label=_("Operator name"), max_length=80, required=False)
+    location_text = forms.CharField(label=_("Location name"), max_length=120, required=False)
+    watt = forms.CharField(label=_("Output power"), max_length=20, required=False)
+
+    def __init__(self, *args, **kwargs):
+        # Local import dodges the circular dependency portal.forms ↔ portal.station_service.
+        from .station_service import COMPONENT_LABELS
+
+        super().__init__(*args, **kwargs)
+        self._component_labels = COMPONENT_LABELS
+        for i, label in enumerate(COMPONENT_LABELS, start=1):
+            self.fields[f"sta{i:02d}bez"] = forms.CharField(
+                label=label,
+                max_length=120,
+                required=False,
+            )
+            self.fields[f"sta{i:02d}gramm"] = forms.IntegerField(
+                label=_("Weight (g)"),
+                min_value=0,
+                max_value=20_000,
+                required=False,
+                widget=forms.NumberInput(attrs={"inputmode": "numeric", "step": "1", "class": "station-weight-input"}),
+            )
+
+    def component_rows(self):
+        """Yield (label, description_field, weight_field) for the template."""
+        for i, label in enumerate(self._component_labels, start=1):
+            yield label, self[f"sta{i:02d}bez"], self[f"sta{i:02d}gramm"]

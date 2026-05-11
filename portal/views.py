@@ -18,8 +18,8 @@ from core.models import Contest, Participant, QsoEntry
 from core.picker import map_picker_context
 from registration.services import cancel_participation, update_participant_profile
 
-from . import qso_service
-from .forms import ProfileEditForm, QsoEntryForm
+from . import qso_service, station_service
+from .forms import ProfileEditForm, QsoEntryForm, StationDescriptionForm
 from .qso_upload import UploadParseError, parse_upload
 
 
@@ -248,10 +248,12 @@ def qso_delete(request, pk: int):
 def qso_upload(request):
     """Accept a .nmd / .csv file and atomically replace the participant's QSO list.
 
-    The wire format is the legacy 6-column one (``UTC;CALL;RSTS;TXTS;RSTR;TXTR``,
-    semicolon-delimited, optional ``#;FIELD=;value`` station-info comment lines).
-    Station-info parsing happens but isn't consumed yet — M2.4 will use it
-    to populate the StationDescription side. M2.3 only writes QSOs.
+    Posted from the portal dashboard. The wire format is the legacy 6-column
+    one (``UTC;CALL;RSTS;TXTS;RSTR;TXTR``, semicolon-delimited, optional
+    ``#;FIELD=;value`` station-info comment lines). An .nmd file carries
+    both QSO log rows and station-description metadata; both are applied
+    here, and the operator is then redirected back to the dashboard with a
+    flash summary.
     """
     participant, redirected = _participant_or_redirect(request)
     if redirected is not None:
@@ -260,24 +262,62 @@ def qso_upload(request):
     uploaded = request.FILES.get("file")
     if uploaded is None:
         messages.error(request, _("Please choose a file to upload."))
-        return _render_app(request, participant=participant)
+        return redirect("portal:dashboard")
 
     name = uploaded.name.lower()
     if not (name.endswith(".csv") or name.endswith(".nmd")):
         messages.error(request, _("Only .csv and .nmd files are supported."))
-        return _render_app(request, participant=participant)
+        return redirect("portal:dashboard")
 
     try:
         parsed = parse_upload(uploaded.read())
     except UploadParseError as exc:
         messages.error(request, str(exc))
-        return _render_app(request, participant=participant)
+        return redirect("portal:dashboard")
 
     count = qso_service.replace_qsos_from_upload(
         participant=participant, rows=parsed.qsos, filename=uploaded.name,
     )
-    messages.success(
+    outcome = station_service.apply_upload_station_info(participant, parsed.station_info.fields)
+    parts = [_("Imported %(count)d QSO entries from %(name)s.") % {"count": count, "name": uploaded.name}]
+    if outcome.station is not None:
+        parts.append(_("Station description updated."))
+    if outcome.location_updated:
+        parts.append(_("Location updated from the file; altitude and canton refreshed from Swisstopo."))
+    messages.success(request, " ".join(str(p) for p in parts))
+    if outcome.location_invalid:
+        messages.warning(
+            request,
+            _("The coordinates in the file are outside Switzerland or could not be parsed — your registered location was kept."),
+        )
+    return redirect("portal:dashboard")
+
+
+# --- station description (M2.4) --------------------------------------------------------------
+
+
+@login_required
+def station(request):
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        messages.info(request, _("You are not registered for the current contest."))
+        return redirect("portal:dashboard")
+
+    existing = station_service.get_or_init_station(participant)
+
+    if request.method == "POST":
+        form = StationDescriptionForm(request.POST)
+        # Permissive: even if some fields fail validation we still save what we have.
+        form.is_valid()
+        station_service.save_station(participant=participant, data=form.cleaned_data)
+        messages.success(request, _("Station description saved."))
+        return redirect("portal:station")
+    else:
+        form = StationDescriptionForm(initial=station_service.initial_from_station(existing))
+
+    return render(
         request,
-        _("Imported %(count)d QSO entries from %(name)s.") % {"count": count, "name": uploaded.name},
+        "portal/station.html",
+        {"form": form, "station": existing, "participant": participant},
     )
-    return _render_app(request, participant=participant)
