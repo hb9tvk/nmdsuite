@@ -141,7 +141,9 @@ def test_upload_replaces_qso_list(client, participant):
         b"0815;HB9XYZ/P;59;alpha bravo 12345;59;charlie delta 1234\n"
     )
     response = _upload(client, blob)
-    assert response.status_code == 200
+    # Upload form lives on the dashboard now — view redirects back to it.
+    assert response.status_code == 302
+    assert response["Location"].endswith("/submission/")
 
     rows = list(QsoEntry.objects.filter(participant=p).order_by("utc_raw"))
     assert [r.remote_call for r in rows] == ["HB9ABO/P", "HB9XYZ/P"]
@@ -159,7 +161,7 @@ def test_upload_rejects_unknown_extension(client, participant):
     user, p = participant
     client.force_login(user)
     response = _upload(client, b"0612;HB9ABO/P;599;a;599;b\n", name="log.txt")
-    assert response.status_code == 200
+    assert response.status_code == 302
     assert QsoEntry.objects.filter(participant=p).count() == 0
 
 
@@ -168,7 +170,7 @@ def test_upload_handles_missing_file(client, participant):
     user, p = participant
     client.force_login(user)
     response = client.post("/submission/log/upload/", {})
-    assert response.status_code == 200
+    assert response.status_code == 302
     assert QsoEntry.objects.filter(participant=p).count() == 0
 
 
@@ -179,7 +181,7 @@ def test_upload_handles_binary_garbage_without_crashing(client, participant):
     user, p = participant
     client.force_login(user)
     response = _upload(client, b"\xff\xfe\x80\x81")
-    assert response.status_code == 200
+    assert response.status_code == 302
     # At most one nonsense row. Real-world garbage uploads are operator error;
     # the next legit upload will replace it atomically anyway.
     assert QsoEntry.objects.filter(participant=p).count() <= 1
@@ -192,3 +194,24 @@ def test_upload_redirects_unregistered_user_to_dashboard(client, seeded_contest)
     response = _upload(client, b"0612;HB9ABO/P;599;a;599;b\n")
     assert response.status_code == 302
     assert response["Location"].endswith("/submission/")
+
+
+@pytest.mark.django_db
+def test_dashboard_renders_upload_form(client, participant):
+    """The upload form lives on the portal/dashboard, not on the log entry page."""
+    user, p = participant
+    client.force_login(user)
+    response = client.get("/submission/")
+    assert response.status_code == 200
+    body = response.content.decode("utf-8")
+    assert "qso-upload" in body
+    assert 'action="/submission/log/upload/"' in body
+
+
+@pytest.mark.django_db
+def test_log_entry_page_no_longer_has_upload_form(client, participant):
+    user, p = participant
+    client.force_login(user)
+    response = client.get("/submission/log/")
+    body = response.content.decode("utf-8")
+    assert "qso-upload" not in body

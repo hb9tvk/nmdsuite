@@ -295,6 +295,62 @@ footer { color: var(--muted); padding-bottom: 2rem; }
     border-radius: 3px;
     background: #fff;
 }
+/* Station description form */
+.station-form fieldset { border: 0; padding: 0; margin: 0; }
+.station-section {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.station-section h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+.station-section .hint { margin: -0.25rem 0 0.75rem; }
+.station-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+}
+.station-grid .form-row { display: flex; flex-direction: column; gap: 0.2rem; }
+.station-grid label { font-weight: 600; font-size: 0.9rem; }
+.station-grid input { padding: 0.4rem 0.5rem; border: 1px solid var(--border); border-radius: 3px; background: #fff; }
+.station-grid input:disabled { background: #f0f0f0; color: #555; }
+.station-grid-span { grid-column: 1 / -1; max-width: calc(50% - 0.5rem); }
+
+.station-row {
+    display: grid;
+    grid-template-columns: 14rem 1fr 7rem auto;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.station-row:last-of-type { border-bottom: 0; }
+.station-row label { font-weight: 600; }
+.station-row input[type="text"] { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 3px; }
+.station-row input[type="number"], .station-row .station-weight-input {
+    width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 3px; text-align: right;
+}
+.station-row-watt input { width: 7rem; text-align: right; }
+.station-row-watt { grid-template-columns: 14rem 7rem auto; }
+.station-unit { color: var(--muted); font-size: 0.9rem; }
+
+.station-total {
+    grid-template-columns: 14rem 1fr 7rem auto;
+    background: #f6f8f4;
+    border-radius: 3px;
+    padding: 0.6rem 0.5rem;
+    margin-top: 0.5rem;
+    border-bottom: 0;
+}
+.station-total label { font-weight: 700; }
+.station-total strong { text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.1rem; grid-column: 3; }
+#station-total-display.over-limit { color: #c0392b; }
+#station-weight-warning { color: #c0392b; min-height: 1.25rem; margin: 0.4rem 0 0; }
+
+.banner { padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1rem; }
+.banner-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
 .qso-upload-form button {
     padding: 0.4rem 0.9rem;
     border: 1px solid var(--accent);

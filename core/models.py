@@ -96,14 +96,27 @@ class Participant(models.Model):
     def is_active(self) -> bool:
         return self.cancelled_at is None
 
+    @property
+    def ch1903_e(self) -> int | None:
+        """Easting in CH1903 (LV03), 6-digit legacy Swiss grid. Display-only."""
+        if self.ch1903p_e is None:
+            return None
+        return int(round(self.ch1903p_e - 2_000_000))
+
+    @property
+    def ch1903_n(self) -> int | None:
+        """Northing in CH1903 (LV03), 6-digit legacy Swiss grid. Display-only."""
+        if self.ch1903p_n is None:
+            return None
+        return int(round(self.ch1903p_n - 1_000_000))
+
 
 class StationDescription(models.Model):
     """The station info that goes alongside the submitted log."""
 
     participant = models.OneToOneField(Participant, on_delete=models.CASCADE, related_name="station")
     op_name = models.CharField(max_length=80, blank=True)
-    location_text = models.CharField(max_length=120, blank=True)
-    qah_m = models.PositiveIntegerField(null=True, blank=True, help_text=_("Antenna height above ground"))
+    location_text = models.CharField(max_length=120, blank=True, help_text=_("Friendly location name (SOTA ref, summit name, …) — altitude/canton/coords live on Participant"))
     watt = models.CharField(max_length=20, blank=True)
     total_weight_g = models.PositiveIntegerField(default=0, help_text=_("Total station weight (grams) — used as ranking tiebreaker"))
     submitted = models.BooleanField(default=False)

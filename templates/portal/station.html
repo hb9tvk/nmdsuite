@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% trans "Station description" %} — NMD{% endblock %}
+
+{% block content %}
+    <h1>{% blocktrans with callsign=participant.callsign %}Station description — {{ callsign }}{% endblocktrans %}</h1>
+
+    {% if station.submitted %}
+        <div class="banner banner-info">
+            {% trans "Your log has been submitted. No further changes are possible." %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="station-form" autocomplete="off">
+        {% csrf_token %}
+        <fieldset {% if station.submitted %}disabled{% endif %}>
+
+            <section class="station-section">
+                <h2>{% trans "Operator information" %}</h2>
+                <div class="station-grid">
+                    <div class="form-row">
+                        <label for="{{ form.op_name.id_for_label }}">{% trans "Operator" %}</label>
+                        {{ form.op_name }}
+                    </div>
+                    <div class="form-row">
+                        <label>{% trans "Email address" %}</label>
+                        <input type="text" value="{{ participant.email }}" disabled>
+                    </div>
+                </div>
+            </section>
+
+            <section class="station-section">
+                <h2>{% trans "Location information" %}</h2>
+                <div class="station-grid">
+                    <div class="form-row">
+                        <label for="{{ form.location_text.id_for_label }}">{% trans "Location name" %}</label>
+                        {{ form.location_text }}
+                    </div>
+                    <div class="form-row">
+                        <label>{% trans "Canton" %}</label>
+                        <input type="text" value="{{ participant.canton }}" disabled>
+                    </div>
+                    <div class="form-row">
+                        <label>{% trans "X coordinate (CH1903)" %}</label>
+                        <input type="text" value="{{ participant.ch1903_e }}" disabled>
+                    </div>
+                    <div class="form-row">
+                        <label>{% trans "Y coordinate (CH1903)" %}</label>
+                        <input type="text" value="{{ participant.ch1903_n }}" disabled>
+                    </div>
+                    <div class="form-row station-grid-span">
+                        <label>{% trans "Altitude (m)" %}</label>
+                        <input type="text" value="{{ participant.altitude_m }}" disabled>
+                    </div>
+                </div>
+            </section>
+
+            <section class="station-section">
+                <h2>{% trans "Station data" %}</h2>
+                <p class="hint">
+                    {% trans "List every piece of equipment that counts toward the contest weight limit (6 kg)." %}
+                </p>
+
+                <div class="station-row station-row-watt">
+                    <label for="{{ form.watt.id_for_label }}">{% trans "Output power" %}</label>
+                    {{ form.watt }}
+                    <span class="station-unit">{% trans "Watt" %}</span>
+                </div>
+
+                {% for label, bez, gramm in form.component_rows %}
+                    <div class="station-row">
+                        <label for="{{ bez.id_for_label }}">{{ label }}</label>
+                        {{ bez }}
+                        {{ gramm }}
+                        <span class="station-unit">{% trans "Weight (g)" %}</span>
+                    </div>
+                {% endfor %}
+
+                <div class="station-row station-total">
+                    <label>{% trans "Total station weight" %}</label>
+                    <strong id="station-total-display">0</strong>
+                    <span class="station-unit">g</span>
+                </div>
+                <p id="station-weight-warning" class="hint" data-warn-text="{% trans 'Total exceeds the 6000 g contest limit.' %}"></p>
+            </section>
+
+        </fieldset>
+
+        {% if not station.submitted %}
+            <p class="actions">
+                <button type="submit">{% trans "Save station description" %}</button>
+                <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
+            </p>
+        {% else %}
+            <p class="actions">
+                <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
+            </p>
+        {% endif %}
+    </form>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="{% static 'js/station_weight.js' %}"></script>
+{% endblock %}

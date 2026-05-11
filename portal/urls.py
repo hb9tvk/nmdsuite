@@ -13,6 +13,7 @@ urlpatterns = [
     path("log/upload/", views.qso_upload, name="qso_upload"),
     path("log/<int:pk>/edit/", views.qso_edit, name="qso_edit"),
     path("log/<int:pk>/delete/", views.qso_delete, name="qso_delete"),
+    path("station/", views.station, name="station"),
     path(
         "login/",
         auth_views.LoginView.as_view(

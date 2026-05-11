@@ -36,8 +36,8 @@
             <dd>{% if participant.multi_op %}{% trans "Yes" %} ({{ participant.station_chief }}){% else %}{% trans "No" %}{% endif %}</dd>
             <dt>{% trans "Canton" %}</dt><dd>{{ participant.canton }}</dd>
             <dt>{% trans "Altitude" %}</dt><dd>{{ participant.altitude_m }} m</dd>
-            <dt>{% trans "Coordinates (WGS84)" %}</dt>
-            <dd>{{ participant.wgs84_lat|floatformat:5 }}, {{ participant.wgs84_lon|floatformat:5 }}</dd>
+            <dt>{% trans "Coordinates (CH1903)" %}</dt>
+            <dd>{{ participant.ch1903_e }}, {{ participant.ch1903_n }}</dd>
             <dt>{% trans "Operating modes" %}</dt>
             <dd>{% if participant.operating_modes == 3 %}{% trans "CW + SSB" %}{% elif participant.operating_modes == 1 %}CW{% elif participant.operating_modes == 2 %}SSB{% endif %}</dd>
             {% if participant.remarks %}
@@ -47,13 +47,29 @@
 
         <p class="actions">
             <a href="{% url 'portal:log_entry' %}" class="btn">{% trans "Log entry" %}</a>
+            <a href="{% url 'portal:station' %}" class="btn">{% trans "Station description" %}</a>
             <a href="{% url 'portal:edit_profile' %}" class="btn">{% trans "Edit registration" %}</a>
             <a href="{% url 'portal:cancel' %}" class="btn btn-danger">{% trans "Cancel participation" %}</a>
         </p>
 
+        {% blocktrans asvar upload_confirm_msg %}This replaces your existing QSO list and station description. Continue?{% endblocktrans %}
+        <section class="qso-upload">
+            <h2>{% trans "Upload .nmd or .csv file" %}</h2>
+            <p class="hint">
+                {% trans "An .nmd file carries both the QSO log and the station description; uploading replaces both." %}
+            </p>
+            <form method="post" enctype="multipart/form-data"
+                  action="{% url 'portal:qso_upload' %}"
+                  onsubmit="return confirm('{{ upload_confirm_msg|escapejs }}');"
+                  class="qso-upload-form">
+                {% csrf_token %}
+                <input type="file" name="file" accept=".csv,.nmd" required>
+                <button type="submit">{% trans "Upload" %}</button>
+            </form>
+        </section>
+
         <h2>{% trans "Coming soon" %}</h2>
         <ul class="placeholder-list">
-            <li>{% trans "Station description — list station components (M2.4)" %}</li>
             <li>{% trans "Submit log (M2.5)" %}</li>
             <li>{% trans "Scoring view (M2.6, after results are published)" %}</li>
         </ul>
