@@ -144,10 +144,15 @@ def score_contest(contest: Contest) -> dict[str, int]:
     ``remote_call`` are silently skipped — they're permissive saves that
     aren't ready to score.
 
-    M3.5 (points + overrides) will layer on top of the classification +
-    suspected detection + dupe deduction left here.
+    Pipeline order: classify → detect suspected → apply overrides →
+    mark dupes → assign points → persist. Overrides run before dedupe so
+    admin decisions outrank automatic classification when picking the
+    bucket winner; points are assigned last so they reflect the final
+    status (DUPE_DEDUCTED rows naturally fall to 0).
     """
     from .dupes import mark_dupes
+    from .overrides import apply_overrides
+    from .points import assign_points
     from .suspected import detect_suspected
 
     participants = list(
@@ -185,15 +190,18 @@ def score_contest(contest: Contest) -> dict[str, int]:
                 half=_qso_half(qso, contest),
             ))
 
-    # Order matters: detect suspected BEFORE dedupe so a SUSPECTED row can
-    # win over a plain UNMATCHED in the same bucket.
+    # Order matters: detect suspected BEFORE overrides BEFORE dedupe.
+    # A SUSPECTED upgrade can win over plain UNMATCHED in dedup, and an
+    # admin override sits at the top of the priority list.
     detect_suspected(
         records,
         qsos_by_key=qsos_by_key,
         participants_by_key=participants_by_key,
         key_by_participant_id=key_by_participant_id,
     )
+    apply_overrides(records, contest)
     mark_dupes(records)
+    assign_points(records)
     ScoringRecord.objects.filter(qso__participant__contest=contest).delete()
     ScoringRecord.objects.bulk_create(records)
 
