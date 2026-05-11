@@ -24,26 +24,30 @@ the listing always reflects the current state of the participant's log.
             {{ qso.txtr }}
         </td>
         <td class="qso-cell qso-mode">{{ qso.mode|default:"?" }}</td>
-        <td class="qso-cell qso-actions">
-            <button type="button"
-                    class="row-btn"
-                    hx-get="{% url 'portal:qso_edit' qso.pk %}"
-                    hx-target="#qso-app"
-                    hx-swap="outerHTML">
-                {% trans "Edit" %}
-            </button>
-            <button type="button"
-                    class="row-btn row-btn-danger"
-                    hx-post="{% url 'portal:qso_delete' qso.pk %}"
-                    hx-target="#qso-app"
-                    hx-swap="outerHTML"
-                    hx-confirm="{% trans 'Delete this QSO?' %}">
-                ×
-            </button>
-        </td>
+        {% if not locked %}
+            <td class="qso-cell qso-actions">
+                <button type="button"
+                        class="row-btn"
+                        hx-get="{% url 'portal:qso_edit' qso.pk %}"
+                        hx-target="#qso-app"
+                        hx-swap="outerHTML">
+                    {% trans "Edit" %}
+                </button>
+                <button type="button"
+                        class="row-btn row-btn-danger"
+                        hx-post="{% url 'portal:qso_delete' qso.pk %}"
+                        hx-target="#qso-app"
+                        hx-swap="outerHTML"
+                        hx-confirm="{% trans 'Delete this QSO?' %}">
+                    ×
+                </button>
+            </td>
+        {% endif %}
     </tr>
 {% empty %}
     <tr class="qso-empty">
-        <td colspan="8">{% trans "No QSOs yet — add one using the form above." %}</td>
+        <td colspan="{% if locked %}7{% else %}8{% endif %}">
+            {% if locked %}{% trans "No QSOs in the submitted log." %}{% else %}{% trans "No QSOs yet — add one using the form above." %}{% endif %}
+        </td>
     </tr>
 {% endfor %}

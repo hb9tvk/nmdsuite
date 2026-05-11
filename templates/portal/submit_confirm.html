@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Submit log" %} — NMD{% endblock %}
+
+{% block content %}
+    <h1>{% blocktrans with callsign=participant.callsign %}Submit log — {{ callsign }}{% endblocktrans %}</h1>
+
+    <div class="banner banner-warn">
+        <strong>{% trans "This action is final." %}</strong>
+        {% trans "After submission you cannot change your QSO log, station description, or registration data." %}
+    </div>
+
+    <h2>{% trans "Summary" %}</h2>
+    <dl class="kv">
+        <dt>{% trans "Callsign" %}</dt><dd>{{ participant.callsign }}</dd>
+        <dt>{% trans "QSOs in log" %}</dt><dd>{{ qso_count }}</dd>
+        {% if invalid_qso_count %}
+            <dt>{% trans "QSO rows with invalid fields" %}</dt>
+            <dd class="warn-text">
+                {% blocktrans count counter=invalid_qso_count %}
+                    {{ counter }} row has errors that may lead to a deduction of points.
+                {% plural %}
+                    {{ counter }} rows have errors that may lead to a deduction of points.
+                {% endblocktrans %}
+            </dd>
+        {% endif %}
+        <dt>{% trans "Total station weight" %}</dt>
+        <dd>
+            {{ station.total_weight_g }} g
+            {% if weight_over_limit %}
+                <span class="warn-text">— {% trans "exceeds the 6 kg contest limit." %}</span>
+            {% endif %}
+        </dd>
+    </dl>
+
+    <form method="post" class="actions">
+        {% csrf_token %}
+        <button type="submit">{% trans "Confirm and submit" %}</button>
+        <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
+    </form>
+{% endblock %}

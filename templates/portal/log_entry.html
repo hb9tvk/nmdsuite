@@ -9,11 +9,17 @@
 {% block content %}
     <h1>{% blocktrans with callsign=participant.callsign %}Log entry — {{ callsign }}{% endblocktrans %}</h1>
 
-    <p class="hint">
-        {% trans "Anything you type is saved as-is. Invalid fields are highlighted in red so you can fix them later. The final submission requires every row to be valid." %}
-    </p>
+    {% if participant.submitted_at %}
+        <div class="banner banner-info">
+            {% trans "Your log has been submitted. The log below is shown read-only." %}
+        </div>
+    {% else %}
+        <p class="hint">
+            {% trans "Anything you type is saved as-is. Invalid fields are highlighted in red so you can fix them later." %}
+        </p>
+    {% endif %}
 
-    {% include "portal/_qso_app.html" with form=form editing_id=editing_id qsos=qsos %}
+    {% include "portal/_qso_app.html" with form=form editing_id=editing_id qsos=qsos locked=participant.submitted_at %}
 
     <p class="actions">
         <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>

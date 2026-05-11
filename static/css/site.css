@@ -350,6 +350,9 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 
 .banner { padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1rem; }
 .banner-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+.banner-warn { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+.warn-text { color: #c0392b; }
+.actions .btn-primary { background: #2c7a4a; border-color: #2c7a4a; color: #fff; }
 
 .qso-upload-form button {
     padding: 0.4rem 0.9rem;

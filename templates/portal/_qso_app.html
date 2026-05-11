@@ -14,9 +14,11 @@ listeners, no fragility about response parsing.
         </ul>
     {% endif %}
 
-    <section id="qso-form-section">
-        {% include "portal/_qso_form.html" with form=form editing_id=editing_id %}
-    </section>
+    {% if not locked %}
+        <section id="qso-form-section">
+            {% include "portal/_qso_form.html" with form=form editing_id=editing_id %}
+        </section>
+    {% endif %}
 
     <table class="qso-table">
         <thead>
@@ -28,11 +30,11 @@ listeners, no fragility about response parsing.
                 <th>{% trans "RST received" %}</th>
                 <th>{% trans "Text received" %}</th>
                 <th>{% trans "Mode" %}</th>
-                <th class="qso-cell-actions">{% trans "Actions" %}</th>
+                {% if not locked %}<th class="qso-cell-actions">{% trans "Actions" %}</th>{% endif %}
             </tr>
         </thead>
         <tbody id="qso-list">
-            {% include "portal/_qso_rows.html" with qsos=qsos %}
+            {% include "portal/_qso_rows.html" with qsos=qsos locked=locked %}
         </tbody>
     </table>
 </div>

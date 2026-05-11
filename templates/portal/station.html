@@ -5,7 +5,7 @@
 {% block content %}
     <h1>{% blocktrans with callsign=participant.callsign %}Station description — {{ callsign }}{% endblocktrans %}</h1>
 
-    {% if station.submitted %}
+    {% if participant.submitted_at %}
         <div class="banner banner-info">
             {% trans "Your log has been submitted. No further changes are possible." %}
         </div>
@@ -13,7 +13,7 @@
 
     <form method="post" class="station-form" autocomplete="off">
         {% csrf_token %}
-        <fieldset {% if station.submitted %}disabled{% endif %}>
+        <fieldset {% if participant.submitted_at %}disabled{% endif %}>
 
             <section class="station-section">
                 <h2>{% trans "Operator information" %}</h2>
@@ -86,7 +86,7 @@
 
         </fieldset>
 
-        {% if not station.submitted %}
+        {% if not participant.submitted_at %}
             <p class="actions">
                 <button type="submit">{% trans "Save station description" %}</button>
                 <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
