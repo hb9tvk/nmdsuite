@@ -84,6 +84,10 @@ class Participant(models.Model):
 
     registered_at = models.DateTimeField(auto_now_add=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text=_("Set when the operator finalises and locks their log + station description"),
+    )
 
     class Meta:
         unique_together = [("contest", "user")]
@@ -95,6 +99,10 @@ class Participant(models.Model):
     @property
     def is_active(self) -> bool:
         return self.cancelled_at is None
+
+    @property
+    def is_submitted(self) -> bool:
+        return self.submitted_at is not None
 
     @property
     def ch1903_e(self) -> int | None:
@@ -119,8 +127,6 @@ class StationDescription(models.Model):
     location_text = models.CharField(max_length=120, blank=True, help_text=_("Friendly location name (SOTA ref, summit name, …) — altitude/canton/coords live on Participant"))
     watt = models.CharField(max_length=20, blank=True)
     total_weight_g = models.PositiveIntegerField(default=0, help_text=_("Total station weight (grams) — used as ranking tiebreaker"))
-    submitted = models.BooleanField(default=False)
-    submitted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = _("Station description")
@@ -154,9 +160,10 @@ class QsoEntry(models.Model):
     later without losing what they typed. ``utc_time`` and ``mode`` are only
     populated when the corresponding raw fields parse cleanly.
 
-    The final "submit log" action (M2.5) refuses to lock the log until every
-    row is valid; the M3 scoring engine ignores rows where ``utc_time`` is
-    null or ``mode`` is blank.
+    The final "submit log" action (M2.5) is also permissive — the operator
+    decides what to file. Invalid rows surface as a warning on the confirm
+    page but do not block submission; the M3 scoring engine ignores rows
+    where ``utc_time`` is null or ``mode`` is blank.
     """
 
     class Mode(models.TextChoices):

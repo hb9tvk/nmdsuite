@@ -1,0 +1,1 @@
+{% load i18n %}NMD {{ contest.year }} – {% trans "Log received" %} – {{ participant.callsign }}

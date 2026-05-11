@@ -1,7 +1,9 @@
-"""Participant portal views (M2.1 dashboard/edit/cancel + M2.2 log entry).
+"""Participant portal views (M2.1 dashboard/edit/cancel … M2.5 submit log).
 
 The login / logout / password-reset views live directly in ``portal.urls``
-via the Django built-ins, so they aren't repeated here.
+via the Django built-ins, so they aren't repeated here. All editing
+endpoints route through ``_editable_participation_or_redirect`` so the
+post-submit lock is enforced in one place.
 """
 from __future__ import annotations
 
@@ -18,7 +20,7 @@ from core.models import Contest, Participant, QsoEntry
 from core.picker import map_picker_context
 from registration.services import cancel_participation, update_participant_profile
 
-from . import qso_service, station_service
+from . import qso_service, station_service, submit_service
 from .forms import ProfileEditForm, QsoEntryForm, StationDescriptionForm
 from .qso_upload import UploadParseError, parse_upload
 
@@ -40,6 +42,24 @@ def _active_participation(user, contest: Contest | None) -> Participant | None:
         .filter(contest=contest, user=user, cancelled_at__isnull=True)
         .first()
     )
+
+
+def _editable_participation_or_redirect(request) -> tuple[Participant | None, object]:
+    """Look up the active participation AND assert it isn't already submitted.
+
+    Returns ``(participant, None)`` on success, or ``(None, response)`` if the
+    caller should return ``response`` instead. Used by every editing endpoint
+    so the post-submit lock is enforced in one place.
+    """
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        messages.info(request, _("You are not registered for the current contest."))
+        return None, redirect("portal:dashboard")
+    if participant.submitted_at is not None:
+        messages.info(request, _("Your log has been submitted; further changes are not possible."))
+        return None, redirect("portal:dashboard")
+    return participant, None
 
 
 @login_required
@@ -76,11 +96,10 @@ def _profile_initial(participant: Participant) -> dict:
 
 @login_required
 def edit_profile(request):
+    participant, redirected = _editable_participation_or_redirect(request)
+    if redirected is not None:
+        return redirected
     contest = _active_contest()
-    participant = _active_participation(request.user, contest)
-    if participant is None:
-        messages.info(request, _("You are not registered for the current contest."))
-        return redirect("portal:dashboard")
 
     if request.method == "POST":
         form = ProfileEditForm(request.POST)
@@ -111,11 +130,10 @@ def edit_profile(request):
 
 @login_required
 def cancel(request):
+    participant, redirected = _editable_participation_or_redirect(request)
+    if redirected is not None:
+        return redirected
     contest = _active_contest()
-    participant = _active_participation(request.user, contest)
-    if participant is None:
-        messages.info(request, _("You are not registered for the current contest."))
-        return redirect("portal:dashboard")
 
     if request.method == "POST":
         cancel_participation(participant, actor=request.user)
@@ -202,7 +220,7 @@ def log_entry(request):
 @login_required
 @require_http_methods(["POST"])
 def qso_save(request):
-    participant, redirected = _participant_or_redirect(request)
+    participant, redirected = _editable_participation_or_redirect(request)
     if redirected is not None:
         return redirected
 
@@ -221,7 +239,7 @@ def qso_save(request):
 @login_required
 def qso_edit(request, pk: int):
     """Pre-fill the top form with this row's values for inline editing."""
-    participant, redirected = _participant_or_redirect(request)
+    participant, redirected = _editable_participation_or_redirect(request)
     if redirected is not None:
         return redirected
     qso = _own_qso(participant, pk)
@@ -232,7 +250,7 @@ def qso_edit(request, pk: int):
 @login_required
 @require_http_methods(["DELETE", "POST"])
 def qso_delete(request, pk: int):
-    participant, redirected = _participant_or_redirect(request)
+    participant, redirected = _editable_participation_or_redirect(request)
     if redirected is not None:
         return redirected
     qso = _own_qso(participant, pk)
@@ -255,7 +273,7 @@ def qso_upload(request):
     here, and the operator is then redirected back to the dashboard with a
     flash summary.
     """
-    participant, redirected = _participant_or_redirect(request)
+    participant, redirected = _editable_participation_or_redirect(request)
     if redirected is not None:
         return redirected
 
@@ -304,20 +322,59 @@ def station(request):
         messages.info(request, _("You are not registered for the current contest."))
         return redirect("portal:dashboard")
 
-    existing = station_service.get_or_init_station(participant)
-
     if request.method == "POST":
+        # Submitted log → POST forbidden, GET still renders read-only.
+        if participant.submitted_at is not None:
+            messages.info(request, _("Your log has been submitted; further changes are not possible."))
+            return redirect("portal:dashboard")
         form = StationDescriptionForm(request.POST)
-        # Permissive: even if some fields fail validation we still save what we have.
-        form.is_valid()
+        form.is_valid()  # permissive: save what parses
         station_service.save_station(participant=participant, data=form.cleaned_data)
         messages.success(request, _("Station description saved."))
         return redirect("portal:station")
-    else:
-        form = StationDescriptionForm(initial=station_service.initial_from_station(existing))
 
+    existing = station_service.get_or_init_station(participant)
+    form = StationDescriptionForm(initial=station_service.initial_from_station(existing))
     return render(
         request,
         "portal/station.html",
         {"form": form, "station": existing, "participant": participant},
+    )
+
+
+# --- submit log (M2.5) -----------------------------------------------------------------------
+
+
+@login_required
+def submit(request):
+    """Confirm-and-lock page. POST flips ``participant.submitted_at`` and
+    sends the operator a trilingual confirmation email."""
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        messages.info(request, _("You are not registered for the current contest."))
+        return redirect("portal:dashboard")
+    if participant.submitted_at is not None:
+        messages.info(request, _("Your log has already been submitted."))
+        return redirect("portal:dashboard")
+
+    if request.method == "POST":
+        submit_service.submit_log(participant=participant)
+        messages.success(request, _("Your log has been submitted. A confirmation email is on its way."))
+        return redirect("portal:dashboard")
+
+    qsos = list(qso_service.list_qsos(participant))
+    invalid_count = sum(1 for q in qsos if not q.is_fully_valid)
+    station = station_service.get_or_init_station(participant)
+    return render(
+        request,
+        "portal/submit_confirm.html",
+        {
+            "participant": participant,
+            "contest": contest,
+            "qso_count": len(qsos),
+            "invalid_qso_count": invalid_count,
+            "station": station,
+            "weight_over_limit": station.total_weight_g > 6000,
+        },
     )

@@ -169,10 +169,10 @@ def test_station_post_saves_form_and_audits(client, participant):
 @pytest.mark.django_db
 def test_station_submitted_state_is_read_only(client, participant):
     user, p = participant
+    from django.utils import timezone
+    p.submitted_at = timezone.now()
+    p.save(update_fields=["submitted_at"])
     client.force_login(user)
-    station = station_service.get_or_init_station(p)
-    station.submitted = True
-    station.save()
     response = client.get("/submission/station/")
     body = response.content.decode("utf-8")
     # The disabled <fieldset> wrapper blocks all child inputs in one go.

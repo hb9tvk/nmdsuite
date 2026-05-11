@@ -34,14 +34,13 @@ class StationComponentInline(admin.TabularInline):
 
 @admin.register(StationDescription)
 class StationDescriptionAdmin(admin.ModelAdmin):
-    list_display = ("participant", "total_weight_g", "submitted", "submitted_at")
-    list_filter = ("submitted",)
+    list_display = ("participant", "total_weight_g")
     inlines = [StationComponentInline]
 
 
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ("callsign", "contest", "first_name", "canton", "operating_modes", "cancelled_at")
+    list_display = ("callsign", "contest", "first_name", "canton", "operating_modes", "submitted_at", "cancelled_at")
     list_filter = ("contest", "canton", "operating_modes", "multi_op")
     search_fields = ("callsign", "first_name", "email")
 
