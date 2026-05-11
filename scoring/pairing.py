@@ -49,6 +49,7 @@ from core.models import (
 from registration.callsigns import login_username, normalize_callsign
 
 from .text_match import DEFAULT_MAX_ERRORS, text_distance
+# Imported below at call-time to avoid an import cycle (dupes imports match_key from us).
 
 
 MATCH_WINDOW = timedelta(minutes=5)
@@ -143,9 +144,10 @@ def score_contest(contest: Contest) -> dict[str, int]:
     ``remote_call`` are silently skipped — they're permissive saves that
     aren't ready to score.
 
-    M3.3 (dupes) and M3.5 (points + overrides) will layer on top of the
-    classification we leave here.
+    M3.5 (points + overrides) will layer on top of the classification +
+    dupe deduction left here.
     """
+    from .dupes import mark_dupes
     participants = list(
         Participant.objects
         .filter(contest=contest, cancelled_at__isnull=True)
@@ -163,7 +165,6 @@ def score_contest(contest: Contest) -> dict[str, int]:
         )
 
     records: list[ScoringRecord] = []
-    summary: dict[str, int] = defaultdict(int)
     for p in participants:
         p_key = match_key(p.callsign)
         for qso in qsos_by_key[p_key]:
@@ -180,8 +181,12 @@ def score_contest(contest: Contest) -> dict[str, int]:
                 text_distance=result.text_distance,
                 half=_qso_half(qso, contest),
             ))
-            summary[result.status] += 1
 
+    mark_dupes(records)
     ScoringRecord.objects.filter(qso__participant__contest=contest).delete()
     ScoringRecord.objects.bulk_create(records)
+
+    summary: dict[str, int] = defaultdict(int)
+    for r in records:
+        summary[r.status] += 1
     return dict(summary)
