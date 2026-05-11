@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% trans "Log entry" %} — NMD{% endblock %}
+
+{% block extra_head %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+    <h1>{% blocktrans with callsign=participant.callsign %}Log entry — {{ callsign }}{% endblocktrans %}</h1>
+
+    <p class="hint">
+        {% trans "Anything you type is saved as-is. Invalid fields are highlighted in red so you can fix them later. The final submission requires every row to be valid." %}
+    </p>
+
+    {% include "portal/_qso_app.html" with form=form editing_id=editing_id qsos=qsos %}
+
+    <p class="actions">
+        <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
+    </p>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="https://unpkg.com/htmx.org@1.9.12"
+            integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+            crossorigin="anonymous"></script>
+    <script>
+        document.body.addEventListener("htmx:configRequest", function (e) {
+            const tok = document.querySelector("meta[name='csrf-token']");
+            if (tok) e.detail.headers["X-CSRFToken"] = tok.content;
+        });
+    </script>
+    <script src="{% static 'js/qso_log.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% load i18n %}
+{% comment %}
+The whole "log entry" UI in one swappable block. The QSO form's hx-target is
+#qso-app with hx-swap=outerHTML, so every save / edit / delete returns this
+entire fragment. Simpler and more reliable than OOB swaps — no event
+listeners, no fragility about response parsing.
+{% endcomment %}
+<div id="qso-app">
+    <section id="qso-form-section">
+        {% include "portal/_qso_form.html" with form=form editing_id=editing_id %}
+    </section>
+
+    <table class="qso-table">
+        <thead>
+            <tr>
+                <th>{% trans "UTC" %}</th>
+                <th>{% trans "Callsign" %}</th>
+                <th>{% trans "RST sent" %}</th>
+                <th>{% trans "Text sent" %}</th>
+                <th>{% trans "RST received" %}</th>
+                <th>{% trans "Text received" %}</th>
+                <th>{% trans "Mode" %}</th>
+                <th class="qso-cell-actions">{% trans "Actions" %}</th>
+            </tr>
+        </thead>
+        <tbody id="qso-list">
+            {% include "portal/_qso_rows.html" with qsos=qsos %}
+        </tbody>
+    </table>
+</div>

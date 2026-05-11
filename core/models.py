@@ -134,30 +134,90 @@ class StationComponent(models.Model):
 
 
 class QsoEntry(models.Model):
-    """One row from the participant's log (one logged QSO)."""
+    """One row from the participant's log (one logged QSO).
+
+    The participant portal accepts log entries permissively: invalid input is
+    stored verbatim in ``utc_raw`` etc. so the operator can fix things up
+    later without losing what they typed. ``utc_time`` and ``mode`` are only
+    populated when the corresponding raw fields parse cleanly.
+
+    The final "submit log" action (M2.5) refuses to lock the log until every
+    row is valid; the M3 scoring engine ignores rows where ``utc_time`` is
+    null or ``mode`` is blank.
+    """
 
     class Mode(models.TextChoices):
         CW = "CW", "CW"
         SSB = "SSB", "SSB"
 
     participant = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name="qsos")
-    utc_time = models.DateTimeField()
-    # `mode` is *derived* from RST length on import (2 digits → SSB, 3 digits → CW)
-    # and persisted here so the rest of the code can rely on it without re-deriving.
-    mode = models.CharField(max_length=3, choices=Mode.choices)
-    remote_call = models.CharField(max_length=20)
-    rsts = models.CharField(max_length=3)
-    txts = models.CharField(max_length=255, blank=True)
-    rstr = models.CharField(max_length=3)
-    txtr = models.CharField(max_length=255, blank=True)
-    remark = models.CharField(max_length=255, blank=True)
+    utc_raw = models.CharField(max_length=8, blank=True, default="")
+    utc_time = models.DateTimeField(null=True, blank=True)
+    mode = models.CharField(max_length=3, choices=Mode.choices, blank=True, default="")
+    remote_call = models.CharField(max_length=20, blank=True, default="")
+    rsts = models.CharField(max_length=3, blank=True, default="")
+    txts = models.CharField(max_length=255, blank=True, default="")
+    rstr = models.CharField(max_length=3, blank=True, default="")
+    txtr = models.CharField(max_length=255, blank=True, default="")
+    remark = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:
-        ordering = ["utc_time"]
+        ordering = ["utc_raw", "id"]
         indexes = [
             models.Index(fields=["participant", "utc_time"]),
             models.Index(fields=["remote_call", "mode", "utc_time"]),
         ]
+
+    # --- per-field validity (computed on render, not stored) -----------------------------------
+
+    @property
+    def is_utc_valid(self) -> bool:
+        from portal.qso_validators import is_valid_utc
+        return is_valid_utc(self.utc_raw)
+
+    @property
+    def is_remote_call_valid(self) -> bool:
+        from registration.callsigns import is_valid_callsign
+        return bool(self.remote_call) and is_valid_callsign(self.remote_call)
+
+    @property
+    def is_rsts_valid(self) -> bool:
+        from portal.qso_validators import is_valid_rst
+        return is_valid_rst(self.rsts)
+
+    @property
+    def is_rstr_valid(self) -> bool:
+        from portal.qso_validators import is_valid_rst
+        return is_valid_rst(self.rstr)
+
+    @property
+    def is_txts_valid(self) -> bool:
+        from portal.qso_validators import is_text_payload_valid
+        return is_text_payload_valid(self.txts)
+
+    @property
+    def is_txtr_valid(self) -> bool:
+        from portal.qso_validators import is_text_payload_valid
+        return is_text_payload_valid(self.txtr)
+
+    @property
+    def is_rst_pair_consistent(self) -> bool:
+        if not self.rsts or not self.rstr:
+            return True  # incomplete row — leave the per-field flags to do the work
+        return len(self.rsts) == len(self.rstr)
+
+    @property
+    def is_fully_valid(self) -> bool:
+        """True only if every field is in good shape — required by the final 'submit log' action."""
+        return (
+            self.is_utc_valid
+            and self.is_remote_call_valid
+            and self.is_rsts_valid
+            and self.is_rstr_valid
+            and self.is_txts_valid
+            and self.is_txtr_valid
+            and self.is_rst_pair_consistent
+        )
 
 
 class ScoringStatus(models.TextChoices):
