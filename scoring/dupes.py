@@ -35,11 +35,14 @@ from .pairing import match_key
 
 
 # Higher priority = kept over lower-priority rows in the same bucket.
+# ADMIN_ACCEPTED ranks top because it's an explicit admin decision and
+# must not be displaced by automatic classification.
 # SUSPECTED_CALL_MISMATCH ranks above plain UNMATCHED because it carries
 # extra diagnostic information (the operator's suspected real peer); it
 # ranks below TEXT_MISMATCH because TEXT_MISMATCH has an actual confirmed
 # peer QSO, while SUSPECTED only has a guess.
 _NMD_PRIORITY: dict[str, int] = {
+    ScoringStatus.ADMIN_ACCEPTED: 5,
     ScoringStatus.FULL_MATCH: 4,
     ScoringStatus.TEXT_MISMATCH: 3,
     ScoringStatus.SUSPECTED_CALL_MISMATCH: 2,
