@@ -145,28 +145,31 @@ def score_contest(contest: Contest) -> dict[str, int]:
     aren't ready to score.
 
     M3.5 (points + overrides) will layer on top of the classification +
-    dupe deduction left here.
+    suspected detection + dupe deduction left here.
     """
     from .dupes import mark_dupes
+    from .suspected import detect_suspected
+
     participants = list(
         Participant.objects
         .filter(contest=contest, cancelled_at__isnull=True)
     )
-    # Map: callsign-without-/P → list of that participant's scorable QSOs.
-    qsos_by_key: dict[str, list[QsoEntry]] = {}
-    for p in participants:
-        key = match_key(p.callsign)
-        qsos_by_key[key] = list(
+    # Map: callsign-without-/P → Participant / list of that participant's scorable QSOs.
+    participants_by_key: dict[str, Participant] = {match_key(p.callsign): p for p in participants}
+    key_by_participant_id: dict[int, str] = {p.id: k for k, p in participants_by_key.items()}
+    qsos_by_key: dict[str, list[QsoEntry]] = {
+        k: list(
             p.qsos
             .filter(utc_time__isnull=False)
             .exclude(mode="")
             .exclude(remote_call="")
             .order_by("utc_time", "id")
         )
+        for k, p in participants_by_key.items()
+    }
 
     records: list[ScoringRecord] = []
-    for p in participants:
-        p_key = match_key(p.callsign)
+    for p_key, p in participants_by_key.items():
         for qso in qsos_by_key[p_key]:
             remote_key = match_key(qso.remote_call)
             peer_qsos: list[QsoEntry] | None = None
@@ -182,6 +185,14 @@ def score_contest(contest: Contest) -> dict[str, int]:
                 half=_qso_half(qso, contest),
             ))
 
+    # Order matters: detect suspected BEFORE dedupe so a SUSPECTED row can
+    # win over a plain UNMATCHED in the same bucket.
+    detect_suspected(
+        records,
+        qsos_by_key=qsos_by_key,
+        participants_by_key=participants_by_key,
+        key_by_participant_id=key_by_participant_id,
+    )
     mark_dupes(records)
     ScoringRecord.objects.filter(qso__participant__contest=contest).delete()
     ScoringRecord.objects.bulk_create(records)
