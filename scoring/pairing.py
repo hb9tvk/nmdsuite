@@ -9,8 +9,21 @@ deduction is NOT done here either — that's M3.3.
 Decisions encoded here:
 
 - Time window: a candidate QSO in the peer's log must fall within
-  ``MATCH_WINDOW`` of ours (clocks drift). Mirrors the legacy TCL
-  scorer's ±5 minute window (``reference/scoring_tcl/cgi-bin/nmdaw.wsh``).
+  ``MATCH_WINDOW`` of ours (clocks drift). Set to ±10 minutes — the
+  legacy TCL scorer used ±5 minutes but real-world validation showed
+  that too many legitimate QSOs slipped through with the tighter
+  window. See "Edge case at the half boundary" below for the dupe
+  implication.
+- **Edge case at the half boundary (08:00 UTC)**: with a ±10 min
+  window, paired QSOs can straddle the H1/H2 split (e.g. 07:55 ↔
+  08:05). If each side derived its own ``half`` from its own
+  ``utc_time``, the same physical QSO would land in H1 on one side
+  and H2 on the other; an operator who also worked the peer in
+  H2 cleanly would then get their boundary QSO deducted as a dupe
+  on one side but not the other. To keep both sides consistent
+  for dupe purposes, ``_qso_half`` derives the half from the
+  **earlier** of the paired pair's timestamps when a mate exists,
+  so both ScoringRecords agree.
 - Callsign normalisation: ``/P``/``/M``/``/MM`` portable suffixes are
   stripped on both sides before comparing — operators are inconsistent
   about typing the suffix into the remote-call field. Uses the same
@@ -52,7 +65,7 @@ from .text_match import DEFAULT_MAX_ERRORS, text_distance
 # Imported below at call-time to avoid an import cycle (dupes imports match_key from us).
 
 
-MATCH_WINDOW = timedelta(minutes=5)
+MATCH_WINDOW = timedelta(minutes=10)
 
 # Swiss callsign prefixes per the contest rules; used to distinguish HB9_QSO
 # (Swiss but non-participant) from DX_QSO (everything else).
@@ -221,8 +234,18 @@ def classify_qso(
     return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
 
 
-def _qso_half(qso: QsoEntry, contest: Contest) -> int:
-    return 1 if qso.utc_time < contest.half_split_utc else 2
+def _qso_half(qso: QsoEntry, contest: Contest, *, mate: QsoEntry | None = None) -> int:
+    """Half of the contest a QSO belongs to (1 = pre-split, 2 = post-split).
+
+    When a paired ``mate`` is provided, use the EARLIER of the two
+    timestamps so both sides of a boundary-crossing pair land in the
+    same half. Keeps dupe deduction symmetric near 08:00 UTC where the
+    ±10 min match window straddles the split.
+    """
+    t = qso.utc_time
+    if mate is not None and mate.utc_time is not None:
+        t = min(t, mate.utc_time)
+    return 1 if t < contest.half_split_utc else 2
 
 
 @transaction.atomic
@@ -282,7 +305,7 @@ def score_contest(contest: Contest) -> dict[str, int]:
                 status=result.status,
                 matched_qso=result.matched_qso,
                 text_distance=result.text_distance,
-                half=_qso_half(qso, contest),
+                half=_qso_half(qso, contest, mate=result.matched_qso),
                 suspected_correct_call=result.suspected_correct_call,
             ))
 

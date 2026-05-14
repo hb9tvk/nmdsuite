@@ -307,6 +307,13 @@ def test_classify_picks_closest_in_time_when_multiple_candidates(seeded_contest)
     assert result.matched_qso == near
 
 
+def test_match_window_is_ten_minutes():
+    """Sanity guard: real-world validation needed ±10 min to catch
+    legitimate pairs whose timestamps drift up to ~10 min apart. Keep
+    this test as a tripwire if the constant ever changes."""
+    assert MATCH_WINDOW == timedelta(minutes=10)
+
+
 @pytest.mark.django_db
 def test_classify_only_matches_same_mode(seeded_contest):
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
@@ -431,6 +438,41 @@ def test_score_contest_rescues_qso_when_peer_wrote_wrong_dxcall(seeded_contest):
 
 
 @pytest.mark.django_db
+def test_score_contest_paired_qso_across_h1_h2_boundary_uses_canonical_half(seeded_contest):
+    """Boundary edge case: with ±10 min window, A at 07:55 (H1) pairs with
+    B at 08:05 (H2). Both ScoringRecords must end up with the *same* half
+    (the earlier of the two timestamps → H1) so that dupe deduction
+    treats the physical QSO symmetrically.
+
+    Without canonical-half, B would see two H2 QSOs (this paired one +
+    the 09:30 dupe) and lose one to dedup, while A would see H1+H2 and
+    keep both — unfair asymmetry caused purely by clock drift."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
+    split = seeded_contest.half_split_utc
+    a_early = split - timedelta(minutes=5)  # 07:55, H1 by own time
+    b_early = split + timedelta(minutes=5)  # 08:05, H2 by own time
+    h2_late = split + timedelta(minutes=90)  # 09:30, clearly H2 on both sides
+
+    qa1 = _qso(a, t=a_early, remote_call="HB9ABC/P", txts=TXT_A, txtr=TXT_B)
+    qa2 = _qso(a, t=h2_late, remote_call="HB9ABC/P", txts=TXT_A, txtr=TXT_B)
+    qb1 = _qso(b, t=b_early, remote_call="HB9TVK/P", txts=TXT_B, txtr=TXT_A)
+    qb2 = _qso(b, t=h2_late, remote_call="HB9TVK/P", txts=TXT_B, txtr=TXT_A)
+
+    score_contest(seeded_contest)
+    ra1 = ScoringRecord.objects.get(qso=qa1)
+    rb1 = ScoringRecord.objects.get(qso=qb1)
+    # Canonical half = min(qa1.utc_time, qb1.utc_time) → a_early → H1.
+    assert ra1.half == 1
+    assert rb1.half == 1
+    # No dupes — each side has H1 + H2.
+    assert ra1.status == ScoringStatus.FULL_MATCH
+    assert rb1.status == ScoringStatus.FULL_MATCH
+    assert ScoringRecord.objects.get(qso=qa2).status == ScoringStatus.FULL_MATCH
+    assert ScoringRecord.objects.get(qso=qb2).status == ScoringStatus.FULL_MATCH
+
+
+@pytest.mark.django_db
 def test_score_contest_dxcall_missing_portable_suffix_loses_points(seeded_contest):
     """End-to-end reproduction of the user's bug report: HB9CGA/P logged
     HB3YMQ (no /P) instead of HB3YMQ/P. The receiver loses their 4 points;
@@ -484,10 +526,13 @@ def test_score_contest_classifies_mixed_log(seeded_contest):
     # C is registered but logs nothing — A's QSO with C will be UNMATCHED.
     _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
     t = seeded_contest.start_utc
+    # Spread the QSOs out so they don't fall within MATCH_WINDOW of B's
+    # transmission at `t` — otherwise suspected detection would promote
+    # the UNMATCHED row to SUSPECTED via B's txts matching.
     nmd_match = _qso(a, t=t, remote_call="HB9ABC/P", txts=TXT_A, txtr=TXT_B)
-    nmd_unmatched = _qso(a, t=t + timedelta(minutes=10), remote_call="HB9XYZ/P", txts=TXT_A, txtr=TXT_B)
-    swiss = _qso(a, t=t + timedelta(minutes=20), remote_call="HB9NON")
-    dx = _qso(a, t=t + timedelta(minutes=30), remote_call="DL1ABC")
+    nmd_unmatched = _qso(a, t=t + timedelta(minutes=30), remote_call="HB9XYZ/P", txts=TXT_A, txtr=TXT_B)
+    swiss = _qso(a, t=t + timedelta(minutes=60), remote_call="HB9NON")
+    dx = _qso(a, t=t + timedelta(minutes=90), remote_call="DL1ABC")
     _qso(b, t=t, remote_call="HB9TVK/P", txts=TXT_B, txtr=TXT_A)
 
     score_contest(seeded_contest)
