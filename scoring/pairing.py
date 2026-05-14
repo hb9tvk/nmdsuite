@@ -90,6 +90,23 @@ def _receiver_distance(qso: QsoEntry, mate: QsoEntry) -> int:
     return text_distance(qso.txtr, mate.txts)
 
 
+def _is_fuzzy_pair(qso: QsoEntry, candidate: QsoEntry, max_errors: int) -> bool:
+    """Both directions of text within tolerance — strong evidence the
+    candidate is the peer's record of *our* QSO, even though they typed
+    a wrong dxcall. We require BOTH directions to match (not just the
+    receiver direction) because we don't have the callsign as evidence
+    here; text similarity is the only signal, so we want it on both
+    sides to avoid false-positive matches against the peer's QSOs with
+    other operators in the same time window.
+    """
+    if not (qso.txtr and qso.txts and candidate.txts and candidate.txtr):
+        return False
+    return (
+        text_distance(qso.txtr, candidate.txts) <= max_errors
+        and text_distance(qso.txts, candidate.txtr) <= max_errors
+    )
+
+
 def _best_candidate(qso: QsoEntry, candidates: list[QsoEntry]) -> QsoEntry | None:
     """Closest-in-time wins. Ties broken by id for deterministic scoring."""
     if not candidates:
@@ -104,10 +121,31 @@ def classify_qso(
     qso: QsoEntry,
     *,
     peer_qsos: list[QsoEntry] | None,
+    my_key: str | None = None,
     max_errors: int = DEFAULT_MAX_ERRORS,
 ) -> Classification:
-    """Classify a single QSO. ``peer_qsos`` is the peer's full log filtered
-    to QSOs *back at us*; ``None`` means the remote isn't a participant."""
+    """Classify a single QSO.
+
+    ``peer_qsos`` is the peer's full log (the entire list of their QSOs).
+    ``None`` means the remote isn't a registered NMD station — classify as
+    HB9_QSO or DX_QSO, no pairing attempted.
+
+    ``my_key`` is the local participant's normalised callsign (output of
+    :func:`match_key`). Used to find the *strict* pairing candidate (peer
+    recorded us as their remote). If ``None`` is passed, no strict filter
+    is applied — a test-friendly default so direct invocations can pass a
+    pre-filtered candidate list.
+
+    Two-stage pairing:
+
+    - **Strict**: peer's recorded dxcall normalises to ``my_key``. Receiver-
+      direction text-distance decides FULL_MATCH vs TEXT_MISMATCH (the
+      sender is always assumed correct; see :func:`_receiver_distance`).
+    - **Fuzzy**: peer's dxcall doesn't match us, but their texts match ours
+      *in both directions* within ``max_errors``. Strong evidence the peer
+      typed a wrong dxcall for our QSO. Classified as FULL_MATCH — we got
+      the call right, the peer's typo isn't our problem.
+    """
     if peer_qsos is None:
         status = ScoringStatus.HB9_QSO if is_swiss_callsign(qso.remote_call) else ScoringStatus.DX_QSO
         return Classification(status=status, matched_qso=None, text_distance=0)
@@ -115,19 +153,37 @@ def classify_qso(
     lo = qso.utc_time - MATCH_WINDOW
     hi = qso.utc_time + MATCH_WINDOW
     in_window = [c for c in peer_qsos if c.mode == qso.mode and lo <= c.utc_time <= hi]
-    mate = _best_candidate(qso, in_window)
-    if mate is None:
+    if not in_window:
         return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
 
-    # FULL_MATCH requires the two text fields relevant to *this* receiver
-    # direction to both be non-empty. An empty-vs-empty pair has distance 0
-    # trivially, but that isn't a real NMD QSO; and a missing claimed-sent
-    # text from the peer means we have no ground truth to validate against.
-    has_texts = bool(qso.txtr) and bool(mate.txts)
-    distance = _receiver_distance(qso, mate)
-    if has_texts and distance <= max_errors:
-        return Classification(status=ScoringStatus.FULL_MATCH, matched_qso=mate, text_distance=distance)
-    return Classification(status=ScoringStatus.TEXT_MISMATCH, matched_qso=mate, text_distance=distance)
+    # Stage 1 — strict: peer recorded us as their remote.
+    if my_key is not None:
+        strict_candidates = [c for c in in_window if match_key(c.remote_call) == my_key]
+    else:
+        strict_candidates = in_window  # test-friendly: caller pre-filtered or doesn't care
+    mate = _best_candidate(qso, strict_candidates)
+    if mate is not None:
+        has_texts = bool(qso.txtr) and bool(mate.txts)
+        distance = _receiver_distance(qso, mate)
+        if has_texts and distance <= max_errors:
+            return Classification(status=ScoringStatus.FULL_MATCH, matched_qso=mate, text_distance=distance)
+        return Classification(status=ScoringStatus.TEXT_MISMATCH, matched_qso=mate, text_distance=distance)
+
+    # Stage 2 — fuzzy: peer typed a wrong dxcall but their texts match ours both ways.
+    fuzzy_candidates = [c for c in in_window if _is_fuzzy_pair(qso, c, max_errors)]
+    if fuzzy_candidates:
+        best = min(fuzzy_candidates, key=lambda c: (
+            _receiver_distance(qso, c),
+            abs((c.utc_time - qso.utc_time).total_seconds()),
+            c.id,
+        ))
+        return Classification(
+            status=ScoringStatus.FULL_MATCH,
+            matched_qso=best,
+            text_distance=_receiver_distance(qso, best),
+        )
+
+    return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
 
 
 def _qso_half(qso: QsoEntry, contest: Contest) -> int:
@@ -179,9 +235,9 @@ def score_contest(contest: Contest) -> dict[str, int]:
             remote_key = match_key(qso.remote_call)
             peer_qsos: list[QsoEntry] | None = None
             if remote_key and remote_key != p_key and remote_key in qsos_by_key:
-                # Only their QSOs back at us are candidates.
-                peer_qsos = [c for c in qsos_by_key[remote_key] if match_key(c.remote_call) == p_key]
-            result = classify_qso(qso, peer_qsos=peer_qsos)
+                # Pass the peer's full log; classify_qso does strict + fuzzy filtering.
+                peer_qsos = qsos_by_key[remote_key]
+            result = classify_qso(qso, peer_qsos=peer_qsos, my_key=p_key)
             records.append(ScoringRecord(
                 qso=qso,
                 status=result.status,
