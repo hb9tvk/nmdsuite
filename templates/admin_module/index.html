@@ -21,6 +21,59 @@
             </dl>
         </section>
 
+        <section class="admin-transitions">
+            <h2>{% trans "Contest lifecycle" %}</h2>
+            <p class="hint">{% trans "Each step is one-way; the audit log records every transition." %}</p>
+            <div class="admin-transition-row">
+                {% if contest.state == 'reg_open' %}
+                    <form method="post" action="{% url 'admin_module:close_registration' %}"
+                          onsubmit="return confirm('{% blocktrans %}Close registration? No new participants can sign up after this.{% endblocktrans %}');">
+                        {% csrf_token %}
+                        <button type="submit">{% trans "Close registration" %}</button>
+                    </form>
+                {% endif %}
+                {% if contest.state == 'reg_closed' %}
+                    <form method="post" action="{% url 'admin_module:open_log_submission' %}">
+                        {% csrf_token %}
+                        <button type="submit">{% trans "Open log submission" %}</button>
+                    </form>
+                {% endif %}
+                {% if contest.state == 'logs_open' %}
+                    <form method="post" action="{% url 'admin_module:close_log_submission' %}"
+                          onsubmit="return confirm('{% blocktrans %}Close log submission? Pending logs will be auto-submitted in their current state.{% endblocktrans %}');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-danger">{% trans "Close log submission (auto-submit pending)" %}</button>
+                    </form>
+                {% endif %}
+                {% if contest.state == 'logs_closed' or contest.state == 'scored' %}
+                    <form method="post" action="{% url 'admin_module:publish_results' %}"
+                          onsubmit="return confirm('{% blocktrans %}Publish results? Participants will be able to see their scoring breakdown.{% endblocktrans %}');">
+                        {% csrf_token %}
+                        <button type="submit">{% trans "Publish results" %}</button>
+                    </form>
+                {% endif %}
+                {% if contest.state == 'published' %}
+                    <p class="hint">{% trans "Contest published. Use the 'Setup new contest' form below when ready to start a new edition." %}</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="admin-setup-new">
+            <h2>{% trans "Setup new contest" %}</h2>
+            <p class="hint">
+                {% trans "Archives the current contest and deactivates all non-staff accounts. Participants will need to re-register." %}
+            </p>
+            <form method="post" action="{% url 'admin_module:setup_new_contest' %}"
+                  onsubmit="return confirm('{% blocktrans %}This archives the current contest AND deactivates every participant account. Are you sure?{% endblocktrans %}');">
+                {% csrf_token %}
+                <label>
+                    {% trans "Year:" %}
+                    <input type="number" name="year" min="2000" max="2100" required>
+                </label>
+                <button type="submit" class="btn-danger">{% trans "Archive + create" %}</button>
+            </form>
+        </section>
+
         <section class="admin-counts">
             <h2>{% trans "Participants" %}</h2>
             <div class="admin-card-row">
