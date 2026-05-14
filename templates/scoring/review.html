@@ -76,13 +76,23 @@
                                             <td>{% if score %}H{{ score.half }}{% else %}—{% endif %}</td>
                                             <td class="cell-rst">{{ qso.rsts|default:"—" }} / {{ qso.rstr|default:"—" }}</td>
                                             <td class="cell-text">
-                                                <div class="text-line"><span class="text-tag">s</span> {{ qso.txts|default:"" }}</div>
-                                                <div class="text-line"><span class="text-tag">r</span> {{ qso.txtr|default:"" }}</div>
-                                                {% if score and score.matched_qso %}
-                                                    <div class="match-info">
-                                                        ↳ {% blocktrans with call=score.matched_qso.participant.callsign time=score.matched_qso.utc_time|date:"H:i" %}paired: {{ call }} @ {{ time }}{% endblocktrans %}
-                                                        <div class="text-line"><span class="text-tag">their s</span> {{ score.matched_qso.txts }}</div>
-                                                    </div>
+                                                {% comment %}
+                                                    Non-NMD QSOs only exchange RST per the rules. Anything in
+                                                    txts/txtr is operator noise we shouldn't display here.
+                                                {% endcomment %}
+                                                {% if score.status != 'hb9_qso' and score.status != 'dx_qso' %}
+                                                    {% if qso.txts or qso.txtr %}
+                                                        <div class="text-line"><span class="text-tag">s</span> {{ qso.txts }}</div>
+                                                        <div class="text-line"><span class="text-tag">r</span> {{ qso.txtr }}</div>
+                                                    {% endif %}
+                                                    {% if score and score.matched_qso %}
+                                                        <div class="match-info">
+                                                            ↳ {% blocktrans with call=score.matched_qso.participant.callsign time=score.matched_qso.utc_time|date:"H:i" %}paired: {{ call }} @ {{ time }}{% endblocktrans %}
+                                                            {% if score.matched_qso.txts %}
+                                                                <div class="text-line"><span class="text-tag">their s</span> {{ score.matched_qso.txts }}</div>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endif %}
                                                 {% endif %}
                                             </td>
                                             <td class="cell-status">
