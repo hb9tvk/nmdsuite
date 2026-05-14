@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Administration" %} — NMD{% endblock %}
+
+{% block content %}
+    <h1>{% trans "Administration" %}{% if contest %} — NMD {{ contest.year }}{% endif %}</h1>
+
+    {% if not contest %}
+        <p>{% trans "No active contest. Seed one via" %} <code>python manage.py seed_contest --year YYYY</code>.</p>
+    {% else %}
+        <section class="admin-overview">
+            <h2>{% trans "Contest" %}</h2>
+            <dl class="kv">
+                <dt>{% trans "Year" %}</dt><dd>{{ contest.year }}</dd>
+                <dt>{% trans "Date" %}</dt><dd>{{ contest.contest_date }}</dd>
+                <dt>{% trans "State" %}</dt><dd>{{ contest.get_state_display }}</dd>
+                {% if contest.results_published_at %}
+                    <dt>{% trans "Results published" %}</dt>
+                    <dd>{{ contest.results_published_at|date:"d.m.Y H:i" }} UTC</dd>
+                {% endif %}
+            </dl>
+        </section>
+
+        <section class="admin-counts">
+            <h2>{% trans "Participants" %}</h2>
+            <div class="admin-card-row">
+                <div class="admin-card">
+                    <div class="admin-card-num">{{ counts.registered }}</div>
+                    <div class="admin-card-label">{% trans "Registered (incl. cancelled)" %}</div>
+                </div>
+                <div class="admin-card">
+                    <div class="admin-card-num">{{ counts.active }}</div>
+                    <div class="admin-card-label">{% trans "Active" %}</div>
+                </div>
+                <div class="admin-card">
+                    <div class="admin-card-num">{{ counts.submitted }}</div>
+                    <div class="admin-card-label">{% trans "Logs submitted" %}</div>
+                </div>
+                <div class="admin-card">
+                    <div class="admin-card-num">{{ counts.pending }}</div>
+                    <div class="admin-card-label">{% trans "Pending submission" %}</div>
+                </div>
+                <div class="admin-card">
+                    <div class="admin-card-num">{{ counts.cancelled }}</div>
+                    <div class="admin-card-label">{% trans "Cancelled" %}</div>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="admin-tools">
+        <h2>{% trans "Tools" %}</h2>
+        <ul class="admin-tools-list">
+            <li><a href="{% url 'admin_module:audit_log' %}">{% trans "Audit log" %}</a> — {% trans "every admin/system action with filters" %}</li>
+            <li><a href="{% url 'scoring:index' %}">{% trans "Scoring review" %}</a> — {% trans "per-QSO status, points, suspected calls" %}</li>
+            <li><a href="/django-admin/">{% trans "Django admin" %}</a> — {% trans "low-level data inspection (registrations, QSOs, emails, etc.)" %}</li>
+        </ul>
+    </section>
+
+    {% if recent_audit %}
+        <section class="admin-recent">
+            <h2>{% trans "Recent activity" %}</h2>
+            <table class="admin-audit-mini">
+                <thead>
+                    <tr>
+                        <th>{% trans "When (UTC)" %}</th>
+                        <th>{% trans "Actor" %}</th>
+                        <th>{% trans "Action" %}</th>
+                        <th>{% trans "Target" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in recent_audit %}
+                        <tr>
+                            <td>{{ entry.timestamp|date:"Y-m-d H:i" }}</td>
+                            <td>{{ entry.actor.username|default:entry.actor_label|default:"—" }}</td>
+                            <td>{{ entry.action }}</td>
+                            <td>{{ entry.target|default:"—" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p><a href="{% url 'admin_module:audit_log' %}">{% trans "Full audit log →" %}</a></p>
+        </section>
+    {% endif %}
+{% endblock %}

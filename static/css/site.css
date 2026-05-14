@@ -407,3 +407,27 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .badge-none { background: #f0f0f0; color: #777; font-style: italic; }
 
 .scoring-row-dupe_deducted { opacity: 0.55; }
+
+/* --- Admin module (staff workflow UI) ---------------------------------------------- */
+.admin-overview, .admin-counts, .admin-tools, .admin-recent { margin-bottom: 1.5rem; }
+.admin-card-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.admin-card { flex: 1 1 8rem; min-width: 8rem; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 4px; background: #fafafa; }
+.admin-card-num { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.admin-card-label { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+.admin-tools-list { list-style: none; padding: 0; }
+.admin-tools-list li { padding: 0.3rem 0; }
+
+.admin-audit-mini { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.admin-audit-mini th, .admin-audit-mini td { padding: 0.3rem 0.5rem; border-bottom: 1px solid #eee; text-align: left; }
+.admin-audit-mini th { background: #fafafa; font-weight: 600; }
+
+.admin-audit-filters { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin-bottom: 1rem; }
+.admin-audit-filters label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; }
+.admin-audit-filters input, .admin-audit-filters select { padding: 0.3rem 0.4rem; font-size: 0.9rem; }
+.admin-audit-count { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+.admin-audit-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.admin-audit-table th, .admin-audit-table td { padding: 0.35rem 0.5rem; border-bottom: 1px solid #eee; vertical-align: top; text-align: left; }
+.admin-audit-table th { background: #fafafa; font-weight: 600; }
+.admin-audit-table .cell-when { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+.admin-audit-table .cell-payload { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: #555; max-width: 28rem; word-break: break-word; }
+.admin-pagination { margin-top: 1rem; display: flex; gap: 1rem; align-items: center; color: var(--muted); font-size: 0.9rem; }

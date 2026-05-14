@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Audit log" %} — NMD{% endblock %}
+
+{% block content %}
+    <h1>{% trans "Audit log" %}</h1>
+
+    <form method="get" class="admin-audit-filters">
+        <label>
+            {% trans "Action" %}
+            <select name="action">
+                <option value="">{% trans "(all)" %}</option>
+                {% for a in actions %}
+                    <option value="{{ a }}"{% if a == selected_action %} selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            {% trans "Actor (username)" %}
+            <input type="text" name="actor" value="{{ selected_actor }}" placeholder="HB9TVK">
+        </label>
+        <label>
+            {% trans "Target contains" %}
+            <input type="text" name="target" value="{{ selected_target }}" placeholder="HB9ABC/P">
+        </label>
+        <button type="submit">{% trans "Filter" %}</button>
+        <a href="{% url 'admin_module:audit_log' %}">{% trans "Reset" %}</a>
+    </form>
+
+    {% if not page_obj.object_list %}
+        <p>{% trans "No entries match." %}</p>
+    {% else %}
+        <p class="admin-audit-count">
+            {% blocktrans with total=page_obj.paginator.count %}{{ total }} entries{% endblocktrans %}
+        </p>
+        <table class="admin-audit-table">
+            <thead>
+                <tr>
+                    <th>{% trans "When (UTC)" %}</th>
+                    <th>{% trans "Actor" %}</th>
+                    <th>{% trans "Action" %}</th>
+                    <th>{% trans "Target" %}</th>
+                    <th>{% trans "Contest" %}</th>
+                    <th>{% trans "Payload" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in page_obj %}
+                    <tr>
+                        <td class="cell-when">{{ entry.timestamp|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ entry.actor.username|default:entry.actor_label|default:"—" }}</td>
+                        <td><code>{{ entry.action }}</code></td>
+                        <td>{{ entry.target|default:"—" }}</td>
+                        <td>{% if entry.contest %}{{ entry.contest.year }}{% else %}—{% endif %}</td>
+                        <td class="cell-payload">{{ entry.payload }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if page_obj.has_other_pages %}
+            <nav class="admin-pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?{% if selected_action %}action={{ selected_action }}&{% endif %}{% if selected_actor %}actor={{ selected_actor }}&{% endif %}{% if selected_target %}target={{ selected_target }}&{% endif %}page={{ page_obj.previous_page_number }}">← {% trans "Previous" %}</a>
+                {% endif %}
+                {% blocktrans with n=page_obj.number total=page_obj.paginator.num_pages %}Page {{ n }} of {{ total }}{% endblocktrans %}
+                {% if page_obj.has_next %}
+                    <a href="?{% if selected_action %}action={{ selected_action }}&{% endif %}{% if selected_actor %}actor={{ selected_actor }}&{% endif %}{% if selected_target %}target={{ selected_target }}&{% endif %}page={{ page_obj.next_page_number }}">{% trans "Next" %} →</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    {% endif %}
+
+    <p class="actions"><a href="{% url 'admin_module:index' %}">← {% trans "Back to administration" %}</a></p>
+{% endblock %}
