@@ -170,22 +170,101 @@ def test_mark_dupes_portable_suffix_does_not_split_buckets(seeded_contest):
 
 
 @pytest.mark.django_db
-def test_mark_dupes_does_not_dedupe_hb9_or_dx(seeded_contest):
-    """Non-NMD statuses have different dupe rules; M3.3 leaves them alone."""
+def test_mark_dupes_hb9_same_peer_same_mode_is_a_dupe(seeded_contest):
+    """Non-NMD rule: once per (peer, mode) for the whole contest. Second
+    HB9 QSO with the same peer in the same mode is a dupe."""
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
     t = seeded_contest.start_utc
-    q1 = _qso(a, t=t, remote_call="HB9NON")
-    q2 = _qso(a, t=t + timedelta(minutes=5), remote_call="HB9NON")
-    q3 = _qso(a, t=t + timedelta(minutes=10), remote_call="DL1ABC")
-    q4 = _qso(a, t=t + timedelta(minutes=15), remote_call="DL1ABC")
+    q_first = _qso(a, t=t, remote_call="HB9NON")
+    q_dupe = _qso(a, t=t + timedelta(minutes=20), remote_call="HB9NON")
     rs = [
-        _record(q1, seeded_contest, status=ScoringStatus.HB9_QSO),
-        _record(q2, seeded_contest, status=ScoringStatus.HB9_QSO),
-        _record(q3, seeded_contest, status=ScoringStatus.DX_QSO),
-        _record(q4, seeded_contest, status=ScoringStatus.DX_QSO),
+        _record(q_first, seeded_contest, status=ScoringStatus.HB9_QSO),
+        _record(q_dupe, seeded_contest, status=ScoringStatus.HB9_QSO),
+    ]
+    flipped = mark_dupes(rs)
+    assert flipped == 1
+    assert next(r for r in rs if r.qso == q_first).status == ScoringStatus.HB9_QSO
+    assert next(r for r in rs if r.qso == q_dupe).status == ScoringStatus.DUPE_DEDUCTED
+
+
+@pytest.mark.django_db
+def test_mark_dupes_dx_same_peer_same_mode_is_a_dupe(seeded_contest):
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc
+    q_first = _qso(a, t=t, remote_call="DL1ABC")
+    q_dupe = _qso(a, t=t + timedelta(minutes=20), remote_call="DL1ABC")
+    rs = [
+        _record(q_first, seeded_contest, status=ScoringStatus.DX_QSO),
+        _record(q_dupe, seeded_contest, status=ScoringStatus.DX_QSO),
+    ]
+    flipped = mark_dupes(rs)
+    assert flipped == 1
+    assert next(r for r in rs if r.qso == q_dupe).status == ScoringStatus.DUPE_DEDUCTED
+
+
+@pytest.mark.django_db
+def test_mark_dupes_non_nmd_different_modes_are_not_dupes(seeded_contest):
+    """Once per (peer, mode) — so the same call in CW and SSB is fine."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc
+    q_cw = _qso(a, t=t, mode="CW", rsts="599", rstr="599", remote_call="HB9NON")
+    q_ssb = _qso(a, t=t + timedelta(minutes=5), mode="SSB", rsts="59", rstr="59", remote_call="HB9NON")
+    rs = [
+        _record(q_cw, seeded_contest, status=ScoringStatus.HB9_QSO),
+        _record(q_ssb, seeded_contest, status=ScoringStatus.HB9_QSO),
     ]
     flipped = mark_dupes(rs)
     assert flipped == 0
+
+
+@pytest.mark.django_db
+def test_mark_dupes_non_nmd_across_halves_is_still_a_dupe(seeded_contest):
+    """Unlike NMD↔NMD, non-NMD has no half-split exception. Two HB9 QSOs
+    with the same peer in the same mode across H1 and H2 → second is a dupe."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    h1 = seeded_contest.start_utc
+    h2 = seeded_contest.half_split_utc + timedelta(minutes=1)
+    q_h1 = _qso(a, t=h1, remote_call="HB9NON")
+    q_h2 = _qso(a, t=h2, remote_call="HB9NON")
+    rs = [
+        _record(q_h1, seeded_contest, status=ScoringStatus.HB9_QSO),
+        _record(q_h2, seeded_contest, status=ScoringStatus.HB9_QSO),
+    ]
+    assert rs[0].half == 1 and rs[1].half == 2
+    flipped = mark_dupes(rs)
+    assert flipped == 1
+    assert next(r for r in rs if r.qso == q_h1).status == ScoringStatus.HB9_QSO
+    assert next(r for r in rs if r.qso == q_h2).status == ScoringStatus.DUPE_DEDUCTED
+
+
+@pytest.mark.django_db
+def test_mark_dupes_non_nmd_earliest_utc_wins(seeded_contest):
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc
+    later = _qso(a, t=t + timedelta(minutes=30), remote_call="HB9NON")
+    earlier = _qso(a, t=t, remote_call="HB9NON")
+    rs = [
+        _record(later, seeded_contest, status=ScoringStatus.HB9_QSO),
+        _record(earlier, seeded_contest, status=ScoringStatus.HB9_QSO),
+    ]
+    mark_dupes(rs)
+    assert next(r for r in rs if r.qso == earlier).status == ScoringStatus.HB9_QSO
+    assert next(r for r in rs if r.qso == later).status == ScoringStatus.DUPE_DEDUCTED
+
+
+@pytest.mark.django_db
+def test_mark_dupes_non_nmd_portable_suffix_does_not_split_buckets(seeded_contest):
+    """HB9NON and HB9NON/P collapse to the same peer for dupe purposes."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc
+    q1 = _qso(a, t=t, remote_call="HB9NON")
+    q2 = _qso(a, t=t + timedelta(minutes=10), remote_call="HB9NON/P")
+    rs = [
+        _record(q1, seeded_contest, status=ScoringStatus.HB9_QSO),
+        _record(q2, seeded_contest, status=ScoringStatus.HB9_QSO),
+    ]
+    flipped = mark_dupes(rs)
+    assert flipped == 1
 
 
 @pytest.mark.django_db
@@ -256,6 +335,21 @@ def test_score_contest_keeps_zweitverbindung_across_halves(seeded_contest):
     score_contest(seeded_contest)
     assert ScoringRecord.objects.get(qso=q_h1).status == ScoringStatus.FULL_MATCH
     assert ScoringRecord.objects.get(qso=q_h2).status == ScoringStatus.FULL_MATCH
+
+
+@pytest.mark.django_db
+def test_score_contest_deducts_non_nmd_dupes_across_halves(seeded_contest):
+    """End-to-end: A works HB9NON twice (H1 + H2, same mode). Second is a
+    non-NMD dupe — no Zweitverbindungen exception for non-NMD QSOs."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    h1 = seeded_contest.start_utc
+    h2 = seeded_contest.half_split_utc + timedelta(minutes=1)
+    q_first = _qso(a, t=h1, remote_call="HB9NON")
+    q_dupe = _qso(a, t=h2, remote_call="HB9NON")
+
+    score_contest(seeded_contest)
+    assert ScoringRecord.objects.get(qso=q_first).status == ScoringStatus.HB9_QSO
+    assert ScoringRecord.objects.get(qso=q_dupe).status == ScoringStatus.DUPE_DEDUCTED
 
 
 @pytest.mark.django_db
