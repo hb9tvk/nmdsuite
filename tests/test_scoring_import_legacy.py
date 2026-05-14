@@ -17,12 +17,21 @@ User = get_user_model()
 # --- helpers ---------------------------------------------------------------------------------
 
 
-def _make_legacy_db(path, rows: list[tuple]) -> None:
-    """Create a legacy-shaped sqlite DB at ``path`` and load ``rows`` into nmdlog.
+def _make_legacy_db(path, rows: list[tuple], *, registered: list[str] | None = None) -> None:
+    """Create a legacy-shaped sqlite DB at ``path`` and load it.
 
-    Row tuple order matches the production schema:
-    (id, mode, localcall, dxcall, utc, rsts, rstr, txts, txtr, match, status, comment)
+    ``rows`` go into ``nmdlog`` (tuple order matches the production schema:
+    id, mode, localcall, dxcall, utc, rsts, rstr, txts, txtr, match, status, comment).
+
+    ``registered`` is the list of NMD-registered callsigns to insert into
+    ``nmdstn``. Default = derived from distinct ``rows[2]`` (localcall), so
+    most tests can ignore it and behave as if every logger was registered.
+    Pass an explicit list (incl. ``[]``) to exercise the unregistered/
+    fallback paths.
     """
+    if registered is None:
+        registered = sorted({r[2] for r in rows if r[2]})
+
     conn = sqlite3.connect(str(path))
     conn.executescript(
         """
@@ -36,6 +45,10 @@ def _make_legacy_db(path, rows: list[tuple]) -> None:
     conn.executemany(
         "INSERT INTO nmdlog VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         rows,
+    )
+    conn.executemany(
+        "INSERT INTO nmdstn VALUES (?, ?)",
+        [(c, 0) for c in registered],
     )
     conn.commit()
     conn.close()
@@ -81,7 +94,7 @@ def test_import_legacy_creates_users_and_participants(seeded_contest, tmp_path):
     assert QsoEntry.objects.filter(participant=b).count() == 1
 
     output = out.getvalue()
-    assert "Imported 2 participant(s)" in output
+    assert "Imported 2 registered participant(s)" in output
     assert "3 QSOs" in output
 
 
@@ -180,9 +193,97 @@ def test_import_legacy_missing_file_errors(seeded_contest):
 @pytest.mark.django_db
 def test_import_legacy_empty_db_errors(seeded_contest, tmp_path):
     db = tmp_path / "empty.db"
-    _make_legacy_db(db, [])
-    with pytest.raises(CommandError, match="no rows in nmdlog"):
+    _make_legacy_db(db, [], registered=[])
+    with pytest.raises(CommandError, match="neither nmdstn rows nor nmdlog rows"):
         call_command("import_legacy", "--year", str(seeded_contest.year), str(db))
+
+
+@pytest.mark.django_db
+def test_import_legacy_creates_participant_for_registered_station_with_no_log(seeded_contest, tmp_path):
+    """A station can register in nmdstn without submitting a log.
+    They must still become a Participant so peer QSOs with them
+    classify as UNMATCHED, not HB9_QSO."""
+    db = tmp_path / "legacy.db"
+    _make_legacy_db(
+        db,
+        [
+            # Only HB9TVK logged; HB9ABC is registered but submitted nothing.
+            (1, "cw", "HB9TVK/P", "HB9ABC/P", _epoch(seeded_contest, 6, 12),
+             "599", "599", TXT_TVK, TXT_ABC, 0, 0, ""),
+        ],
+        registered=["HB9TVK/P", "HB9ABC/P"],
+    )
+    call_command("import_legacy", "--year", str(seeded_contest.year), str(db), stdout=StringIO())
+
+    a = Participant.objects.get(callsign="HB9TVK/P")
+    b = Participant.objects.get(callsign="HB9ABC/P")
+    assert QsoEntry.objects.filter(participant=a).count() == 1
+    assert QsoEntry.objects.filter(participant=b).count() == 0
+
+
+@pytest.mark.django_db
+def test_import_legacy_unmatched_when_registered_peer_is_silent(seeded_contest, tmp_path):
+    """End-to-end semantics fix: HB9ABC registered but logged nothing.
+    HB9TVK's QSO with them must be UNMATCHED, NOT HB9_QSO."""
+    from core.models import ScoringRecord, ScoringStatus
+    from scoring.pairing import score_contest
+
+    db = tmp_path / "legacy.db"
+    _make_legacy_db(
+        db,
+        [
+            (1, "cw", "HB9TVK/P", "HB9ABC/P", _epoch(seeded_contest, 6, 12),
+             "599", "599", TXT_TVK, TXT_ABC, 0, 0, ""),
+        ],
+        registered=["HB9TVK/P", "HB9ABC/P"],
+    )
+    call_command("import_legacy", "--year", str(seeded_contest.year), str(db), stdout=StringIO())
+    score_contest(seeded_contest)
+
+    tvk_qso = QsoEntry.objects.get(participant__callsign="HB9TVK/P", remote_call="HB9ABC/P")
+    assert ScoringRecord.objects.get(qso=tvk_qso).status == ScoringStatus.UNMATCHED
+
+
+@pytest.mark.django_db
+def test_import_legacy_drops_unregistered_loggers(seeded_contest, tmp_path):
+    """An nmdlog entry whose localcall isn't in nmdstn is skipped with a warning."""
+    db = tmp_path / "legacy.db"
+    t1 = _epoch(seeded_contest, 6, 12)
+    _make_legacy_db(
+        db,
+        [
+            (1, "cw", "HB9TVK/P", "HB9ABC/P", t1, "599", "599", TXT_TVK, TXT_ABC, 0, 0, ""),
+            (2, "cw", "HB9FAKE",  "HB9TVK/P", t1, "599", "599", "x" * 20, "y" * 20, 0, 0, ""),
+        ],
+        registered=["HB9TVK/P", "HB9ABC/P"],  # HB9FAKE NOT registered
+    )
+    out = StringIO()
+    call_command("import_legacy", "--year", str(seeded_contest.year), str(db), stdout=out)
+    output = out.getvalue()
+
+    assert not Participant.objects.filter(callsign__contains="FAKE").exists()
+    assert "unregistered logger: HB9FAKE" in output
+    assert "dropped 1 unregistered logger" in output
+
+
+@pytest.mark.django_db
+def test_import_legacy_falls_back_to_distinct_localcalls_when_nmdstn_empty(seeded_contest, tmp_path):
+    """Old legacy dumps might have an empty nmdstn — fall back so the engine
+    can still be exercised, but warn that the NMD/non-NMD distinction is fuzzy."""
+    db = tmp_path / "legacy.db"
+    t1 = _epoch(seeded_contest, 6, 12)
+    _make_legacy_db(
+        db,
+        [
+            (1, "cw", "HB9TVK/P", "HB9ABC/P", t1, "599", "599", TXT_TVK, TXT_ABC, 0, 0, ""),
+        ],
+        registered=[],
+    )
+    out = StringIO()
+    call_command("import_legacy", "--year", str(seeded_contest.year), str(db), stdout=out)
+    output = out.getvalue()
+    assert "nmdstn is empty" in output
+    assert Participant.objects.get(callsign="HB9TVK/P")
 
 
 @pytest.mark.django_db
