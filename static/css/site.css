@@ -229,6 +229,8 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .row-btn-danger:hover { background: #fbe6e3; }
 
 .qso-cell.invalid-cell { color: #c0392b; }
+.qso-cell.dupe-cell::after { content: " ⚠"; color: #b8860b; }
+.qso-row-dupe { background: #fff8e1; }
 .qso-empty td { text-align: center; color: var(--muted); padding: 1rem; }
 
 .qso-entry-form {

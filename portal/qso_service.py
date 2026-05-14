@@ -7,6 +7,7 @@ otherwise they stay null/blank and the per-field validity properties on
 """
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime, time, timezone
 from typing import Any, Iterable
 
@@ -14,7 +15,7 @@ from django.db import transaction
 
 from core.audit import audit
 from core.models import Contest, Participant, QsoEntry
-from registration.callsigns import normalize_callsign
+from registration.callsigns import login_username, normalize_callsign
 
 from .qso_validators import is_valid_rst, is_valid_utc, mode_from_rsts
 
@@ -66,6 +67,66 @@ def update_qso(*, qso: QsoEntry, data: dict[str, Any]) -> QsoEntry:
 
 def list_qsos(participant: Participant):
     return QsoEntry.objects.filter(participant=participant).order_by("utc_raw", "id")
+
+
+def detect_potential_dupe_ids(participant: Participant) -> set[int]:
+    """Return ids of QSOs that look like potential duplicates.
+
+    Mirrors the scoring-side dupe rules but runs in the participant portal
+    as a soft warning — saving is still permissive. Two rules:
+
+    - **Same-half repeat**: same ``(peer, mode, half)`` appearing more than
+      once is always a dupe regardless of NMD status. Catches both the
+      NMD same-half case (Zweitverbindungen are H1+H2 only — never two in
+      one half) and the broader non-NMD case.
+    - **Cross-half non-NMD repeat**: same ``(peer, mode)`` across H1 and
+      H2 is only a dupe if the peer is *not* a registered NMD station.
+      NMD stations may legitimately be worked once per half.
+
+    Returns the *set* of QSO ids that participate in any dupe pair — both
+    sides are flagged, not just the later one.
+    """
+    contest = participant.contest
+    registered_keys = {
+        login_username(c)
+        for c in Participant.objects
+        .filter(contest=contest, cancelled_at__isnull=True)
+        .values_list("callsign", flat=True)
+    }
+
+    strict_buckets: dict[tuple[str, str, int], list[int]] = defaultdict(list)
+    loose_buckets: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for qso in QsoEntry.objects.filter(participant=participant).order_by("utc_time", "id"):
+        if qso.utc_time is None or not qso.mode or not qso.remote_call:
+            continue
+        peer_key = login_username(qso.remote_call)
+        if not peer_key:
+            continue
+        half = 1 if qso.utc_time < contest.half_split_utc else 2
+        strict_buckets[(peer_key, qso.mode, half)].append(qso.id)
+        loose_buckets[(peer_key, qso.mode)].append(qso.id)
+
+    dupe_ids: set[int] = set()
+    for bucket in strict_buckets.values():
+        if len(bucket) > 1:
+            dupe_ids.update(bucket)
+    for (peer_key, _mode), ids in loose_buckets.items():
+        if peer_key in registered_keys:
+            continue  # NMD peer — cross-half repeats are Zweitverbindungen
+        if len(ids) > 1:
+            dupe_ids.update(ids)
+    return dupe_ids
+
+
+def list_qsos_with_dupe_flags(participant: Participant) -> list[QsoEntry]:
+    """``list_qsos`` plus a transient ``.is_potential_dupe`` attribute on
+    each row. Used by the log-entry view to highlight likely duplicates;
+    saves are still permissive (the flag is purely visual)."""
+    qsos = list(list_qsos(participant))
+    dupe_ids = detect_potential_dupe_ids(participant)
+    for q in qsos:
+        q.is_potential_dupe = q.id in dupe_ids
+    return qsos
 
 
 def initial_from_qso(qso: QsoEntry) -> dict[str, str]:

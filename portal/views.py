@@ -195,7 +195,7 @@ def _render_app(request, *, participant, form=None, editing_id=""):
         {
             "form": form or QsoEntryForm(),
             "editing_id": editing_id,
-            "qsos": qso_service.list_qsos(participant),
+            "qsos": qso_service.list_qsos_with_dupe_flags(participant),
         },
     )
 
@@ -210,7 +210,7 @@ def log_entry(request):
         "portal/log_entry.html",
         {
             "participant": participant,
-            "qsos": qso_service.list_qsos(participant),
+            "qsos": qso_service.list_qsos_with_dupe_flags(participant),
             "form": QsoEntryForm(),
             "editing_id": "",
         },
