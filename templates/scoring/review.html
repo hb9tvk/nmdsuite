@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Scoring review" %} — NMD{% endblock %}
+
+{% block content %}
+    <h1>{% trans "Scoring review" %}{% if contest %} — NMD {{ contest.year }}{% endif %}</h1>
+
+    {% if all_years %}
+        <p class="year-switcher">
+            {% trans "Year:" %}
+            {% for y in all_years %}
+                <a href="{% url 'scoring:index' %}?year={{ y }}"
+                   class="year-link{% if contest and y == contest.year %} active{% endif %}">{{ y }}</a>
+            {% endfor %}
+        </p>
+    {% endif %}
+
+    {% if not contest %}
+        <p>{% trans "No contest selected." %}</p>
+
+    {% elif not participants %}
+        <p>{% trans "No participants in this contest yet — import a legacy DB or seed test data first." %}</p>
+
+    {% else %}
+        <div class="scoring-review">
+            <aside class="scoring-sidebar">
+                <h2>{% trans "Participants" %}</h2>
+                <table class="scoring-summary">
+                    <thead>
+                        <tr><th>{% trans "Call" %}</th><th>CW</th><th>SSB</th><th>{% trans "Total" %}</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for row in participants %}
+                            <tr class="{% if selected and row.pk == selected.pk %}selected{% endif %}">
+                                <td><a href="{% url 'scoring:participant' row.pk %}?year={{ contest.year }}">{{ row.callsign }}</a></td>
+                                <td>{{ row.cw_total }}</td>
+                                <td>{{ row.ssb_total }}</td>
+                                <td><strong>{{ row.total }}</strong></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </aside>
+
+            <section class="scoring-detail">
+                {% if not selected %}
+                    <p class="hint">{% trans "Pick a participant on the left to see their QSO log with status." %}</p>
+                {% else %}
+                    <h2>{{ selected.callsign }}</h2>
+
+                    {% if not rows %}
+                        <p class="hint">{% trans "No QSOs logged." %}</p>
+                    {% else %}
+                        <table class="scoring-qso-table">
+                            <thead>
+                                <tr>
+                                    <th>UTC</th>
+                                    <th>{% trans "Peer" %}</th>
+                                    <th>{% trans "Mode" %}</th>
+                                    <th>{% trans "Half" %}</th>
+                                    <th>RST s/r</th>
+                                    <th>{% trans "Text" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                    <th>{% trans "Pts" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in rows %}
+                                    {% with qso=row.qso score=row.score %}
+                                        <tr class="scoring-row scoring-row-{% if score %}{{ score.status }}{% else %}none{% endif %}">
+                                            <td class="cell-utc">
+                                                {% if qso.utc_time %}{{ qso.utc_time|date:"H:i" }}{% else %}<span class="bad">{{ qso.utc_raw|default:"—" }}</span>{% endif %}
+                                            </td>
+                                            <td class="cell-peer">{{ qso.remote_call|default:"—" }}</td>
+                                            <td>{{ qso.mode|default:"?" }}</td>
+                                            <td>{% if score %}H{{ score.half }}{% else %}—{% endif %}</td>
+                                            <td class="cell-rst">{{ qso.rsts|default:"—" }} / {{ qso.rstr|default:"—" }}</td>
+                                            <td class="cell-text">
+                                                <div class="text-line"><span class="text-tag">s</span> {{ qso.txts|default:"" }}</div>
+                                                <div class="text-line"><span class="text-tag">r</span> {{ qso.txtr|default:"" }}</div>
+                                                {% if score and score.matched_qso %}
+                                                    <div class="match-info">
+                                                        ↳ {% blocktrans with call=score.matched_qso.participant.callsign time=score.matched_qso.utc_time|date:"H:i" %}paired: {{ call }} @ {{ time }}{% endblocktrans %}
+                                                        <div class="text-line"><span class="text-tag">their s</span> {{ score.matched_qso.txts }}</div>
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td class="cell-status">
+                                                {% if not score %}
+                                                    <span class="badge badge-none">{% trans "not scored" %}</span>
+                                                {% else %}
+                                                    <span class="badge badge-{{ score.status }}">{{ score.get_status_display }}</span>
+                                                    {% if score.text_distance %}<small> d={{ score.text_distance }}</small>{% endif %}
+                                                    {% if score.suspected_correct_call %}
+                                                        <div class="suspect">→ {{ score.suspected_correct_call }}</div>
+                                                    {% endif %}
+                                                    {% if score.admin_overridden %}
+                                                        <div class="admin-note">admin: {{ score.admin_comment|default:"—" }}</div>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                            <td class="cell-points">{% if score %}{{ score.points }}{% else %}—{% endif %}</td>
+                                        </tr>
+                                    {% endwith %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                {% endif %}
+            </section>
+        </div>
+    {% endif %}
+{% endblock %}

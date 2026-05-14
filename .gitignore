@@ -34,3 +34,6 @@ htmlcov/
 # log-submission app). Used locally for development context only — not needed
 # to build or run nmdsuite, so it's not pushed to GitHub.
 /reference/
+
+# Local validation fixtures (e.g. legacy SQLite dumps for `import_legacy`).
+/testdata/
