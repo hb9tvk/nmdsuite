@@ -230,6 +230,9 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 
 .qso-cell.invalid-cell { color: #c0392b; }
 .qso-cell.dupe-cell::after { content: " ⚠"; color: #b8860b; }
+.qso-cell.typo-cell { color: #b8860b; }
+.qso-cell.typo-cell::after { content: " ⚠"; }
+.qso-cell .typo-hint { display: block; font-size: 0.8em; font-weight: normal; color: #b8860b; }
 .qso-row-dupe { background: #fff8e1; }
 .qso-empty td { text-align: center; color: var(--muted); padding: 1rem; }
 

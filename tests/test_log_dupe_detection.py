@@ -18,7 +18,11 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from core.models import Participant, QsoEntry
-from portal.qso_service import detect_potential_dupe_ids, list_qsos_with_dupe_flags
+from portal.qso_service import (
+    detect_callsign_typo_map,
+    detect_potential_dupe_ids,
+    list_qsos_with_warnings,
+)
 
 User = get_user_model()
 
@@ -141,7 +145,50 @@ def test_three_in_same_half_all_flagged(seeded_contest):
     assert dupe_ids == {q1.id, q2.id, q3.id}
 
 
-# --- list_qsos_with_dupe_flags (annotation wrapper) ------------------------------------------
+# --- detect_callsign_typo_map ----------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_typo_detected_when_dxcall_misses_portable_suffix(seeded_contest):
+    """Operator typed HB3YMQ but the registered NMD station is HB3YMQ/P."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    _make_participant(seeded_contest, username="HB3YMQ", callsign="HB3YMQ/P")
+    t = seeded_contest.start_utc
+    q = _qso(a, t=t, remote_call="HB3YMQ")  # missing /P
+
+    typo_map = detect_callsign_typo_map(a)
+    assert typo_map == {q.id: "HB3YMQ/P"}
+
+
+@pytest.mark.django_db
+def test_no_typo_when_dxcall_matches_registered_exactly(seeded_contest):
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    _make_participant(seeded_contest, username="HB3YMQ", callsign="HB3YMQ/P")
+    t = seeded_contest.start_utc
+    _qso(a, t=t, remote_call="HB3YMQ/P")
+    assert detect_callsign_typo_map(a) == {}
+
+
+@pytest.mark.django_db
+def test_no_typo_when_peer_is_not_registered(seeded_contest):
+    """An HB9-prefixed callsign that isn't in the registration set is a
+    legitimate non-NMD QSO, not a typo."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc
+    _qso(a, t=t, remote_call="HB9NON")  # not registered
+    assert detect_callsign_typo_map(a) == {}
+
+
+@pytest.mark.django_db
+def test_no_typo_when_dxcall_is_blank(seeded_contest):
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc
+    QsoEntry.objects.create(participant=a, utc_raw="0612", utc_time=t,
+                            mode="CW", remote_call="", rsts="599", rstr="599")
+    assert detect_callsign_typo_map(a) == {}
+
+
+# --- list_qsos_with_warnings (annotation wrapper) --------------------------------------------
 
 
 @pytest.mark.django_db
@@ -152,9 +199,22 @@ def test_list_qsos_annotates_is_potential_dupe(seeded_contest):
     _qso(a, t=t + timedelta(minutes=10), remote_call="HB9NON")
     unique = _qso(a, t=t + timedelta(minutes=30), remote_call="DL1ABC")
 
-    flagged = {q.id: q.is_potential_dupe for q in list_qsos_with_dupe_flags(a)}
+    flagged = {q.id: q.is_potential_dupe for q in list_qsos_with_warnings(a)}
     assert flagged[dupe.id] is True
     assert flagged[unique.id] is False
+
+
+@pytest.mark.django_db
+def test_list_qsos_annotates_suspected_correct_call(seeded_contest):
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    _make_participant(seeded_contest, username="HB3YMQ", callsign="HB3YMQ/P")
+    t = seeded_contest.start_utc
+    typo = _qso(a, t=t, remote_call="HB3YMQ")  # missing /P
+    fine = _qso(a, t=t + timedelta(minutes=10), remote_call="DL1ABC")
+
+    by_id = {q.id: q for q in list_qsos_with_warnings(a)}
+    assert by_id[typo.id].suspected_correct_call == "HB3YMQ/P"
+    assert by_id[fine.id].suspected_correct_call == ""
 
 
 # --- view integration ------------------------------------------------------------------------
@@ -172,3 +232,21 @@ def test_log_entry_page_renders_dupe_row_class(client, seeded_contest):
     response = client.get("/submission/log/")
     assert response.status_code == 200
     assert b"qso-row-dupe" in response.content
+
+
+@pytest.mark.django_db
+def test_log_entry_page_renders_typo_hint(client, seeded_contest):
+    """Operator typed HB3YMQ (no /P) for a station registered as HB3YMQ/P;
+    the page should show a typo marker and the correct callsign hint."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    _make_participant(seeded_contest, username="HB3YMQ", callsign="HB3YMQ/P")
+    t = seeded_contest.start_utc
+    _qso(a, t=t, remote_call="HB3YMQ")
+    client.force_login(a.user)
+
+    response = client.get("/submission/log/")
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "typo-cell" in body
+    assert "HB3YMQ/P" in body
+    assert "typo-hint" in body

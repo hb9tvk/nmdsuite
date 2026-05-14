@@ -118,14 +118,52 @@ def detect_potential_dupe_ids(participant: Participant) -> set[int]:
     return dupe_ids
 
 
-def list_qsos_with_dupe_flags(participant: Participant) -> list[QsoEntry]:
-    """``list_qsos`` plus a transient ``.is_potential_dupe`` attribute on
-    each row. Used by the log-entry view to highlight likely duplicates;
-    saves are still permissive (the flag is purely visual)."""
+def detect_callsign_typo_map(participant: Participant) -> dict[int, str]:
+    """Map QSO id → the registered callsign of an NMD station the operator
+    most likely meant.
+
+    Fires when the typed ``remote_call`` normalises to a registered NMD
+    station's callsign (i.e. shares the same base after stripping /P, /M,
+    …) but doesn't match it *exactly*. Common case: the operator dropped
+    the ``/P`` portable suffix. Same condition the M3 scoring engine uses
+    to downgrade FULL_MATCH → SUSPECTED_CALL_MISMATCH, so flagging it
+    here lets the operator fix it before submission.
+    """
+    contest = participant.contest
+    registered = {
+        login_username(c): c
+        for c in Participant.objects
+        .filter(contest=contest, cancelled_at__isnull=True)
+        .values_list("callsign", flat=True)
+    }
+
+    typo_map: dict[int, str] = {}
+    for qso in QsoEntry.objects.filter(participant=participant):
+        if not qso.remote_call:
+            continue
+        key = login_username(qso.remote_call)
+        if not key:
+            continue
+        registered_full = registered.get(key)
+        if registered_full is None:
+            continue
+        if normalize_callsign(qso.remote_call) != normalize_callsign(registered_full):
+            typo_map[qso.id] = registered_full
+    return typo_map
+
+
+def list_qsos_with_warnings(participant: Participant) -> list[QsoEntry]:
+    """``list_qsos`` plus transient ``.is_potential_dupe`` and
+    ``.suspected_correct_call`` attributes on each row. Used by the
+    log-entry view to highlight likely duplicates and callsign typos
+    (e.g. missing /P). Saves are still permissive — the flags are purely
+    visual."""
     qsos = list(list_qsos(participant))
     dupe_ids = detect_potential_dupe_ids(participant)
+    typo_map = detect_callsign_typo_map(participant)
     for q in qsos:
         q.is_potential_dupe = q.id in dupe_ids
+        q.suspected_correct_call = typo_map.get(q.id, "")
     return qsos
 
 

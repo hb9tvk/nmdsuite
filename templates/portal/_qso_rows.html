@@ -8,8 +8,11 @@ the listing always reflects the current state of the participant's log.
         <td class="qso-cell qso-utc{% if not qso.is_utc_valid %} invalid-cell{% endif %}">
             {{ qso.utc_raw }}
         </td>
-        <td class="qso-cell qso-call{% if qso.is_potential_dupe %} dupe-cell{% endif %}{% if not qso.is_remote_call_valid %} invalid-cell{% endif %}">
+        <td class="qso-cell qso-call{% if qso.is_potential_dupe %} dupe-cell{% endif %}{% if qso.suspected_correct_call %} typo-cell{% endif %}{% if not qso.is_remote_call_valid %} invalid-cell{% endif %}"{% if qso.suspected_correct_call %} title="{% blocktrans with correct=qso.suspected_correct_call %}Registered NMD callsign is {{ correct }}. Saving is allowed, but the QSO will not score unless the callsign matches exactly (per the on-air /P rule).{% endblocktrans %}"{% endif %}>
             {{ qso.remote_call }}
+            {% if qso.suspected_correct_call %}
+                <small class="typo-hint">→ {{ qso.suspected_correct_call }}</small>
+            {% endif %}
         </td>
         <td class="qso-cell qso-rst{% if not qso.is_rsts_valid %} invalid-cell{% endif %}">
             {{ qso.rsts }}
