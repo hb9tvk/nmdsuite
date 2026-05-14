@@ -174,29 +174,77 @@ def test_suspected_skips_records_with_empty_candidate_txts(seeded_contest):
 
 
 @pytest.mark.django_db
-def test_suspected_does_not_touch_full_or_text_mismatch_or_hb9_or_dx(seeded_contest):
-    """Only UNMATCHED is eligible for upgrade — other statuses stand."""
+def test_suspected_does_not_touch_full_or_text_mismatch(seeded_contest):
+    """FULL_MATCH has a confirmed pair (no second-guessing); TEXT_MISMATCH
+    also has one (with bad text). Both stay as-is."""
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
     c = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
     t = seeded_contest.start_utc
     q_full = _qso(a, t=t, remote_call="HB9X", txts=TXT_A, txtr=TXT_C)
     q_tm = _qso(a, t=t + timedelta(minutes=5), remote_call="HB9X", txts=TXT_A, txtr=TXT_C)
-    q_hb9 = _qso(a, t=t + timedelta(minutes=10), remote_call="HB9NON", txts=TXT_A, txtr=TXT_C)
-    q_dx = _qso(a, t=t + timedelta(minutes=15), remote_call="DL1ABC", txts=TXT_A, txtr=TXT_C)
     _qso(c, t=t, remote_call="HB9TVK/P", txts=TXT_C, txtr="x" * 20)
     _qso(c, t=t + timedelta(minutes=5), remote_call="HB9TVK/P", txts=TXT_C, txtr="x" * 20)
-    _qso(c, t=t + timedelta(minutes=10), remote_call="HB9TVK/P", txts=TXT_C, txtr="x" * 20)
-    _qso(c, t=t + timedelta(minutes=15), remote_call="HB9TVK/P", txts=TXT_C, txtr="x" * 20)
 
     records = [
         _record(q_full, seeded_contest, status=ScoringStatus.FULL_MATCH),
         _record(q_tm, seeded_contest, status=ScoringStatus.TEXT_MISMATCH),
-        _record(q_hb9, seeded_contest, status=ScoringStatus.HB9_QSO),
-        _record(q_dx, seeded_contest, status=ScoringStatus.DX_QSO),
     ]
     pbk, kbpid, qbk = _scaffold(seeded_contest, [a, c])
     flipped = detect_suspected(records, qsos_by_key=qbk, participants_by_key=pbk, key_by_participant_id=kbpid)
     assert flipped == 0
+
+
+@pytest.mark.django_db
+def test_suspected_flips_hb9_qso_when_text_matches_a_registered_sender(seeded_contest):
+    """A typed a Swiss-looking non-participant callsign but the texts match a
+    registered station's transmission — that's almost certainly a misheard
+    NMD QSO, not a real HB9 QSO. Flip to SUSPECTED (0 pts) instead of
+    keeping HB9_QSO (1 pt)."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    c = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
+    t = seeded_contest.start_utc
+    # A typed HB9NON (not registered) but actually worked HB9XYZ whose texts match.
+    qa = _qso(a, t=t, remote_call="HB9NON", txts=TXT_A, txtr=TXT_C)
+    _qso(c, t=t, remote_call="HB9TVK/P", txts=TXT_C, txtr="x" * 20)
+
+    records = [_record(qa, seeded_contest, status=ScoringStatus.HB9_QSO)]
+    pbk, kbpid, qbk = _scaffold(seeded_contest, [a, c])
+    flipped = detect_suspected(records, qsos_by_key=qbk, participants_by_key=pbk, key_by_participant_id=kbpid)
+    assert flipped == 1
+    assert records[0].status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert records[0].suspected_correct_call == c.callsign
+
+
+@pytest.mark.django_db
+def test_suspected_flips_dx_qso_when_text_matches_a_registered_sender(seeded_contest):
+    """Same as HB9 case but for DX (non-Swiss) typed callsigns."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    c = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
+    t = seeded_contest.start_utc
+    qa = _qso(a, t=t, remote_call="DL1ABC", txts=TXT_A, txtr=TXT_C)
+    _qso(c, t=t, remote_call="HB9TVK/P", txts=TXT_C, txtr="x" * 20)
+
+    records = [_record(qa, seeded_contest, status=ScoringStatus.DX_QSO)]
+    pbk, kbpid, qbk = _scaffold(seeded_contest, [a, c])
+    detect_suspected(records, qsos_by_key=qbk, participants_by_key=pbk, key_by_participant_id=kbpid)
+    assert records[0].status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+
+
+@pytest.mark.django_db
+def test_suspected_leaves_legitimate_hb9_qso_with_empty_text_alone(seeded_contest):
+    """Real HB9/DX QSOs only exchange RST (no text). The empty-txtr guard
+    prevents false positives — they stay HB9_QSO at 1 pt."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    c = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
+    t = seeded_contest.start_utc
+    qa = _qso(a, t=t, remote_call="HB9NON", txts="", txtr="")  # no text → legitimate non-NMD
+    _qso(c, t=t, remote_call="HB9TVK/P", txts=TXT_C, txtr="x" * 20)
+
+    records = [_record(qa, seeded_contest, status=ScoringStatus.HB9_QSO)]
+    pbk, kbpid, qbk = _scaffold(seeded_contest, [a, c])
+    flipped = detect_suspected(records, qsos_by_key=qbk, participants_by_key=pbk, key_by_participant_id=kbpid)
+    assert flipped == 0
+    assert records[0].status == ScoringStatus.HB9_QSO
 
 
 # --- score_contest integration ---------------------------------------------------------------

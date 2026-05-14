@@ -4,12 +4,15 @@ Rows inside #qso-list. Re-rendered with each /log/save/ etc. response so
 the listing always reflects the current state of the participant's log.
 {% endcomment %}
 {% for qso in qsos %}
-    <tr id="qso-row-{{ qso.pk }}">
+    <tr id="qso-row-{{ qso.pk }}"{% if qso.is_potential_dupe %} class="qso-row-dupe" title="{% trans 'Looks like a duplicate of another QSO in this log. Saving is allowed — fix the time or callsign if this was a typo.' %}"{% endif %}>
         <td class="qso-cell qso-utc{% if not qso.is_utc_valid %} invalid-cell{% endif %}">
             {{ qso.utc_raw }}
         </td>
-        <td class="qso-cell qso-call{% if not qso.is_remote_call_valid %} invalid-cell{% endif %}">
+        <td class="qso-cell qso-call{% if qso.is_potential_dupe %} dupe-cell{% endif %}{% if qso.suspected_correct_call %} typo-cell{% endif %}{% if not qso.is_remote_call_valid %} invalid-cell{% endif %}"{% if qso.suspected_correct_call %} title="{% blocktrans with correct=qso.suspected_correct_call %}Registered NMD callsign is {{ correct }}. Saving is allowed, but the QSO will not score unless the callsign matches exactly (per the on-air /P rule).{% endblocktrans %}"{% endif %}>
             {{ qso.remote_call }}
+            {% if qso.suspected_correct_call %}
+                <small class="typo-hint">→ {{ qso.suspected_correct_call }}</small>
+            {% endif %}
         </td>
         <td class="qso-cell qso-rst{% if not qso.is_rsts_valid %} invalid-cell{% endif %}">
             {{ qso.rsts }}

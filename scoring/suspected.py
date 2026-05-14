@@ -16,10 +16,16 @@ here is purely diagnostic; M3.5 still grants 0 points.
 
 Decisions encoded here:
 
-- **Only ``UNMATCHED`` records are upgraded.** ``HB9_QSO`` / ``DX_QSO``
-  rows already earn 1 point and the mishearing signal is weaker for
-  non-participant callsigns; we'd rather not silently downgrade them.
-  ``TEXT_MISMATCH`` already has a confirmed pair, so we don't second-guess.
+- **Eligible statuses**: ``UNMATCHED``, ``HB9_QSO``, and ``DX_QSO``. The
+  last two cover the case where the operator typed a wrong callsign that
+  happened to look Swiss or DX — the natural classification would be 1
+  point for HB9/DX, but if the texts match a registered NMD station's
+  transmission, this is much more likely a misheard NMD QSO (0 points,
+  with a hint about who they probably actually worked). Legitimate
+  HB9/DX QSOs exchange only RST per the rules, so they have empty
+  ``txtr`` and aren't eligible for detection — false-positive risk is
+  low. ``TEXT_MISMATCH`` already has a confirmed pair, so we don't
+  second-guess.
 - **Search universe**: all participants except (a) the operator
   themselves and (b) the participant they claimed to have worked.
 - **Match criteria**: same mode, ``utc_time`` within
@@ -39,6 +45,13 @@ from core.models import Participant, QsoEntry, ScoringRecord, ScoringStatus
 
 from .pairing import MATCH_WINDOW, match_key
 from .text_match import DEFAULT_MAX_ERRORS, text_distance
+
+
+_ELIGIBLE_STATUSES = frozenset({
+    ScoringStatus.UNMATCHED,
+    ScoringStatus.HB9_QSO,
+    ScoringStatus.DX_QSO,
+})
 
 
 def _find_suspected_sender(
@@ -89,7 +102,7 @@ def detect_suspected(
     the number of rows that were flipped."""
     flipped = 0
     for r in records:
-        if r.status != ScoringStatus.UNMATCHED:
+        if r.status not in _ELIGIBLE_STATUSES:
             continue
         qso = r.qso
         my_key = key_by_participant_id.get(qso.participant_id)
