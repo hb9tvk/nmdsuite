@@ -413,6 +413,8 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .admin-transition-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 .admin-transition-row button { padding: 0.5rem 1rem; }
 .admin-transition-row .btn-danger { background: #fff3cd; border-color: #ffeeba; color: #856404; }
+.admin-transition-row .btn-revert { background: #fafafa; border: 1px solid #ddd; color: #555; padding: 0.5rem 1rem; }
+.admin-transition-row .btn-revert:hover { background: #f0f0f0; }
 .admin-setup-new form { display: flex; gap: 0.75rem; align-items: end; }
 .admin-setup-new label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; }
 .admin-setup-new input[type="number"] { padding: 0.3rem 0.4rem; width: 6rem; font-size: 0.95rem; }

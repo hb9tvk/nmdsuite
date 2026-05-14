@@ -55,6 +55,14 @@
                 {% if contest.state == 'published' %}
                     <p class="hint">{% trans "Contest published. Use the 'Setup new contest' form below when ready to start a new edition." %}</p>
                 {% endif %}
+                {% if contest.state == 'reg_closed' or contest.state == 'logs_open' or contest.state == 'logs_closed' or contest.state == 'published' %}
+                    <form method="post" action="{% url 'admin_module:revert_state' %}"
+                          onsubmit="return confirm('{% blocktrans %}Revert to the previous state? If reverting 'log submission closed', the auto-submitted logs will be unlocked so operators can edit again.{% endblocktrans %}');"
+                          class="admin-revert-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-revert">{% trans "Revert to previous state" %}</button>
+                    </form>
+                {% endif %}
             </div>
         </section>
 

@@ -179,6 +179,113 @@ def test_setup_new_contest_rejects_year_out_of_range(seeded_contest):
         services.setup_new_contest(year=1900, actor=_make_staff_user())
 
 
+# --- reverse transitions ---------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_revert_close_registration(seeded_contest):
+    seeded_contest.state = Contest.State.REGISTRATION_CLOSED
+    seeded_contest.save()
+    services.revert_close_registration(seeded_contest, actor=_make_staff_user())
+    seeded_contest.refresh_from_db()
+    assert seeded_contest.state == Contest.State.REGISTRATION_OPEN
+    assert AuditLog.objects.filter(action="contest.revert_close_registration").exists()
+
+
+@pytest.mark.django_db
+def test_revert_open_log_submission(seeded_contest):
+    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.save()
+    services.revert_open_log_submission(seeded_contest, actor=_make_staff_user())
+    seeded_contest.refresh_from_db()
+    assert seeded_contest.state == Contest.State.REGISTRATION_CLOSED
+
+
+@pytest.mark.django_db
+def test_revert_close_log_submission_undoes_only_auto_submits(seeded_contest):
+    """Closing + reverting logs leaves operator-submitted rows alone but
+    un-locks the rows that the close action auto-submitted."""
+    staff = _make_staff_user()
+    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.save()
+    operator_submitted = _make_participant(seeded_contest, username="OPS", callsign="OPS/P", submitted=True)
+    pending = _make_participant(seeded_contest, username="PND", callsign="PND/P")
+    original_submitted_at = operator_submitted.submitted_at
+
+    services.close_log_submission(seeded_contest, actor=staff)
+    pending.refresh_from_db()
+    assert pending.submitted_at is not None
+    assert pending.auto_submitted is True
+
+    n = services.revert_close_log_submission(seeded_contest, actor=staff)
+    seeded_contest.refresh_from_db()
+    operator_submitted.refresh_from_db()
+    pending.refresh_from_db()
+
+    assert n == 1
+    assert seeded_contest.state == Contest.State.LOGS_OPEN
+    # Operator's own submission untouched.
+    assert operator_submitted.submitted_at == original_submitted_at
+    assert operator_submitted.auto_submitted is False
+    # Pending row: fully un-submitted, ready to edit again.
+    assert pending.submitted_at is None
+    assert pending.auto_submitted is False
+    audit = AuditLog.objects.filter(action="contest.revert_close_logs").first()
+    assert audit.payload == {"un_submitted": 1}
+
+
+@pytest.mark.django_db
+def test_revert_publish_results_clears_published_at(seeded_contest):
+    staff = _make_staff_user()
+    seeded_contest.state = Contest.State.LOGS_CLOSED
+    seeded_contest.save()
+    services.publish_results(seeded_contest, actor=staff)
+    seeded_contest.refresh_from_db()
+    assert seeded_contest.results_published_at is not None
+
+    services.revert_publish_results(seeded_contest, actor=staff)
+    seeded_contest.refresh_from_db()
+    assert seeded_contest.state == Contest.State.LOGS_CLOSED
+    assert seeded_contest.results_published_at is None
+
+
+@pytest.mark.django_db
+def test_revert_rejects_wrong_state(seeded_contest):
+    staff = _make_staff_user()
+    # REGISTRATION_OPEN — nothing to revert from.
+    with pytest.raises(TransitionError):
+        services.revert_close_registration(seeded_contest, actor=staff)
+    with pytest.raises(TransitionError):
+        services.revert_publish_results(seeded_contest, actor=staff)
+
+
+# --- single-button revert view --------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_view_revert_dispatches_from_published(client, seeded_contest):
+    seeded_contest.state = Contest.State.PUBLISHED
+    seeded_contest.results_published_at = timezone.now()
+    seeded_contest.save()
+    client.force_login(_make_staff_user())
+    response = client.post("/admin/contest/revert/")
+    assert response.status_code == 302
+    seeded_contest.refresh_from_db()
+    assert seeded_contest.state == Contest.State.LOGS_CLOSED
+    assert seeded_contest.results_published_at is None
+
+
+@pytest.mark.django_db
+def test_view_revert_no_op_when_already_at_first_state(client, seeded_contest):
+    """REGISTRATION_OPEN is the earliest state — revert button shouldn't be
+    shown and POST should error gracefully if someone hits the URL directly."""
+    client.force_login(_make_staff_user())
+    response = client.post("/admin/contest/revert/")
+    assert response.status_code == 302
+    seeded_contest.refresh_from_db()
+    assert seeded_contest.state == Contest.State.REGISTRATION_OPEN
+
+
 # --- view smoke tests ------------------------------------------------------------------------
 
 

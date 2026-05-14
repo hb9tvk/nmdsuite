@@ -115,6 +115,39 @@ def publish_results(request):
 
 @_staff_required
 @require_http_methods(["POST"])
+def revert_state(request):
+    """Single 'go back one step' endpoint. Dispatches to the right
+    reverse service based on the contest's current state. No-op (with
+    an error flash) if there's nothing to revert."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    reverters = {
+        Contest.State.REGISTRATION_CLOSED: (services.revert_close_registration, _("Registration reopened.")),
+        Contest.State.LOGS_OPEN: (services.revert_open_log_submission, _("Reverted to registration closed.")),
+        Contest.State.LOGS_CLOSED: (
+            services.revert_close_log_submission,
+            lambda n: _("Log submission reopened; %(n)d auto-submitted logs unlocked.") % {"n": n},
+        ),
+        Contest.State.PUBLISHED: (services.revert_publish_results, _("Results unpublished.")),
+    }
+    entry = reverters.get(contest.state)
+    if entry is None:
+        messages.error(request, _("Nothing to revert from this state."))
+        return redirect("admin_module:index")
+    fn, msg = entry
+    try:
+        result = fn(contest, actor=request.user)
+    except services.TransitionError as exc:
+        messages.error(request, str(exc))
+        return redirect("admin_module:index")
+    messages.success(request, msg(result) if callable(msg) else msg)
+    return redirect("admin_module:index")
+
+
+@_staff_required
+@require_http_methods(["POST"])
 def setup_new_contest(request):
     """Archive current contest(s), deactivate non-staff accounts, create a new
     Contest row. POST-only; year comes from the form."""

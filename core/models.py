@@ -88,6 +88,14 @@ class Participant(models.Model):
         null=True, blank=True,
         help_text=_("Set when the operator finalises and locks their log + station description"),
     )
+    auto_submitted = models.BooleanField(
+        default=False,
+        help_text=_(
+            "True if submitted_at was set by admin's 'close log submission' "
+            "(rather than by the operator). Used to scope the un-submit when "
+            "reverting the LOGS_CLOSED → LOGS_OPEN transition."
+        ),
+    )
 
     class Meta:
         unique_together = [("contest", "user")]
