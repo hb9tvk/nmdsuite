@@ -66,6 +66,7 @@ class Classification:
     status: ScoringStatus
     matched_qso: QsoEntry | None
     text_distance: int
+    suspected_correct_call: str = ""
 
 
 def match_key(callsign: str) -> str:
@@ -122,6 +123,7 @@ def classify_qso(
     *,
     peer_qsos: list[QsoEntry] | None,
     my_key: str | None = None,
+    peer_callsign: str | None = None,
     max_errors: int = DEFAULT_MAX_ERRORS,
 ) -> Classification:
     """Classify a single QSO.
@@ -135,6 +137,16 @@ def classify_qso(
     recorded us as their remote). If ``None`` is passed, no strict filter
     is applied — a test-friendly default so direct invocations can pass a
     pre-filtered candidate list.
+
+    ``peer_callsign`` is the peer's registered ``Participant.callsign``
+    (with ``/P`` etc. preserved). When provided, we verify our typed
+    dxcall matches it exactly (modulo case/whitespace). The peer lookup
+    itself is portable-suffix-tolerant (so we can find HB9TVK/P when the
+    operator typed HB9TVK), but giving 4 points requires the operator to
+    have typed the callsign as the station registered it. A mismatch —
+    e.g. missing ``/P`` on the dxcall when the peer is registered as
+    ``HB3YMQ/P`` — downgrades to ``SUSPECTED_CALL_MISMATCH``. The peer's
+    registered callsign goes into ``suspected_correct_call``.
 
     Two-stage pairing:
 
@@ -156,6 +168,14 @@ def classify_qso(
     if not in_window:
         return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
 
+    # Did the operator type the peer's callsign exactly as the peer registered it?
+    # Missing /P (or any other typo) costs them the points — we still surface the
+    # matched QSO and the correct callsign so the manual review can show it.
+    call_mismatch = (
+        peer_callsign is not None
+        and normalize_callsign(qso.remote_call) != normalize_callsign(peer_callsign)
+    )
+
     # Stage 1 — strict: peer recorded us as their remote.
     if my_key is not None:
         strict_candidates = [c for c in in_window if match_key(c.remote_call) == my_key]
@@ -165,6 +185,13 @@ def classify_qso(
     if mate is not None:
         has_texts = bool(qso.txtr) and bool(mate.txts)
         distance = _receiver_distance(qso, mate)
+        if call_mismatch:
+            return Classification(
+                status=ScoringStatus.SUSPECTED_CALL_MISMATCH,
+                matched_qso=mate,
+                text_distance=distance,
+                suspected_correct_call=peer_callsign or "",
+            )
         if has_texts and distance <= max_errors:
             return Classification(status=ScoringStatus.FULL_MATCH, matched_qso=mate, text_distance=distance)
         return Classification(status=ScoringStatus.TEXT_MISMATCH, matched_qso=mate, text_distance=distance)
@@ -177,10 +204,18 @@ def classify_qso(
             abs((c.utc_time - qso.utc_time).total_seconds()),
             c.id,
         ))
+        distance = _receiver_distance(qso, best)
+        if call_mismatch:
+            return Classification(
+                status=ScoringStatus.SUSPECTED_CALL_MISMATCH,
+                matched_qso=best,
+                text_distance=distance,
+                suspected_correct_call=peer_callsign or "",
+            )
         return Classification(
             status=ScoringStatus.FULL_MATCH,
             matched_qso=best,
-            text_distance=_receiver_distance(qso, best),
+            text_distance=distance,
         )
 
     return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
@@ -234,16 +269,21 @@ def score_contest(contest: Contest) -> dict[str, int]:
         for qso in qsos_by_key[p_key]:
             remote_key = match_key(qso.remote_call)
             peer_qsos: list[QsoEntry] | None = None
+            peer_callsign: str | None = None
             if remote_key and remote_key != p_key and remote_key in qsos_by_key:
                 # Pass the peer's full log; classify_qso does strict + fuzzy filtering.
                 peer_qsos = qsos_by_key[remote_key]
-            result = classify_qso(qso, peer_qsos=peer_qsos, my_key=p_key)
+                peer_callsign = participants_by_key[remote_key].callsign
+            result = classify_qso(
+                qso, peer_qsos=peer_qsos, my_key=p_key, peer_callsign=peer_callsign,
+            )
             records.append(ScoringRecord(
                 qso=qso,
                 status=result.status,
                 matched_qso=result.matched_qso,
                 text_distance=result.text_distance,
                 half=_qso_half(qso, contest),
+                suspected_correct_call=result.suspected_correct_call,
             ))
 
     # Order matters: detect suspected BEFORE overrides BEFORE dedupe.

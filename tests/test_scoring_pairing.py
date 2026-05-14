@@ -193,6 +193,60 @@ def test_classify_fuzzy_requires_both_text_directions(seeded_contest):
 
 
 @pytest.mark.django_db
+def test_classify_strict_match_downgrades_to_suspected_when_dxcall_misses_portable_suffix(seeded_contest):
+    """We typed HB3YMQ but the registered station is HB3YMQ/P. Pairing still
+    finds them (lookup is portable-tolerant), but giving 4 points requires
+    the dxcall to match the registered callsign exactly. Downgrade to
+    SUSPECTED with the correct call surfaced as a hint."""
+    a = _make_participant(seeded_contest, username="HB9CGA", callsign="HB9CGA/P")
+    b = _make_participant(seeded_contest, username="HB3YMQ", callsign="HB3YMQ/P")
+    t = seeded_contest.start_utc
+    txt_a = "Fernausbreitung 0123456"
+    txt_b = "Blumenstraeusse 0123456"
+    qa = _qso(a, t=t, remote_call="HB3YMQ", txts=txt_a, txtr=txt_b)  # missing /P
+    qb = _qso(b, t=t, remote_call="HB9CGA/P", txts=txt_b, txtr=txt_a)  # correct
+
+    result = classify_qso(qa, peer_qsos=[qb], my_key="HB9CGA", peer_callsign="HB3YMQ/P")
+    assert result.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert result.matched_qso == qb
+    assert result.suspected_correct_call == "HB3YMQ/P"
+
+
+@pytest.mark.django_db
+def test_classify_full_match_when_dxcall_matches_registered_callsign_exactly(seeded_contest):
+    """Sanity check: when peer_callsign is provided AND we typed it right,
+    we still get FULL_MATCH (i.e. providing peer_callsign doesn't break
+    the happy path)."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
+    t = seeded_contest.start_utc
+    qa = _qso(a, t=t, remote_call="HB9ABC/P", txts=TXT_A, txtr=TXT_B)
+    qb = _qso(b, t=t, remote_call="HB9TVK/P", txts=TXT_B, txtr=TXT_A)
+    result = classify_qso(qa, peer_qsos=[qb], my_key="HB9TVK", peer_callsign="HB9ABC/P")
+    assert result.status == ScoringStatus.FULL_MATCH
+
+
+@pytest.mark.django_db
+def test_classify_fuzzy_match_also_downgrades_on_call_mismatch(seeded_contest):
+    """Even if we'd be saved by a fuzzy peer-side-typo rescue, typing the
+    peer's call wrong on our side still costs us the points."""
+    a = _make_participant(seeded_contest, username="HB3XSS", callsign="HB3XSS/P")
+    b = _make_participant(seeded_contest, username="HB3YRZ", callsign="HB3YRZ/P")
+    t = seeded_contest.start_utc
+    # We typed HB3YRZ (missing /P) — wrong on our side.
+    qa = _qso(a, t=t, mode="SSB", rsts="55", rstr="55", remote_call="HB3YRZ",
+              txts="au clair de la lune", txtr="turbina elettrica")
+    # Peer also typed our call wrong (HB9XSS instead of HB3XSS) — wrong on their side.
+    qb = _qso(b, t=t, mode="SSB", rsts="55", rstr="55", remote_call="HB9XSS/P",
+              txts="turbina elettrica", txtr="au claire de la lune")
+    result = classify_qso(qa, peer_qsos=[qb], my_key="HB3XSS", peer_callsign="HB3YRZ/P")
+    # Fuzzy would have given us FULL_MATCH for the peer-typo case, but our own
+    # call typo dominates → SUSPECTED.
+    assert result.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert result.suspected_correct_call == "HB3YRZ/P"
+
+
+@pytest.mark.django_db
 def test_classify_text_mismatch_when_distance_exceeds_tolerance(seeded_contest):
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
     b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
@@ -377,16 +431,44 @@ def test_score_contest_rescues_qso_when_peer_wrote_wrong_dxcall(seeded_contest):
 
 
 @pytest.mark.django_db
+def test_score_contest_dxcall_missing_portable_suffix_loses_points(seeded_contest):
+    """End-to-end reproduction of the user's bug report: HB9CGA/P logged
+    HB3YMQ (no /P) instead of HB3YMQ/P. The receiver loses their 4 points;
+    the other side (which got the call right) keeps theirs."""
+    a = _make_participant(seeded_contest, username="HB9CGA", callsign="HB9CGA/P")
+    b = _make_participant(seeded_contest, username="HB3YMQ", callsign="HB3YMQ/P")
+    t = seeded_contest.start_utc
+    txt_a = "Fernausbreitung extra-padding-xx"
+    txt_b = "Blumenstraeusse extra-padding-x"
+    qa = _qso(a, t=t, remote_call="HB3YMQ", txts=txt_a, txtr=txt_b)        # missing /P
+    qb = _qso(b, t=t, remote_call="HB9CGA/P", txts=txt_b, txtr=txt_a)      # correct
+
+    score_contest(seeded_contest)
+    ra = ScoringRecord.objects.get(qso=qa)
+    rb = ScoringRecord.objects.get(qso=qb)
+    assert ra.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert ra.suspected_correct_call == "HB3YMQ/P"
+    assert ra.points == 0
+    assert rb.status == ScoringStatus.FULL_MATCH
+    assert rb.points == 4
+
+
+@pytest.mark.django_db
 def test_score_contest_handles_portable_suffix_asymmetry(seeded_contest):
-    """A's log has the remote without /P; B's callsign has /P. Must still match."""
+    """When the dxcall is typed without /P but the peer is registered with /P,
+    the lookup still finds them (so we don't misclassify as HB9_QSO); the
+    /P mismatch then downgrades the receiver to SUSPECTED. The other side
+    (which got the call right) keeps FULL_MATCH."""
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
     b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
     t = seeded_contest.start_utc
-    _qso(a, t=t, remote_call="HB9ABC", txts=TXT_A, txtr=TXT_B)  # no /P
-    _qso(b, t=t, remote_call="HB9TVK/P", txts=TXT_B, txtr=TXT_A)
+    qa = _qso(a, t=t, remote_call="HB9ABC", txts=TXT_A, txtr=TXT_B)  # no /P
+    qb = _qso(b, t=t, remote_call="HB9TVK/P", txts=TXT_B, txtr=TXT_A)  # correct
 
-    summary = score_contest(seeded_contest)
-    assert summary == {ScoringStatus.FULL_MATCH: 2}
+    score_contest(seeded_contest)
+    assert ScoringRecord.objects.get(qso=qa).status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert ScoringRecord.objects.get(qso=qa).suspected_correct_call == "HB9ABC/P"
+    assert ScoringRecord.objects.get(qso=qb).status == ScoringStatus.FULL_MATCH
 
 
 @pytest.mark.django_db
