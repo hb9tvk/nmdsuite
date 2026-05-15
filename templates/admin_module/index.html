@@ -112,6 +112,7 @@
     <section class="admin-tools">
         <h2>{% trans "Tools" %}</h2>
         <ul class="admin-tools-list">
+            <li><a href="{% url 'admin_module:participants_index' %}">{% trans "Participants" %}</a> — {% trans "on-behalf registration and editing" %}</li>
             <li><a href="{% url 'admin_module:audit_log' %}">{% trans "Audit log" %}</a> — {% trans "every admin/system action with filters" %}</li>
             <li><a href="{% url 'scoring:index' %}">{% trans "Scoring review" %}</a> — {% trans "per-QSO status, points, suspected calls" %}</li>
             <li><a href="/django-admin/">{% trans "Django admin" %}</a> — {% trans "low-level data inspection (registrations, QSOs, emails, etc.)" %}</li>

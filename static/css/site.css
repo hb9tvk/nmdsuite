@@ -128,6 +128,12 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .reg-map .leaflet-marker-dragging {
     cursor: grabbing;
 }
+/* Read-only variant: no picking, so use the default grab cursor instead of crosshair. */
+.reg-map-readonly.leaflet-container,
+.reg-map-readonly .leaflet-grab,
+.reg-map-readonly .leaflet-interactive {
+    cursor: grab;
+}
 .reg-map-status {
     min-height: 1.25rem;
     margin: 0 0 0.75rem;
@@ -440,3 +446,12 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .admin-audit-table .cell-when { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
 .admin-audit-table .cell-payload { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: #555; max-width: 28rem; word-break: break-word; }
 .admin-pagination { margin-top: 1rem; display: flex; gap: 1rem; align-items: center; color: var(--muted); font-size: 0.9rem; }
+
+.admin-filter { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin-bottom: 1rem; }
+.admin-filter label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; }
+.admin-filter input, .admin-filter select { padding: 0.3rem 0.4rem; font-size: 0.9rem; }
+
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.admin-table th, .admin-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+.admin-table th { background: #fafafa; font-weight: 600; }
+.admin-table tr:hover td { background: #f7f7f7; }

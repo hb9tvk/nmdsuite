@@ -12,4 +12,10 @@ urlpatterns = [
     path("contest/publish/", views.publish_results, name="publish_results"),
     path("contest/revert/", views.revert_state, name="revert_state"),
     path("contest/setup-new/", views.setup_new_contest, name="setup_new_contest"),
+    # On-behalf participant management (M4.3a). Participant pk in the URL
+    # avoids slash-in-callsign (``HB9TVK/P``) routing problems.
+    path("participants/", views.participants_index, name="participants_index"),
+    path("participants/register/", views.participant_register, name="participant_register"),
+    path("participants/<int:pk>/", views.participant_detail, name="participant_detail"),
+    path("participants/<int:pk>/edit-profile/", views.participant_edit_profile, name="participant_edit_profile"),
 ]
