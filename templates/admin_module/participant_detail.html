@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ participant.callsign }} — {% trans "Administration" %}{% endblock %}
+
+{% block extra_head %}{% include "partials/_location_head.html" %}{% endblock %}
+
+{% block content %}
+    <p>
+        <a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a>
+        &nbsp;·&nbsp;
+        <a href="{% url 'admin_module:participants_index' %}">{% trans "Participants" %}</a>
+    </p>
+
+    <h1>{{ participant.callsign }}</h1>
+    <p class="hint">{% trans "On-behalf editing surface. Changes are audited with you as the actor." %}</p>
+
+    <section class="admin-overview">
+        <h2>{% trans "Registration" %}</h2>
+        <dl class="kv">
+            <dt>{% trans "Name" %}</dt><dd>{{ participant.first_name }}</dd>
+            <dt>{% trans "Email" %}</dt><dd>{{ participant.email }}</dd>
+            <dt>{% trans "Canton" %}</dt><dd>{{ participant.canton }}</dd>
+            <dt>{% trans "Altitude" %}</dt><dd>{{ participant.altitude_m }} m</dd>
+            {% if participant.wgs84_lat is not None and participant.wgs84_lon is not None %}
+                <dt>{% trans "Coordinates (WGS84)" %}</dt>
+                <dd>{{ participant.wgs84_lat|floatformat:5 }}, {{ participant.wgs84_lon|floatformat:5 }}</dd>
+            {% endif %}
+            {% if participant.ch1903_e and participant.ch1903_n %}
+                <dt>{% trans "Coordinates (CH1903)" %}</dt>
+                <dd>{{ participant.ch1903_e }}, {{ participant.ch1903_n }}</dd>
+            {% endif %}
+            <dt>{% trans "Multi-op" %}</dt>
+            <dd>
+                {% if participant.multi_op %}
+                    {% trans "yes" %} ({% trans "chief:" %} {{ participant.station_chief|default:"—" }})
+                {% else %}
+                    {% trans "no" %}
+                {% endif %}
+            </dd>
+            <dt>{% trans "Modes" %}</dt>
+            <dd>
+                {% if participant.operating_modes == 1 %}CW
+                {% elif participant.operating_modes == 2 %}SSB
+                {% elif participant.operating_modes == 3 %}CW + SSB
+                {% endif %}
+            </dd>
+            <dt>{% trans "Registered at" %}</dt><dd>{{ participant.registered_at|date:"Y-m-d H:i" }} UTC</dd>
+            <dt>{% trans "Status" %}</dt><dd>{{ status }}</dd>
+            {% if participant.submitted_at %}
+                <dt>{% trans "Submitted at" %}</dt>
+                <dd>
+                    {{ participant.submitted_at|date:"Y-m-d H:i" }} UTC
+                    {% if participant.auto_submitted %}({% trans "auto-submitted" %}){% endif %}
+                </dd>
+            {% endif %}
+            {% if participant.cancelled_at %}
+                <dt>{% trans "Cancelled at" %}</dt><dd>{{ participant.cancelled_at|date:"Y-m-d H:i" }} UTC</dd>
+            {% endif %}
+        </dl>
+
+        {% if participant.wgs84_lat is not None and participant.wgs84_lon is not None %}
+            <div id="participant-map" class="reg-map reg-map-readonly"
+                 data-lat="{{ participant.wgs84_lat|stringformat:'f' }}"
+                 data-lon="{{ participant.wgs84_lon|stringformat:'f' }}"
+                 data-label="{{ participant.callsign }}"></div>
+        {% endif %}
+    </section>
+
+    <section class="admin-overview">
+        <h2>{% trans "Log" %}</h2>
+        <dl class="kv">
+            <dt>{% trans "QSO entries" %}</dt><dd>{{ qso_count }}</dd>
+            <dt>{% trans "Station description" %}</dt>
+            <dd>{% if station %}{% trans "present" %}{% else %}{% trans "missing" %}{% endif %}</dd>
+        </dl>
+    </section>
+
+    <section class="admin-transitions">
+        <h2>{% trans "Actions" %}</h2>
+        <p class="actions">
+            <a href="{% url 'admin_module:participant_edit_profile' pk=participant.pk %}" class="btn">
+                {% trans "Edit registration data" %}
+            </a>
+        </p>
+        <p class="hint">{% trans "Station description, log entries, log upload, and submit/un-submit follow in M4.3b." %}</p>
+    </section>
+{% endblock %}
+
+{% block extra_scripts %}
+    {% if participant.wgs84_lat is not None and participant.wgs84_lon is not None %}
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+                integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+                crossorigin=""></script>
+        <script>
+            (function () {
+                "use strict";
+                var el = document.getElementById("participant-map");
+                if (!el || typeof L === "undefined") return;
+                var lat = parseFloat(el.dataset.lat);
+                var lon = parseFloat(el.dataset.lon);
+                if (!isFinite(lat) || !isFinite(lon)) return;
+                var map = L.map(el, { scrollWheelZoom: false }).setView([lat, lon], 13);
+                L.tileLayer(
+                    "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
+                    {
+                        attribution: '&copy; <a href="https://www.swisstopo.admin.ch">Swisstopo</a>',
+                        maxZoom: 17,
+                    }
+                ).addTo(map);
+                L.marker([lat, lon]).addTo(map).bindPopup(el.dataset.label || "");
+            })();
+        </script>
+    {% endif %}
+{% endblock %}

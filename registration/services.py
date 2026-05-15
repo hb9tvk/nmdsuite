@@ -35,11 +35,18 @@ def _generate_password(length: int = 12) -> str:
 
 
 @transaction.atomic
-def register_participant(*, contest: Contest, form_data: dict[str, Any]) -> RegistrationOutcome:
+def register_participant(
+    *, contest: Contest, form_data: dict[str, Any], actor: User | None = None,
+) -> RegistrationOutcome:
     """Persist a registration and the user account that goes with it.
 
     ``form_data`` is what ``RegistrationForm.cleaned_data`` produces, plus a
     pre-computed ``operating_modes`` int.
+
+    ``actor`` is the user attributed in the audit log. Defaults to the
+    participant's own user (self-service registration). When admin staff
+    register on behalf of someone else (M4.3), the staff user is passed in
+    and an ``on_behalf=True`` flag is recorded in the audit payload.
 
     Raises ``Participant.MultipleObjectsReturned`` etc. only on programmer
     error; duplicate-registration-for-active-contest is enforced via the
@@ -95,16 +102,20 @@ def register_participant(*, contest: Contest, form_data: dict[str, Any]) -> Regi
         remarks=form_data.get("remarks", "") or "",
     )
 
+    audit_actor = actor or user
+    audit_payload = {
+        "user_was_created": user_was_created,
+        "multi_op": participant.multi_op,
+        "canton": participant.canton,
+    }
+    if actor is not None and actor != user:
+        audit_payload["on_behalf"] = True
     audit(
         action="registration.create",
-        actor=user,
+        actor=audit_actor,
         target=callsign,
         contest=contest,
-        payload={
-            "user_was_created": user_was_created,
-            "multi_op": participant.multi_op,
-            "canton": participant.canton,
-        },
+        payload=audit_payload,
     )
 
     return RegistrationOutcome(
@@ -128,12 +139,18 @@ def cancel_participation(participant: Participant, *, actor: User | None = None)
 
 
 @transaction.atomic
-def update_participant_profile(*, participant: Participant, form_data: dict[str, Any]) -> Participant:
+def update_participant_profile(
+    *, participant: Participant, form_data: dict[str, Any], actor: User | None = None,
+) -> Participant:
     """Apply edited profile fields to an existing Participant.
 
     Only the fields the spec lists as editable are touched; identity columns
     (callsign, first_name, email) are deliberately not part of ``form_data``
     because the edit form omits them.
+
+    ``actor`` is the audit actor (defaults to the participant's own user).
+    M4.3 admin on-behalf edits pass in the staff user and an ``on_behalf=True``
+    flag is recorded in the audit payload.
     """
     parsed = form_data["parsed_coords"]
     participant.multi_op = bool(form_data["multi_op"])
@@ -150,11 +167,15 @@ def update_participant_profile(*, participant: Participant, form_data: dict[str,
     participant.operating_modes = form_data["operating_modes"]
     participant.remarks = form_data.get("remarks", "") or ""
     participant.save()
+    audit_actor = actor or participant.user
+    audit_payload = {"canton": participant.canton, "altitude_m": participant.altitude_m}
+    if actor is not None and actor != participant.user:
+        audit_payload["on_behalf"] = True
     audit(
         action="registration.update",
-        actor=participant.user,
+        actor=audit_actor,
         target=participant.callsign,
         contest=participant.contest,
-        payload={"canton": participant.canton, "altitude_m": participant.altitude_m},
+        payload=audit_payload,
     )
     return participant

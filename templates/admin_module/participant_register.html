@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Register on behalf" %} — NMD{% endblock %}
+
+{% block extra_head %}{% include "partials/_location_head.html" %}{% endblock %}
+
+{% block content %}
+    <p>
+        <a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a>
+        &nbsp;·&nbsp;
+        <a href="{% url 'admin_module:participants_index' %}">{% trans "Participants" %}</a>
+    </p>
+
+    <h1>{% trans "Register on behalf" %} — NMD {{ contest.year }}</h1>
+    <p class="hint">
+        {% trans "Same registration form the operator would see. Bypasses the contest's registration-open state, so this works even after registration has been closed. Audited under your account." %}
+    </p>
+
+    <form method="post" novalidate class="reg-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <fieldset>
+            <legend>{% trans "Operator" %}</legend>
+            {% include "registration/_field.html" with field=form.callsign %}
+            {% include "registration/_field.html" with field=form.first_name %}
+            {% include "registration/_field.html" with field=form.email %}
+        </fieldset>
+
+        {% include "partials/_location_fieldset.html" %}
+
+        <fieldset>
+            <legend>{% trans "Station type" %}</legend>
+            {% include "registration/_field.html" with field=form.multi_op %}
+            {% include "registration/_field.html" with field=form.station_chief %}
+        </fieldset>
+
+        <fieldset>
+            <legend>{% trans "Operating modes" %}</legend>
+            {% include "registration/_field.html" with field=form.mode_cw %}
+            {% include "registration/_field.html" with field=form.mode_ssb %}
+        </fieldset>
+
+        <fieldset>
+            <legend>{% trans "Other" %}</legend>
+            {% include "registration/_field.html" with field=form.remarks %}
+        </fieldset>
+
+        <p class="actions">
+            <button type="submit">{% trans "Register" %}</button>
+            <a href="{% url 'admin_module:participants_index' %}">{% trans "Cancel" %}</a>
+        </p>
+    </form>
+{% endblock %}
+
+{% block extra_scripts %}{% include "partials/_location_scripts.html" %}{% endblock %}
