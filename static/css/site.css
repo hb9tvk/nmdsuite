@@ -409,7 +409,16 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .scoring-row-dupe_deducted { opacity: 0.55; }
 
 /* --- Admin module (staff workflow UI) ---------------------------------------------- */
-.admin-overview, .admin-counts, .admin-tools, .admin-recent { margin-bottom: 1.5rem; }
+.admin-overview, .admin-counts, .admin-tools, .admin-recent, .admin-transitions, .admin-setup-new { margin-bottom: 1.5rem; }
+.admin-transition-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.admin-transition-row button { padding: 0.5rem 1rem; }
+.admin-transition-row .btn-danger { background: #fff3cd; border-color: #ffeeba; color: #856404; }
+.admin-transition-row .btn-revert { background: #fafafa; border: 1px solid #ddd; color: #555; padding: 0.5rem 1rem; }
+.admin-transition-row .btn-revert:hover { background: #f0f0f0; }
+.admin-setup-new form { display: flex; gap: 0.75rem; align-items: end; }
+.admin-setup-new label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.85rem; }
+.admin-setup-new input[type="number"] { padding: 0.3rem 0.4rem; width: 6rem; font-size: 0.95rem; }
+.admin-setup-new .btn-danger { background: #f8d7da; border-color: #f5c6cb; color: #721c24; padding: 0.5rem 1rem; }
 .admin-card-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 .admin-card { flex: 1 1 8rem; min-width: 8rem; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 4px; background: #fafafa; }
 .admin-card-num { font-size: 1.75rem; font-weight: 700; line-height: 1; }

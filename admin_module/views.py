@@ -11,11 +11,16 @@ setup-new), on-behalf editing, bulk email, and backup/restore.
 """
 from __future__ import annotations
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.utils.translation import gettext as _
+from django.views.decorators.http import require_http_methods
 
 from core.models import AuditLog, Contest, Participant
+
+from . import services
 
 
 def _staff_required(view):
@@ -50,6 +55,118 @@ def index(request):
         "counts": counts,
         "recent_audit": recent_audit,
     })
+
+
+# --- contest state transitions (M4.2) ---------------------------------------------------------
+
+
+def _run_transition(request, transition, *, success_msg, **kwargs):
+    """Common wrapper: call ``transition(contest, actor=...)`` on the
+    active contest, surface success or TransitionError as a flash, and
+    redirect back to the dashboard."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    try:
+        result = transition(contest, actor=request.user, **kwargs)
+    except services.TransitionError as exc:
+        messages.error(request, str(exc))
+        return redirect("admin_module:index")
+    messages.success(request, success_msg(result) if callable(success_msg) else success_msg)
+    return redirect("admin_module:index")
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def close_registration(request):
+    return _run_transition(
+        request, services.close_registration,
+        success_msg=_("Registration closed."),
+    )
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def open_log_submission(request):
+    return _run_transition(
+        request, services.open_log_submission,
+        success_msg=_("Log submission opened."),
+    )
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def close_log_submission(request):
+    return _run_transition(
+        request, services.close_log_submission,
+        success_msg=lambda n: _("Log submission closed; %(n)d pending logs were auto-submitted.") % {"n": n},
+    )
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def publish_results(request):
+    return _run_transition(
+        request, services.publish_results,
+        success_msg=_("Results published."),
+    )
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def revert_state(request):
+    """Single 'go back one step' endpoint. Dispatches to the right
+    reverse service based on the contest's current state. No-op (with
+    an error flash) if there's nothing to revert."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    reverters = {
+        Contest.State.REGISTRATION_CLOSED: (services.revert_close_registration, _("Registration reopened.")),
+        Contest.State.LOGS_OPEN: (services.revert_open_log_submission, _("Reverted to registration closed.")),
+        Contest.State.LOGS_CLOSED: (
+            services.revert_close_log_submission,
+            lambda n: _("Log submission reopened; %(n)d auto-submitted logs unlocked.") % {"n": n},
+        ),
+        Contest.State.PUBLISHED: (services.revert_publish_results, _("Results unpublished.")),
+    }
+    entry = reverters.get(contest.state)
+    if entry is None:
+        messages.error(request, _("Nothing to revert from this state."))
+        return redirect("admin_module:index")
+    fn, msg = entry
+    try:
+        result = fn(contest, actor=request.user)
+    except services.TransitionError as exc:
+        messages.error(request, str(exc))
+        return redirect("admin_module:index")
+    messages.success(request, msg(result) if callable(msg) else msg)
+    return redirect("admin_module:index")
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def setup_new_contest(request):
+    """Archive current contest(s), deactivate non-staff accounts, create a new
+    Contest row. POST-only; year comes from the form."""
+    raw_year = (request.POST.get("year") or "").strip()
+    try:
+        year = int(raw_year)
+    except ValueError:
+        messages.error(request, _("Invalid year."))
+        return redirect("admin_module:index")
+    try:
+        contest = services.setup_new_contest(year=year, actor=request.user)
+    except services.TransitionError as exc:
+        messages.error(request, str(exc))
+        return redirect("admin_module:index")
+    messages.success(
+        request,
+        _("Archived previous contests and deactivated participant accounts. NMD %(y)d seeded.") % {"y": contest.year},
+    )
+    return redirect("admin_module:index")
 
 
 @_staff_required
