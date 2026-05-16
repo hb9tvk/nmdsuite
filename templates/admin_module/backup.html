@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Backup / restore" %} — {% trans "Administration" %}{% endblock %}
+
+{% block content %}
+    <p>
+        <a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a>
+    </p>
+
+    <h1>{% trans "Backup / restore" %}</h1>
+
+    {% if restored %}
+        <div class="banner banner-warn">
+            <strong>{% trans "Restore complete in this worker." %}</strong>
+            {% blocktrans %}
+                The container runs multiple gunicorn workers; the others still
+                have open file handles to the previous database file. Restart
+                the container (e.g. <code>docker compose restart</code>) to
+                make sure every worker is using the restored database. You
+                will need to log in again.
+            {% endblocktrans %}
+        </div>
+    {% endif %}
+
+    <section class="admin-overview">
+        <h2>{% trans "Backup" %}</h2>
+        <p>
+            {% trans "Download a transaction-consistent SQLite snapshot of the current database. Safe to run any time — does not pause writes." %}
+        </p>
+        <form method="post" action="{% url 'admin_module:backup_download' %}" class="inline-form">
+            {% csrf_token %}
+            <p class="actions">
+                <button type="submit" class="btn">{% trans "Download backup" %}</button>
+            </p>
+        </form>
+    </section>
+
+    <section class="admin-overview">
+        <h2>{% trans "Restore" %}</h2>
+        <p class="hint">
+            {% trans "Uploads a previously-downloaded SQLite file and replaces the live database with it. The previous database is moved aside as a .bak file on the server." %}
+        </p>
+
+        {% blocktrans asvar restore_confirm_msg %}This REPLACES the entire database with the uploaded file. All current data will be moved aside as a .bak file. After restore, the container should be restarted to ensure all workers pick up the new data. Continue?{% endblocktrans %}
+        <form method="post" enctype="multipart/form-data"
+              action="{% url 'admin_module:backup_restore' %}"
+              onsubmit="return confirm('{{ restore_confirm_msg|escapejs }}');"
+              class="bulk-email-form">
+            {% csrf_token %}
+            <div class="form-row">
+                <label for="restore-file">{% trans "Backup file (.sqlite3):" %}</label>
+                <input id="restore-file" type="file" name="file" accept=".sqlite3,.db,application/vnd.sqlite3,application/x-sqlite3" required>
+            </div>
+            <p class="actions">
+                <button type="submit" class="btn-danger">{% trans "Restore from file" %}</button>
+                <a href="{% url 'admin_module:backup_index' %}">{% trans "Cancel" %}</a>
+            </p>
+        </form>
+    </section>
+{% endblock %}

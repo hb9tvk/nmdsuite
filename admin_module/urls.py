@@ -29,4 +29,8 @@ urlpatterns = [
     path("participants/<int:pk>/release/", views.participant_release, name="participant_release"),
     # Bulk email (M4.4).
     path("email/", views.bulk_email, name="bulk_email"),
+    # Backup / restore (M4.5).
+    path("backup/", views.backup_index, name="backup_index"),
+    path("backup/download/", views.backup_download, name="backup_download"),
+    path("backup/restore/", views.backup_restore, name="backup_restore"),
 ]

@@ -15,9 +15,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import IntegrityError
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
@@ -29,7 +30,7 @@ from portal.qso_upload import UploadParseError, parse_upload
 from registration.forms import RegistrationForm
 from registration.services import register_participant, update_participant_profile
 
-from . import email_service, services
+from . import backup_service, email_service, services
 from .forms import BulkEmailForm
 
 
@@ -646,6 +647,62 @@ def participant_release(request, pk: int):
             request, _("Released submission for %(call)s.") % {"call": participant.callsign},
         )
     return redirect("admin_module:participant_detail", pk=participant.pk)
+
+
+# --- backup / restore (M4.5) ------------------------------------------------------------------
+
+
+@_staff_required
+def backup_index(request):
+    """Landing page with backup download + restore upload.
+
+    The optional ``?restored=1`` query string surfaces the post-restore
+    banner telling the operator to restart the container.
+    """
+    return render(
+        request,
+        "admin_module/backup.html",
+        {"restored": request.GET.get("restored") == "1"},
+    )
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def backup_download(request):
+    """Stream the live DB as a SQLite file download. POST to avoid pre-fetchers
+    and link crawlers accidentally triggering an audit row."""
+    blob = backup_service.create_backup(actor=request.user)
+    stamp = timezone.now().strftime("%Y-%m-%d-%H%M")
+    filename = f"nmdsuite-backup-{stamp}.sqlite3"
+    response = HttpResponse(blob, content_type="application/vnd.sqlite3")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def backup_restore(request):
+    """Replace the live DB with the uploaded file. See
+    :mod:`admin_module.backup_service` for details (and the multi-worker
+    caveat: other gunicorn workers see stale data until container restart)."""
+    uploaded = request.FILES.get("file")
+    if uploaded is None:
+        messages.error(request, _("Please choose a backup file to upload."))
+        return redirect("admin_module:backup_index")
+
+    file_bytes = uploaded.read()
+    try:
+        backup_service.restore_backup(file_bytes=file_bytes, actor=request.user)
+    except backup_service.RestoreError as exc:
+        messages.error(request, str(exc))
+        return redirect("admin_module:backup_index")
+
+    # After the swap, this worker's connections to the new DB are fresh,
+    # but the admin's session row lived in the OLD DB. They'll be logged
+    # out at the next request; surface the restart banner via querystring
+    # so it survives that redirect.
+    return redirect(f"{reverse('admin_module:backup_index')}?restored=1")
 
 
 # --- bulk email (M4.4) ------------------------------------------------------------------------
