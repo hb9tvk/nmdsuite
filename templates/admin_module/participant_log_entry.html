@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% trans "Log entry" %} {{ participant.callsign }} — {% trans "Administration" %}{% endblock %}
+
+{% block extra_head %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block content %}
+    <p>
+        <a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a>
+        &nbsp;·&nbsp;
+        <a href="{% url 'admin_module:participants_index' %}">{% trans "Participants" %}</a>
+        &nbsp;·&nbsp;
+        <a href="{% url 'admin_module:participant_detail' pk=participant.pk %}">{{ participant.callsign }}</a>
+    </p>
+
+    <h1>{% blocktrans with callsign=participant.callsign %}Log entry — {{ callsign }}{% endblocktrans %}</h1>
+    <p class="hint">
+        {% trans "On-behalf editing. The portal's post-submit lock is bypassed here so staff can amend a submitted log if needed." %}
+    </p>
+
+    {% if participant.submitted_at %}
+        <div class="banner banner-info">
+            {% blocktrans with when=participant.submitted_at|date:"d.m.Y H:i" %}
+                Log was submitted on {{ when }} UTC. Edits will alter the submitted log.
+            {% endblocktrans %}
+        </div>
+    {% endif %}
+
+    {% include "portal/_qso_app.html" with form=form editing_id=editing_id qsos=qsos locked=locked qso_save_url=qso_save_url qso_list_url=qso_list_url %}
+
+    <section class="qso-upload">
+        <h2>{% trans "Upload .nmd or .csv file" %}</h2>
+        <p class="hint">{% trans "Replaces the QSO list and (if present in the file) the station description." %}</p>
+        {% blocktrans asvar upload_confirm_msg %}This replaces the existing QSO list and station description. Continue?{% endblocktrans %}
+        <form method="post" enctype="multipart/form-data"
+              action="{% url 'admin_module:participant_qso_upload' pk=participant.pk %}"
+              onsubmit="return confirm('{{ upload_confirm_msg|escapejs }}');"
+              class="qso-upload-form">
+            {% csrf_token %}
+            <input type="file" name="file" accept=".csv,.nmd" required>
+            <button type="submit">{% trans "Upload" %}</button>
+        </form>
+    </section>
+
+    <p class="actions">
+        <a href="{% url 'admin_module:participant_detail' pk=participant.pk %}">← {% trans "Back to participant" %}</a>
+    </p>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="https://unpkg.com/htmx.org@1.9.12"
+            integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+            crossorigin="anonymous"></script>
+    <script>
+        document.body.addEventListener("htmx:configRequest", function (e) {
+            const tok = document.querySelector("meta[name='csrf-token']");
+            if (tok) e.detail.headers["X-CSRFToken"] = tok.content;
+        });
+    </script>
+    <script src="{% static 'js/qso_log.js' %}"></script>
+{% endblock %}

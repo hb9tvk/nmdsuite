@@ -117,14 +117,16 @@ def test_audit_log_lists_entries(client, seeded_contest):
 @pytest.mark.django_db
 def test_audit_log_filter_by_action(client, seeded_contest):
     actor = _make_staff_user()
-    audit(actor=actor, action="alpha.evt", target="T1", contest=seeded_contest)
-    audit(actor=actor, action="beta.evt", target="T2", contest=seeded_contest)
+    # Use a hyphen in the target so a random CSRF token (base64-ish, no
+    # punctuation) can never accidentally match the substring.
+    audit(actor=actor, action="alpha.evt", target="TARGET-ALPHA", contest=seeded_contest)
+    audit(actor=actor, action="beta.evt", target="TARGET-BETA", contest=seeded_contest)
     client.force_login(actor)
 
     response = client.get("/admin/audit/?action=alpha.evt")
     body = response.content.decode()
-    assert "T1" in body
-    assert "T2" not in body
+    assert "TARGET-ALPHA" in body
+    assert "TARGET-BETA" not in body
 
 
 @pytest.mark.django_db
@@ -144,14 +146,15 @@ def test_audit_log_filter_by_target_substring(client, seeded_contest):
 def test_audit_log_filter_by_actor(client, seeded_contest):
     actor1 = _make_staff_user()
     actor2 = User.objects.create_user(username="OTHER", password="x", email="o@x.org", is_staff=True)
-    audit(actor=actor1, action="a.b", target="T1", contest=seeded_contest)
-    audit(actor=actor2, action="a.b", target="T2", contest=seeded_contest)
+    # Hyphenated targets avoid false positives from base64 CSRF tokens.
+    audit(actor=actor1, action="a.b", target="TARGET-ALPHA", contest=seeded_contest)
+    audit(actor=actor2, action="a.b", target="TARGET-BETA", contest=seeded_contest)
     client.force_login(actor1)
 
     response = client.get("/admin/audit/?actor=OTHER")
     body = response.content.decode()
-    assert "T2" in body
-    assert "T1" not in body
+    assert "TARGET-BETA" in body
+    assert "TARGET-ALPHA" not in body
 
 
 @pytest.mark.django_db

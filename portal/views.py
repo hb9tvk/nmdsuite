@@ -172,6 +172,23 @@ def _own_qso(participant: Participant, pk: int) -> QsoEntry:
     return qso
 
 
+def _attach_qso_urls(qsos):
+    """Attach the per-row edit/delete URLs the partial expects."""
+    for q in qsos:
+        q.edit_url = reverse("portal:qso_edit", args=[q.pk])
+        q.delete_url = reverse("portal:qso_delete", args=[q.pk])
+    return qsos
+
+
+def _portal_qso_app_context() -> dict[str, str]:
+    """URL endpoints the QSO partials need. Mirrors what the admin
+    on-behalf surface passes, but pointing at the portal endpoints."""
+    return {
+        "qso_save_url": reverse("portal:qso_save"),
+        "qso_list_url": reverse("portal:log_entry"),
+    }
+
+
 def _raw_qso_data(request) -> dict[str, str]:
     """Read the 6 QSO fields from request.POST verbatim — permissive saves
     persist exactly what the operator typed."""
@@ -195,7 +212,8 @@ def _render_app(request, *, participant, form=None, editing_id=""):
         {
             "form": form or QsoEntryForm(),
             "editing_id": editing_id,
-            "qsos": qso_service.list_qsos_with_warnings(participant),
+            "qsos": _attach_qso_urls(qso_service.list_qsos_with_warnings(participant)),
+            **_portal_qso_app_context(),
         },
     )
 
@@ -210,9 +228,10 @@ def log_entry(request):
         "portal/log_entry.html",
         {
             "participant": participant,
-            "qsos": qso_service.list_qsos_with_warnings(participant),
+            "qsos": _attach_qso_urls(qso_service.list_qsos_with_warnings(participant)),
             "form": QsoEntryForm(),
             "editing_id": "",
+            **_portal_qso_app_context(),
         },
     )
 

@@ -31,14 +31,14 @@ the listing always reflects the current state of the participant's log.
             <td class="qso-cell qso-actions">
                 <button type="button"
                         class="row-btn"
-                        hx-get="{% url 'portal:qso_edit' qso.pk %}"
+                        hx-get="{{ qso.edit_url }}"
                         hx-target="#qso-app"
                         hx-swap="outerHTML">
                     {% trans "Edit" %}
                 </button>
                 <button type="button"
                         class="row-btn row-btn-danger"
-                        hx-post="{% url 'portal:qso_delete' qso.pk %}"
+                        hx-post="{{ qso.delete_url }}"
                         hx-target="#qso-app"
                         hx-swap="outerHTML"
                         hx-confirm="{% trans 'Delete this QSO?' %}">

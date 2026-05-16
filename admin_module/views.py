@@ -16,14 +16,16 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.http import Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
-from core.models import AuditLog, Contest, Participant
+from core.models import AuditLog, Contest, Participant, QsoEntry
 from core.picker import map_picker_context
-from portal.forms import ProfileEditForm
+from portal import qso_service, station_service, submit_service
+from portal.forms import ProfileEditForm, QsoEntryForm, StationDescriptionForm
+from portal.qso_upload import UploadParseError, parse_upload
 from registration.forms import RegistrationForm
 from registration.services import register_participant, update_participant_profile
 
@@ -384,6 +386,265 @@ def participant_edit_profile(request, pk: int):
             **map_picker_context(request),
         },
     )
+
+
+# --- on-behalf log + station + submit (M4.3b) -------------------------------------------------
+#
+# These views mirror the participant portal flows (log entry, station
+# description, submit) for a chosen participant. The portal partials are
+# reused; URL endpoints come from context so the same partials work for
+# both surfaces. The submitted_at lock that gates the portal does NOT
+# apply here — admin acts as a release valve when an operator needs help
+# after submission.
+
+
+def _admin_qso_app_context(participant: Participant) -> dict[str, str]:
+    """URL endpoints the QSO partials need, pointing at the admin
+    on-behalf endpoints scoped to a participant pk."""
+    return {
+        "qso_save_url": reverse("admin_module:participant_qso_save", kwargs={"pk": participant.pk}),
+        "qso_list_url": reverse("admin_module:participant_log_entry", kwargs={"pk": participant.pk}),
+    }
+
+
+def _attach_admin_qso_urls(qsos, participant: Participant):
+    for q in qsos:
+        q.edit_url = reverse(
+            "admin_module:participant_qso_edit",
+            kwargs={"pk": participant.pk, "qso_pk": q.pk},
+        )
+        q.delete_url = reverse(
+            "admin_module:participant_qso_delete",
+            kwargs={"pk": participant.pk, "qso_pk": q.pk},
+        )
+    return qsos
+
+
+def _participant_qso_or_404(participant: Participant, qso_pk: int) -> QsoEntry:
+    qso = get_object_or_404(QsoEntry, pk=qso_pk)
+    if qso.participant_id != participant.id:
+        raise Http404
+    return qso
+
+
+def _raw_qso_data(request) -> dict[str, str]:
+    return {
+        "utc": request.POST.get("utc", ""),
+        "remote_call": request.POST.get("remote_call", ""),
+        "rsts": request.POST.get("rsts", ""),
+        "txts": request.POST.get("txts", ""),
+        "rstr": request.POST.get("rstr", ""),
+        "txtr": request.POST.get("txtr", ""),
+    }
+
+
+def _render_qso_app(request, participant: Participant, *, form=None, editing_id=""):
+    """Server-rendered QSO app fragment for htmx swaps."""
+    qsos = _attach_admin_qso_urls(
+        qso_service.list_qsos_with_warnings(participant), participant,
+    )
+    return render(
+        request,
+        "portal/_qso_app.html",
+        {
+            "form": form or QsoEntryForm(),
+            "editing_id": editing_id,
+            "qsos": qsos,
+            # No portal 'locked' flag: admin can edit even after submission.
+            "locked": False,
+            **_admin_qso_app_context(participant),
+        },
+    )
+
+
+@_staff_required
+def participant_station(request, pk: int):
+    """On-behalf edit of a participant's station description. Mirrors the
+    portal flow but with breadcrumb navigation back to the detail page."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+
+    if request.method == "POST":
+        form = StationDescriptionForm(request.POST)
+        form.is_valid()  # permissive: save whatever parses
+        station_service.save_station(
+            participant=participant, data=form.cleaned_data, actor=request.user,
+        )
+        messages.success(
+            request, _("Station description updated for %(call)s.") % {"call": participant.callsign},
+        )
+        return redirect("admin_module:participant_station", pk=participant.pk)
+
+    station = station_service.get_or_init_station(participant)
+    form = StationDescriptionForm(initial=station_service.initial_from_station(station))
+    return render(
+        request,
+        "admin_module/participant_station.html",
+        {"form": form, "station": station, "participant": participant, "contest": contest},
+    )
+
+
+@_staff_required
+def participant_log_entry(request, pk: int):
+    """List + permissive editing of a participant's QSO log. Uses the
+    portal's htmx-driven entry UI."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+
+    qsos = _attach_admin_qso_urls(
+        qso_service.list_qsos_with_warnings(participant), participant,
+    )
+    return render(
+        request,
+        "admin_module/participant_log_entry.html",
+        {
+            "participant": participant,
+            "contest": contest,
+            "qsos": qsos,
+            "form": QsoEntryForm(),
+            "editing_id": "",
+            "locked": False,
+            **_admin_qso_app_context(participant),
+        },
+    )
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def participant_qso_save(request, pk: int):
+    contest = _active_contest()
+    if contest is None:
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+
+    data = _raw_qso_data(request)
+    if not qso_service.is_all_empty(data):
+        editing_id = (request.POST.get("editing_id") or "").strip()
+        if editing_id:
+            qso = _participant_qso_or_404(participant, int(editing_id))
+            qso_service.update_qso(qso=qso, data=data)
+        else:
+            qso_service.create_qso(participant=participant, data=data)
+    return _render_qso_app(request, participant)
+
+
+@_staff_required
+def participant_qso_edit(request, pk: int, qso_pk: int):
+    contest = _active_contest()
+    if contest is None:
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+    qso = _participant_qso_or_404(participant, qso_pk)
+    form = QsoEntryForm(initial=qso_service.initial_from_qso(qso))
+    return _render_qso_app(request, participant, form=form, editing_id=qso.pk)
+
+
+@_staff_required
+@require_http_methods(["DELETE", "POST"])
+def participant_qso_delete(request, pk: int, qso_pk: int):
+    contest = _active_contest()
+    if contest is None:
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+    qso = _participant_qso_or_404(participant, qso_pk)
+    qso.delete()
+    return _render_qso_app(request, participant)
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def participant_qso_upload(request, pk: int):
+    """Replace the participant's QSO log + station info from a .nmd/.csv upload."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+
+    uploaded = request.FILES.get("file")
+    if uploaded is None:
+        messages.error(request, _("Please choose a file to upload."))
+        return redirect("admin_module:participant_log_entry", pk=participant.pk)
+
+    name = uploaded.name.lower()
+    if not (name.endswith(".csv") or name.endswith(".nmd")):
+        messages.error(request, _("Only .csv and .nmd files are supported."))
+        return redirect("admin_module:participant_log_entry", pk=participant.pk)
+
+    try:
+        parsed = parse_upload(uploaded.read())
+    except UploadParseError as exc:
+        messages.error(request, str(exc))
+        return redirect("admin_module:participant_log_entry", pk=participant.pk)
+
+    count = qso_service.replace_qsos_from_upload(
+        participant=participant, rows=parsed.qsos, filename=uploaded.name, actor=request.user,
+    )
+    outcome = station_service.apply_upload_station_info(
+        participant, parsed.station_info.fields, actor=request.user,
+    )
+    parts = [_("Imported %(count)d QSO entries from %(name)s.") % {"count": count, "name": uploaded.name}]
+    if outcome.station is not None:
+        parts.append(_("Station description updated."))
+    if outcome.location_updated:
+        parts.append(_("Location updated from the file; altitude and canton refreshed from Swisstopo."))
+    messages.success(request, " ".join(str(p) for p in parts))
+    if outcome.location_invalid:
+        messages.warning(
+            request,
+            _("The coordinates in the file are outside Switzerland or could not be parsed — the registered location was kept."),
+        )
+    return redirect("admin_module:participant_log_entry", pk=participant.pk)
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def participant_submit(request, pk: int):
+    """Force-submit a participant's log on their behalf.
+
+    No confirmation email is sent (the operator did not trigger this);
+    admin can follow up manually if needed.
+    """
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+
+    if participant.submitted_at is not None:
+        messages.info(request, _("Already submitted; nothing to do."))
+    else:
+        submit_service.submit_log(participant=participant, actor=request.user)
+        messages.success(
+            request, _("Submitted log on behalf of %(call)s.") % {"call": participant.callsign},
+        )
+    return redirect("admin_module:participant_detail", pk=participant.pk)
+
+
+@_staff_required
+@require_http_methods(["POST"])
+def participant_release(request, pk: int):
+    """Un-submit a previously-submitted log so the operator can edit again."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+
+    if participant.submitted_at is None:
+        messages.info(request, _("Not currently submitted; nothing to release."))
+    else:
+        submit_service.release_log(participant=participant, actor=request.user)
+        messages.success(
+            request, _("Released submission for %(call)s.") % {"call": participant.callsign},
+        )
+    return redirect("admin_module:participant_detail", pk=participant.pk)
 
 
 @_staff_required
