@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Your scoring" %} — NMD{% endblock %}
+
+{% block content %}
+    <p>
+        <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
+    </p>
+
+    <h1>
+        {% blocktrans with callsign=participant.callsign year=contest.year %}
+            Your scoring — {{ callsign }} (NMD {{ year }})
+        {% endblocktrans %}
+    </h1>
+
+    {% if not published %}
+        <div class="banner banner-info">
+            {% trans "Results have not been published yet. This page will show your per-QSO scoring once the administrator publishes the final ranking." %}
+        </div>
+    {% else %}
+        <section class="admin-overview">
+            <h2>{% trans "Total points" %}</h2>
+            <table class="scoring-breakdown">
+                <thead>
+                    <tr>
+                        <th>{% trans "Mode" %}</th>
+                        <th>H1 (06–08 UTC)</th>
+                        <th>H2 (08–10 UTC)</th>
+                        <th>{% trans "Total" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>CW</td>
+                        <td>{{ breakdown.cw.h1 }}</td>
+                        <td>{{ breakdown.cw.h2 }}</td>
+                        <td><strong>{{ breakdown.cw.total }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>SSB</td>
+                        <td>{{ breakdown.ssb.h1 }}</td>
+                        <td>{{ breakdown.ssb.h2 }}</td>
+                        <td><strong>{{ breakdown.ssb.total }}</strong></td>
+                    </tr>
+                    <tr class="scoring-breakdown-total">
+                        <td colspan="3">{% trans "Combined total" %}</td>
+                        <td><strong>{{ breakdown.total }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="admin-overview">
+            <h2>{% trans "QSO log with scoring" %}</h2>
+            <p class="hint">
+                {% trans "Each row shows how the scoring engine classified the QSO. Hover over the status badge for the full label." %}
+            </p>
+
+            {% if not rows %}
+                <p>{% trans "No QSOs logged." %}</p>
+            {% else %}
+                <table class="scoring-qso-table">
+                    <thead>
+                        <tr>
+                            <th>UTC</th>
+                            <th>{% trans "Peer" %}</th>
+                            <th>{% trans "Mode" %}</th>
+                            <th>{% trans "Half" %}</th>
+                            <th>RST s/r</th>
+                            <th>{% trans "Text" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Pts" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            {% with qso=row.qso score=row.score %}
+                                <tr class="scoring-row scoring-row-{% if score %}{{ score.status }}{% else %}none{% endif %}">
+                                    <td class="cell-utc">
+                                        {% if qso.utc_time %}{{ qso.utc_time|date:"H:i" }}{% else %}<span class="bad">{{ qso.utc_raw|default:"—" }}</span>{% endif %}
+                                    </td>
+                                    <td class="cell-peer">{{ qso.remote_call|default:"—" }}</td>
+                                    <td>{{ qso.mode|default:"?" }}</td>
+                                    <td>{% if score %}H{{ score.half }}{% else %}—{% endif %}</td>
+                                    <td class="cell-rst">{{ qso.rsts|default:"—" }} / {{ qso.rstr|default:"—" }}</td>
+                                    <td class="cell-text">
+                                        {% if score.status != 'hb9_qso' and score.status != 'dx_qso' %}
+                                            {% if qso.txts or qso.txtr %}
+                                                <div class="text-line"><span class="text-tag">s</span> {{ qso.txts }}</div>
+                                                <div class="text-line"><span class="text-tag">r</span> {{ qso.txtr }}</div>
+                                            {% endif %}
+                                            {% if score and score.matched_qso %}
+                                                <div class="match-info">
+                                                    ↳ {% blocktrans with call=score.matched_qso.participant.callsign time=score.matched_qso.utc_time|date:"H:i" %}paired: {{ call }} @ {{ time }}{% endblocktrans %}
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td class="cell-status">
+                                        {% if not score %}
+                                            <span class="badge badge-none">{% trans "not scored" %}</span>
+                                        {% else %}
+                                            {% if score.status == 'full_match' and score.text_distance > 0 %}
+                                                <span class="badge badge-full_match">{% trans "Sufficient NMD match" %}</span>
+                                            {% else %}
+                                                <span class="badge badge-{{ score.status }}">{{ score.get_status_display }}</span>
+                                            {% endif %}
+                                            {% if score.suspected_correct_call %}
+                                                <div class="suspect">→ {{ score.suspected_correct_call }}</div>
+                                            {% endif %}
+                                            {% if score.admin_overridden and score.admin_comment %}
+                                                <div class="admin-note">{{ score.admin_comment }}</div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td class="cell-points">{% if score %}{{ score.points }}{% else %}—{% endif %}</td>
+                                </tr>
+                            {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </section>
+    {% endif %}
+{% endblock %}

@@ -397,3 +397,59 @@ def submit(request):
             "weight_over_limit": station.total_weight_g > 6000,
         },
     )
+
+
+# --- scoring view (M2.6) ---------------------------------------------------------------------
+#
+# The operator's per-QSO scoring breakdown, gated on the contest having
+# `results_published_at` set (admin flips that via M4.2's publish_results
+# transition). Until then the page shows a "results not yet published"
+# message. After publish, it shows the same QSO + status data the staff
+# review page uses, plus a points-by-mode-and-half breakdown.
+
+
+@login_required
+def scoring(request):
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        messages.info(request, _("You are not registered for the current contest."))
+        return redirect("portal:dashboard")
+
+    published = contest is not None and contest.results_published_at is not None
+
+    rows: list[dict] = []
+    breakdown = None
+    if published:
+        from core.models import QsoEntry, ScoringRecord
+        from scoring.totals import participant_breakdown
+
+        breakdown = participant_breakdown(participant)
+        qsos = (
+            QsoEntry.objects
+            .filter(participant=participant)
+            .select_related(
+                "score",
+                "score__matched_qso",
+                "score__matched_qso__participant",
+            )
+            .order_by("utc_time", "utc_raw", "id")
+        )
+        for q in qsos:
+            try:
+                score = q.score
+            except ScoringRecord.DoesNotExist:
+                score = None
+            rows.append({"qso": q, "score": score})
+
+    return render(
+        request,
+        "portal/scoring.html",
+        {
+            "contest": contest,
+            "participant": participant,
+            "published": published,
+            "breakdown": breakdown,
+            "rows": rows,
+        },
+    )

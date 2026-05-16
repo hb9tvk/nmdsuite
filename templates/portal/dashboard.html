@@ -56,6 +56,9 @@
         <p class="actions">
             <a href="{% url 'portal:log_entry' %}" class="btn">{% trans "Log entry" %}</a>
             <a href="{% url 'portal:station' %}" class="btn">{% trans "Station description" %}</a>
+            {% if contest.results_published_at %}
+                <a href="{% url 'portal:scoring' %}" class="btn">{% trans "View your scoring" %}</a>
+            {% endif %}
             {% if not participant.submitted_at %}
                 <a href="{% url 'portal:edit_profile' %}" class="btn">{% trans "Edit registration" %}</a>
                 <a href="{% url 'portal:submit' %}" class="btn btn-primary">{% trans "Submit log" %}</a>
@@ -81,9 +84,5 @@
             </section>
         {% endif %}
 
-        <h2>{% trans "Coming soon" %}</h2>
-        <ul class="placeholder-list">
-            <li>{% trans "Scoring view (M2.6, after results are published)" %}</li>
-        </ul>
     {% endif %}
 {% endblock %}

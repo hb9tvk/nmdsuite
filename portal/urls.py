@@ -15,6 +15,7 @@ urlpatterns = [
     path("log/<int:pk>/delete/", views.qso_delete, name="qso_delete"),
     path("station/", views.station, name="station"),
     path("submit/", views.submit, name="submit"),
+    path("scoring/", views.scoring, name="scoring"),
     path(
         "login/",
         auth_views.LoginView.as_view(
