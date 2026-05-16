@@ -403,6 +403,12 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .scoring-qso-table .suspect, .scoring-qso-table .admin-note { font-size: 0.75rem; color: #666; margin-top: 0.2rem; }
 .scoring-qso-table .bad { color: #c0392b; }
 
+.scoring-breakdown { border-collapse: collapse; margin-bottom: 1rem; }
+.scoring-breakdown th, .scoring-breakdown td { padding: 0.35rem 0.75rem; border-bottom: 1px solid #eee; text-align: right; }
+.scoring-breakdown th { background: #fafafa; font-weight: 600; }
+.scoring-breakdown th:first-child, .scoring-breakdown td:first-child { text-align: left; }
+.scoring-breakdown-total td { background: #f7f7f7; }
+
 .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
 .badge-full_match, .badge-admin_accepted { background: #d4edda; color: #155724; }
 .badge-text_mismatch { background: #fff3cd; color: #856404; }
