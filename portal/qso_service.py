@@ -181,12 +181,17 @@ def initial_from_qso(qso: QsoEntry) -> dict[str, str]:
 @transaction.atomic
 def replace_qsos_from_upload(
     *, participant: Participant, rows: Iterable[dict[str, Any]], filename: str = "",
+    actor: Any = None,
 ) -> int:
     """Replace the participant's QSO list with the rows parsed from an upload.
 
     Atomic: the existing entries are deleted and the new ones inserted in a
     single transaction so a parse failure mid-stream can't leave a torn log.
     Returns the number of QSOs inserted.
+
+    ``actor`` is the audit actor (defaults to the participant's own user).
+    Admin on-behalf uploads pass in the staff user and an ``on_behalf=True``
+    flag is recorded in the audit payload.
     """
     QsoEntry.objects.filter(participant=participant).delete()
     inserted = 0
@@ -198,11 +203,15 @@ def replace_qsos_from_upload(
         _apply(entry, contest=contest, data=row)
         entry.save()
         inserted += 1
+    audit_actor = actor or participant.user
+    audit_payload: dict[str, Any] = {"count": inserted, "filename": filename}
+    if actor is not None and actor != participant.user:
+        audit_payload["on_behalf"] = True
     audit(
         action="qso.upload",
-        actor=participant.user,
+        actor=audit_actor,
         target=participant.callsign,
         contest=contest,
-        payload={"count": inserted, "filename": filename},
+        payload=audit_payload,
     )
     return inserted

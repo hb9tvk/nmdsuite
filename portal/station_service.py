@@ -63,8 +63,15 @@ def initial_from_station(station: StationDescription) -> dict[str, Any]:
 
 
 @transaction.atomic
-def save_station(*, participant: Participant, data: dict[str, Any]) -> StationDescription:
-    """Persist the station header + replace the component rows from form data."""
+def save_station(
+    *, participant: Participant, data: dict[str, Any], actor: Any = None,
+) -> StationDescription:
+    """Persist the station header + replace the component rows from form data.
+
+    ``actor`` defaults to the participant's own user (portal self-edit). When
+    admin staff edit on behalf (M4.3b), the staff user is passed in and an
+    ``on_behalf=True`` flag is recorded in the audit payload.
+    """
     station = get_or_init_station(participant)
     station.op_name = (data.get("op_name") or "").strip()
     station.location_text = (data.get("location_text") or "").strip()
@@ -89,12 +96,16 @@ def save_station(*, participant: Participant, data: dict[str, Any]) -> StationDe
     station.total_weight_g = total
     station.save()
 
+    audit_actor = actor or participant.user
+    audit_payload: dict[str, Any] = {"total_weight_g": total, "component_count": len(new_rows)}
+    if actor is not None and actor != participant.user:
+        audit_payload["on_behalf"] = True
     audit(
         action="station.update",
-        actor=participant.user,
+        actor=audit_actor,
         target=participant.callsign,
         contest=participant.contest,
-        payload={"total_weight_g": total, "component_count": len(new_rows)},
+        payload=audit_payload,
     )
     return station
 
@@ -115,7 +126,9 @@ class UploadOutcome:
 
 
 @transaction.atomic
-def apply_upload_station_info(participant: Participant, fields: dict[str, str]) -> UploadOutcome:
+def apply_upload_station_info(
+    participant: Participant, fields: dict[str, str], *, actor: Any = None,
+) -> UploadOutcome:
     """Persist station data extracted from an .nmd upload's ``#;FIELD=;value`` lines.
 
     - ``OPNAME`` / ``ORT`` / ``WATT`` / ``STA##BEZ`` / ``STA##GRAMM`` → the
@@ -125,12 +138,15 @@ def apply_upload_station_info(participant: Participant, fields: dict[str, str]) 
       columns; altitude and canton are then re-derived from Swisstopo. The
       file's own ``QAH`` and ``KANTON`` are intentionally ignored —
       Swisstopo is the authority once coordinates are accepted.
+
+    ``actor`` flows through to the audit rows so admin on-behalf uploads
+    are attributed correctly.
     """
     outcome = UploadOutcome()
     if not fields:
         return outcome
 
-    _apply_location_from_upload(participant, fields, outcome)
+    _apply_location_from_upload(participant, fields, outcome, actor=actor)
 
     data: dict[str, Any] = {}
     if "OPNAME" in fields:
@@ -151,12 +167,12 @@ def apply_upload_station_info(participant: Participant, fields: dict[str, str]) 
                 pass
 
     if data:
-        outcome.station = save_station(participant=participant, data=data)
+        outcome.station = save_station(participant=participant, data=data, actor=actor)
     return outcome
 
 
 def _apply_location_from_upload(
-    participant: Participant, fields: dict[str, str], outcome: UploadOutcome
+    participant: Participant, fields: dict[str, str], outcome: UploadOutcome, *, actor: Any = None,
 ) -> None:
     """If the upload carries usable coordinates, move the Participant to them.
 
@@ -197,16 +213,20 @@ def _apply_location_from_upload(
     participant.save()
     outcome.location_updated = True
 
+    audit_actor = actor or participant.user
+    audit_payload: dict[str, Any] = {
+        "source": "nmd_upload",
+        "canton": participant.canton,
+        "altitude_m": participant.altitude_m,
+        "wgs84_lat": participant.wgs84_lat,
+        "wgs84_lon": participant.wgs84_lon,
+    }
+    if actor is not None and actor != participant.user:
+        audit_payload["on_behalf"] = True
     audit(
         action="registration.update",
-        actor=participant.user,
+        actor=audit_actor,
         target=participant.callsign,
         contest=participant.contest,
-        payload={
-            "source": "nmd_upload",
-            "canton": participant.canton,
-            "altitude_m": participant.altitude_m,
-            "wgs84_lat": participant.wgs84_lat,
-            "wgs84_lon": participant.wgs84_lon,
-        },
+        payload=audit_payload,
     )

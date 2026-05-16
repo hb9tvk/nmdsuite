@@ -3,9 +3,14 @@
 Single top-of-page QSO form. Submitting or pressing Enter replaces the
 whole #qso-app (form + table) with the server's response, which always
 includes the latest row list. Simple, no OOB.
+
+URL endpoints come from context so this partial works for both the
+portal self-edit and the admin on-behalf surface:
+  qso_save_url — POST target for the form
+  qso_list_url — GET target for the cancel-edit button (re-renders #qso-app)
 {% endcomment %}
 <form id="qso-form"
-      hx-post="{% url 'portal:qso_save' %}"
+      hx-post="{{ qso_save_url }}"
       hx-target="#qso-app"
       hx-swap="outerHTML"
       class="qso-entry-form"
@@ -41,7 +46,7 @@ includes the latest row list. Simple, no OOB.
             {% if editing_id %}
                 <button type="button"
                         class="qso-cancel-edit"
-                        hx-get="{% url 'portal:log_entry' %}"
+                        hx-get="{{ qso_list_url }}"
                         hx-target="#qso-app"
                         hx-select="#qso-app"
                         hx-swap="outerHTML">
