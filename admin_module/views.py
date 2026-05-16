@@ -29,7 +29,8 @@ from portal.qso_upload import UploadParseError, parse_upload
 from registration.forms import RegistrationForm
 from registration.services import register_participant, update_participant_profile
 
-from . import services
+from . import email_service, services
+from .forms import BulkEmailForm
 
 
 def _staff_required(view):
@@ -645,6 +646,64 @@ def participant_release(request, pk: int):
             request, _("Released submission for %(call)s.") % {"call": participant.callsign},
         )
     return redirect("admin_module:participant_detail", pk=participant.pk)
+
+
+# --- bulk email (M4.4) ------------------------------------------------------------------------
+
+
+@_staff_required
+def bulk_email(request):
+    """Compose-and-send a manual message to every active participant.
+
+    Two-stage UX: GET (or POST without ``confirmed=1``) shows the form
+    with a recipient-count preview; submitting again with ``confirmed=1``
+    actually fires the send. Keeps the confirm-before-blast guarantee
+    without needing a separate preview page.
+    """
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    recipients = list(email_service.active_recipients(contest))
+    recipient_count = len(recipients)
+
+    if request.method == "POST":
+        form = BulkEmailForm(request.POST)
+        confirmed = request.POST.get("confirmed") == "1"
+        if form.is_valid() and confirmed:
+            result = email_service.send_bulk_email(
+                contest=contest,
+                subject=form.cleaned_data["subject"],
+                body=form.cleaned_data["body"],
+                actor=request.user,
+            )
+            if result.failed:
+                messages.warning(
+                    request,
+                    _("Sent %(sent)d of %(total)d messages; %(failed)d failed.") % {
+                        "sent": result.sent, "total": result.total, "failed": result.failed,
+                    },
+                )
+            else:
+                messages.success(
+                    request,
+                    _("Sent %(sent)d messages.") % {"sent": result.sent},
+                )
+            return redirect("admin_module:bulk_email")
+    else:
+        form = BulkEmailForm()
+
+    return render(
+        request,
+        "admin_module/bulk_email.html",
+        {
+            "form": form,
+            "contest": contest,
+            "recipients": recipients,
+            "recipient_count": recipient_count,
+        },
+    )
 
 
 @_staff_required

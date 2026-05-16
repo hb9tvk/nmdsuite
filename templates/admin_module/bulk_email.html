@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Bulk email" %} — {% trans "Administration" %}{% endblock %}
+
+{% block content %}
+    <p>
+        <a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a>
+    </p>
+
+    <h1>{% blocktrans with year=contest.year %}Bulk email — NMD {{ year }}{% endblocktrans %}</h1>
+
+    <section class="admin-overview">
+        <h2>{% trans "Recipients" %}</h2>
+        <p>
+            {% blocktrans count n=recipient_count %}
+                {{ n }} active participant will receive this message.
+            {% plural %}
+                {{ n }} active participants will receive this message.
+            {% endblocktrans %}
+        </p>
+        {% if recipients %}
+            <details>
+                <summary>{% trans "Show recipient list" %}</summary>
+                <ul class="bulk-email-recipients">
+                    {% for p in recipients %}
+                        <li>{{ p.callsign }} &lt;{{ p.email }}&gt;</li>
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endif %}
+    </section>
+
+    <section class="admin-overview">
+        <h2>{% trans "Message" %}</h2>
+        <p class="hint">
+            {% trans "Plain text. You can use {callsign} and {first_name} in subject or body; each recipient sees their own values." %}
+        </p>
+
+        {% blocktrans asvar send_confirm_msg count n=recipient_count %}Send this message to {{ n }} participant?{% plural %}Send this message to {{ n }} participants?{% endblocktrans %}
+        <form method="post" class="bulk-email-form" novalidate
+              onsubmit="return confirm('{{ send_confirm_msg|escapejs }}');">
+            {% csrf_token %}
+            <input type="hidden" name="confirmed" value="1">
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-row">
+                <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
+                {{ form.subject }}
+                {% if form.subject.errors %}<div class="form-errors">{{ form.subject.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-row">
+                <label for="{{ form.body.id_for_label }}">{{ form.body.label }}</label>
+                {{ form.body }}
+                {% if form.body.errors %}<div class="form-errors">{{ form.body.errors }}</div>{% endif %}
+            </div>
+
+            <p class="actions">
+                <button type="submit" class="btn-danger">{% trans "Send now" %}</button>
+                <a href="{% url 'admin_module:index' %}">{% trans "Cancel" %}</a>
+            </p>
+        </form>
+    </section>
+{% endblock %}
