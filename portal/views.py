@@ -10,7 +10,7 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -73,6 +73,7 @@ def dashboard(request):
             "contest": contest,
             "participant": participant,
             "registration_open": contest is not None and contest.state == Contest.State.REGISTRATION_OPEN,
+            "participant_list_available": _participant_list_available(contest),
         },
     )
 
@@ -397,6 +398,41 @@ def submit(request):
             "weight_over_limit": station.total_weight_g > 6000,
         },
     )
+
+
+# --- participant list PDF (M4A.1) ------------------------------------------------------------
+
+
+def _participant_list_available(contest: Contest | None) -> bool:
+    """Available once registration has closed and through the rest of
+    the contest lifecycle. Archived contests still show, so historical
+    operators can re-download an old list if they want it."""
+    if contest is None:
+        return False
+    return contest.state != Contest.State.REGISTRATION_OPEN
+
+
+@login_required
+def participant_list(request):
+    """Stream the active-participants list as a PDF.
+
+    Any authenticated operator can download (it's the same list they'd
+    see on paper at the contest). Gated on the contest having moved
+    past REGISTRATION_OPEN so we don't publish an incomplete roster.
+    """
+    contest = _active_contest()
+    if not _participant_list_available(contest):
+        messages.info(request, _("The participant list will be available once registration closes."))
+        return redirect("portal:dashboard")
+
+    from core.participant_list_pdf import build_participant_list_pdf
+
+    blob = build_participant_list_pdf(contest)
+    filename = f"nmd-{contest.year}-participants.pdf"
+    response = HttpResponse(blob, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
 
 
 # --- scoring view (M2.6) ---------------------------------------------------------------------
