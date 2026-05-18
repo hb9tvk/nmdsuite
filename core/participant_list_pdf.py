@@ -40,16 +40,8 @@ def _coord_text(p: Participant) -> str:
 
 
 def _site_text(p: Participant) -> str:
-    """Pull the station description's free-text location label if it exists.
-
-    The station description is created when the operator opens the
-    log-submission UI; at registration-close time most participants
-    won't have one yet, in which case the column is empty.
-    """
-    station = getattr(p, "station", None)
-    if station is None:
-        return ""
-    return station.location_text or ""
+    """Friendly location label, always present from registration."""
+    return p.location_text or ""
 
 
 def build_participant_list_pdf(contest: Contest) -> bytes:

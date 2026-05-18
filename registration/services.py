@@ -98,6 +98,7 @@ def register_participant(
         wgs84_lon=parsed.wgs84_lon,
         altitude_m=form_data["altitude_m"],
         canton=form_data["canton"],
+        location_text=(form_data.get("location_text", "") or "").strip(),
         operating_modes=form_data["operating_modes"],
         remarks=form_data.get("remarks", "") or "",
     )
@@ -164,6 +165,7 @@ def update_participant_profile(
     participant.wgs84_lon = parsed.wgs84_lon
     participant.altitude_m = form_data["altitude_m"]
     participant.canton = form_data["canton"]
+    participant.location_text = (form_data.get("location_text", "") or "").strip()
     participant.operating_modes = form_data["operating_modes"]
     participant.remarks = form_data.get("remarks", "") or ""
     participant.save()

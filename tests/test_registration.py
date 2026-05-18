@@ -17,6 +17,7 @@ VALID_FORM = {
     "email": "peter@example.org",
     "multi_op": "False",
     "station_chief": "",
+    "location_text": "Niederhorn",
     "coord_input_e": "8.2275",
     "coord_input_n": "46.8182",
     "altitude_m": "1500",

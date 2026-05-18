@@ -34,6 +34,7 @@ def registered_user(seeded_contest):
         ch1903p_n=1_200_000,
         altitude_m=1500,
         canton="BE",
+        location_text="Niederhorn",
         operating_modes=3,
     )
     return user, p
@@ -96,6 +97,7 @@ def test_edit_post_updates_only_editable_fields(client, registered_user):
         {
             "multi_op": "True",
             "station_chief": "HB9XYZ",
+            "location_text": "Niesen",
             "coord_input_e": "7.4474",
             "coord_input_n": "46.9480",
             "altitude_m": "950",
@@ -132,6 +134,7 @@ def test_edit_rejects_altitude_below_800(client, registered_user):
         {
             "multi_op": "False",
             "station_chief": "",
+            "location_text": "Niederhorn",
             "coord_input_e": "8.2275",
             "coord_input_n": "46.8182",
             "altitude_m": "600",

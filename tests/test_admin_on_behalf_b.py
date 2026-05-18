@@ -180,7 +180,6 @@ def test_station_post_saves_and_audits(client, seeded_contest):
     client.force_login(staff)
     form = {
         "op_name": "Peter",
-        "location_text": "Gemmipass",
         "watt": "5",
         "sta01bez": "TX",
         "sta01gramm": "800",

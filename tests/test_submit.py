@@ -22,7 +22,7 @@ def participant(seeded_contest):
         email="t@example.org", coord_system_input="wgs84",
         coord_input_e="8.2", coord_input_n="46.8",
         wgs84_lat=46.8, wgs84_lon=8.2, ch1903p_e=2_600_000, ch1903p_n=1_200_000,
-        altitude_m=1500, canton="BE", operating_modes=3,
+        altitude_m=1500, canton="BE", location_text="Niederhorn", operating_modes=3,
     )
     return user, p
 

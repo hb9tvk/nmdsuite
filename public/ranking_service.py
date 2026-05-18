@@ -273,8 +273,7 @@ def _station_weight(p: Participant) -> int:
 
 
 def _location_text(p: Participant) -> str:
-    station = getattr(p, "station", None)
-    return station.location_text if station and station.location_text else ""
+    return p.location_text or ""
 
 
 def _components_by_idx(p: Participant) -> dict[int, str]:

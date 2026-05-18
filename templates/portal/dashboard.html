@@ -42,6 +42,7 @@
             <dt>{% trans "Email" %}</dt><dd>{{ participant.email }}</dd>
             <dt>{% trans "Multi-operator station" %}</dt>
             <dd>{% if participant.multi_op %}{% trans "Yes" %} ({{ participant.station_chief }}){% else %}{% trans "No" %}{% endif %}</dd>
+            <dt>{% trans "Location name" %}</dt><dd>{{ participant.location_text }}</dd>
             <dt>{% trans "Canton" %}</dt><dd>{{ participant.canton }}</dd>
             <dt>{% trans "Altitude" %}</dt><dd>{{ participant.altitude_m }} m</dd>
             <dt>{% trans "Coordinates (CH1903)" %}</dt>

@@ -85,6 +85,7 @@ def _profile_initial(participant: Participant) -> dict:
     return {
         "multi_op": participant.multi_op,
         "station_chief": participant.station_chief,
+        "location_text": participant.location_text,
         "coord_input_e": participant.coord_input_e,
         "coord_input_n": participant.coord_input_n,
         "altitude_m": participant.altitude_m,
