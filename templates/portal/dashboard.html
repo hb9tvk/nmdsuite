@@ -56,6 +56,9 @@
         <p class="actions">
             <a href="{% url 'portal:log_entry' %}" class="btn">{% trans "Log entry" %}</a>
             <a href="{% url 'portal:station' %}" class="btn">{% trans "Station description" %}</a>
+            {% if participant_list_available %}
+                <a href="{% url 'portal:participant_list' %}" class="btn">{% trans "Participant list (PDF)" %}</a>
+            {% endif %}
             {% if contest.results_published_at %}
                 <a href="{% url 'portal:scoring' %}" class="btn">{% trans "View your scoring" %}</a>
             {% endif %}
