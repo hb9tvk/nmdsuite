@@ -38,7 +38,7 @@ build-backend = "setuptools.build_meta"
 # We only declare packages so `pip install -e .` works for dependency resolution;
 # `reference/`, `templates/`, `static/`, `locale/`, `tests/` are intentionally
 # excluded (they're not importable Python packages).
-packages = ["nmdsuite", "core", "registration", "portal", "scoring", "admin_module"]
+packages = ["nmdsuite", "core", "registration", "portal", "scoring", "admin_module", "public"]
 
 [tool.ruff]
 line-length = 110
@@ -67,4 +67,4 @@ django_settings_module = "nmdsuite.settings"
 DJANGO_SETTINGS_MODULE = "nmdsuite.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 addopts = "-q --strict-markers"
-testpaths = ["tests", "core", "registration", "portal", "scoring", "admin_module"]
+testpaths = ["tests", "core", "registration", "portal", "scoring", "admin_module", "public"]

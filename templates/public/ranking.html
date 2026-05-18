@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% blocktrans with year=contest.year %}NMD {{ year }} — Ranking{% endblocktrans %}{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
+    <style>
+        .ranking-map { width: 100%; height: 420px; margin-bottom: 1.5rem; }
+        .ranking-section { margin-bottom: 2rem; }
+        .ranking-section h2 { margin-bottom: 0.5rem; }
+        table.ranking { width: 100%; border-collapse: collapse; }
+        table.ranking th, table.ranking td {
+            padding: 0.25rem 0.5rem; border-bottom: 1px solid #ddd; text-align: left;
+        }
+        table.ranking th { background: #f0f0f0; }
+        table.ranking td.num, table.ranking th.num { text-align: right; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <h1>{% blocktrans with year=contest.year %}National Mountain Day {{ year }} — Ranking{% endblocktrans %}</h1>
+    <p>
+        {% blocktrans with date=contest.contest_date %}Contest held {{ date }}.{% endblocktrans %}
+        {% if contest.results_published_at %}
+            {% blocktrans with when=contest.results_published_at|date:"d.m.Y H:i" %}Results published {{ when }} UTC.{% endblocktrans %}
+        {% endif %}
+    </p>
+
+    <div id="ranking-map" class="ranking-map"></div>
+    {{ markers|json_script:"ranking-markers" }}
+
+    <section class="ranking-section">
+        <h2>{% trans "CW ranking" %} / {% trans "Classement CW" %} / {% trans "Classifica CW" %}</h2>
+        {% include "public/_ranking_table.html" with rows=page.cw %}
+    </section>
+
+    <section class="ranking-section">
+        <h2>{% trans "SSB ranking" %} / {% trans "Classement SSB" %} / {% trans "Classifica SSB" %}</h2>
+        {% include "public/_ranking_table.html" with rows=page.ssb %}
+    </section>
+
+    <section class="ranking-section">
+        <h2>{% trans "Station data" %} / {% trans "Données stations" %} / {% trans "Dati stazioni" %}</h2>
+        <table class="ranking">
+            <thead>
+                <tr>
+                    <th class="num">#</th>
+                    <th>{% trans "Callsign" %}</th>
+                    <th class="num">{% trans "Points" %}</th>
+                    <th>{{ trx_label }}</th>
+                    <th>{% trans "Output power" %}</th>
+                    <th>{{ psu_label }}</th>
+                    <th>{{ antenna_label }}</th>
+                    <th class="num">{% trans "Total weight (g)" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in page.stations %}
+                    <tr>
+                        <td class="num">{{ s.rank }}</td>
+                        <td>{{ s.callsign }}</td>
+                        <td class="num">{{ s.points_total }}</td>
+                        <td>{{ s.trx }}</td>
+                        <td>{{ s.watt }}</td>
+                        <td>{{ s.psu }}</td>
+                        <td>{{ s.antenna }}</td>
+                        <td class="num">{{ s.total_weight_g }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="8">{% trans "No participants." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="{% static 'js/ranking_map.js' %}"></script>
+{% endblock %}

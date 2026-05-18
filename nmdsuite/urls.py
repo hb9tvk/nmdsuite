@@ -13,6 +13,7 @@ urlpatterns = [
     path("submission/", include(("portal.urls", "portal"), namespace="portal")),
     path("scoring/", include(("scoring.urls", "scoring"), namespace="scoring")),
     path("admin/", include(("admin_module.urls", "admin_module"), namespace="admin_module")),
+    path("ranking/", include(("public.urls", "public"), namespace="public")),
     path("django-admin/", admin.site.urls),
     path("i18n/", include("django.conf.urls.i18n")),
 ]
