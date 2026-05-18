@@ -21,7 +21,7 @@
         }
     }
 
-    const map = L.map(el, { scrollWheelZoom: false });
+    const map = L.map(el);  // scroll-wheel zoom enabled (Leaflet default)
 
     L.tileLayer(
         "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
