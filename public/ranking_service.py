@@ -5,6 +5,18 @@ mode-specific ranking tables, the station-data table, and the marker
 list for the map at the top. Constructed in a single pass so the
 template doesn't issue further queries.
 
+Ranking rows surface a QSO breakdown that mirrors the legacy ranking
+PDF (RL_CW_SSB):
+
+- ``nmd_qsos``: QSOs that scored as a successful NMD↔NMD match (worth
+  4 points each). Maps to ``FULL_MATCH`` + ``ADMIN_ACCEPTED``.
+- ``hb_qsos``: 1-point Swiss-non-NMD QSOs (``HB9_QSO``).
+- ``eu_qsos``: 1-point non-Swiss QSOs (``DX_QSO`` — our engine doesn't
+  separate EU from rest-of-world DX, so this is the catch-all).
+- QSOs in unscored states (``UNMATCHED``, ``TEXT_MISMATCH``,
+  ``SUSPECTED_CALL_MISMATCH``, ``DUPE_DEDUCTED``) appear in no column,
+  matching the legacy report.
+
 Tie-breakers (applied in this order, mirroring the contest rules):
 
     1. points DESC                      — the actual ranking criterion
@@ -13,12 +25,12 @@ Tie-breakers (applied in this order, mirroring the contest rules):
 """
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass, field
 
-from django.db.models import Q, Sum
-from django.db.models.functions import Coalesce
+from django.db.models import Count, Sum
 
-from core.models import Contest, Participant
+from core.models import Contest, Participant, ScoringRecord, ScoringStatus
 from portal.station_service import COMPONENT_LABELS
 
 # Fixed slot indexes documented in portal.station_service (1-based).
@@ -26,6 +38,8 @@ from portal.station_service import COMPONENT_LABELS
 _TRX_IDX = 1
 _PSU_IDX = 2
 _ANTENNA_IDX = 5
+
+_NMD_STATUSES = frozenset({ScoringStatus.FULL_MATCH, ScoringStatus.ADMIN_ACCEPTED})
 
 
 @dataclass(frozen=True)
@@ -36,6 +50,10 @@ class RankingRow:
     canton: str
     altitude_m: int
     location_text: str
+    nmd_qsos: int
+    hb_qsos: int
+    eu_qsos: int
+    total_qsos: int
     points: int
     total_weight_g: int
 
@@ -71,6 +89,10 @@ class RankingPage:
     markers: list[MapMarker] = field(default_factory=list)
 
 
+# Internal per-mode counts dict shape: {"nmd": int, "hb": int, "eu": int, "points": int}.
+_EMPTY_MODE_SUMMARY = {"nmd": 0, "hb": 0, "eu": 0, "points": 0}
+
+
 def build_ranking_page(contest: Contest) -> RankingPage:
     """Assemble all data the ranking template needs for ``contest``.
 
@@ -79,39 +101,28 @@ def build_ranking_page(contest: Contest) -> RankingPage:
     on stragglers, so by the time results are published the list is
     complete.
     """
-    qs = (
+    participants = list(
         Participant.objects
         .filter(
             contest=contest,
             cancelled_at__isnull=True,
             submitted_at__isnull=False,
         )
-        .annotate(
-            cw_points=Coalesce(
-                Sum("qsos__score__points", filter=Q(qsos__mode="CW")),
-                0,
-            ),
-            ssb_points=Coalesce(
-                Sum("qsos__score__points", filter=Q(qsos__mode="SSB")),
-                0,
-            ),
-        )
         .select_related("station")
         .prefetch_related("station__components")
+        .order_by("callsign")
     )
-    participants = list(qs)
+    scoring = _scoring_summary(contest)
 
     cw = _ranking_for_mode(
-        participants,
-        mode_bit=Participant.Mode.CW,
-        points_attr="cw_points",
+        participants, scoring,
+        mode_bit=Participant.Mode.CW, mode_str="CW",
     )
     ssb = _ranking_for_mode(
-        participants,
-        mode_bit=Participant.Mode.SSB,
-        points_attr="ssb_points",
+        participants, scoring,
+        mode_bit=Participant.Mode.SSB, mode_str="SSB",
     )
-    stations = _station_data(participants)
+    stations = _station_data(participants, scoring)
     markers = _markers(participants)
 
     return RankingPage(
@@ -121,8 +132,51 @@ def build_ranking_page(contest: Contest) -> RankingPage:
     )
 
 
+def _scoring_summary(
+    contest: Contest,
+) -> dict[int, dict[str, dict[str, int]]]:
+    """Aggregate scoring records per (participant, mode) into the four
+    buckets the ranking row needs.
+
+    One GROUP BY query; we fold statuses into the legacy report
+    categories in Python so this stays readable. ``summary[participant_id]
+    ['CW']`` returns ``{"nmd": N, "hb": N, "eu": N, "points": P}``.
+    """
+    rows = (
+        ScoringRecord.objects
+        .filter(qso__participant__contest=contest)
+        .values("qso__participant_id", "qso__mode", "status")
+        .annotate(n=Count("id"), pts=Sum("points"))
+    )
+    summary: dict[int, dict[str, dict[str, int]]] = defaultdict(
+        lambda: {"CW": dict(_EMPTY_MODE_SUMMARY), "SSB": dict(_EMPTY_MODE_SUMMARY)},
+    )
+    for row in rows:
+        pid = row["qso__participant_id"]
+        mode = row["qso__mode"]
+        if mode not in ("CW", "SSB"):
+            continue  # QSOs with unparseable mode don't score
+        bucket = summary[pid][mode]
+        bucket["points"] += row["pts"] or 0
+        status = row["status"]
+        n = row["n"]
+        if status in _NMD_STATUSES:
+            bucket["nmd"] += n
+        elif status == ScoringStatus.HB9_QSO:
+            bucket["hb"] += n
+        elif status == ScoringStatus.DX_QSO:
+            bucket["eu"] += n
+        # Other statuses (UNMATCHED, TEXT_MISMATCH, SUSPECTED_*,
+        # DUPE_DEDUCTED) are intentionally not counted — they earn 0
+        # points and don't appear on the legacy report.
+    return summary
+
+
 def _ranking_for_mode(
-    participants: list[Participant], *, mode_bit: int, points_attr: str,
+    participants: list[Participant],
+    scoring: dict[int, dict[str, dict[str, int]]],
+    *,
+    mode_bit: int, mode_str: str,
 ) -> list[RankingRow]:
     """Filter participants to those who registered for ``mode_bit`` and
     sort by (points DESC, station weight ASC, callsign ASC).
@@ -132,15 +186,20 @@ def _ranking_for_mode(
     not registered for the mode is omitted entirely.
     """
     eligible = [p for p in participants if p.operating_modes & mode_bit]
+
+    def per_mode(p: Participant) -> dict[str, int]:
+        return scoring.get(p.id, {}).get(mode_str, dict(_EMPTY_MODE_SUMMARY))
+
     eligible.sort(
         key=lambda p: (
-            -getattr(p, points_attr),
+            -per_mode(p)["points"],
             _station_weight(p),
             p.callsign,
         ),
     )
     rows: list[RankingRow] = []
     for i, p in enumerate(eligible, start=1):
+        m = per_mode(p)
         rows.append(RankingRow(
             rank=i,
             callsign=p.callsign,
@@ -148,18 +207,29 @@ def _ranking_for_mode(
             canton=p.canton,
             altitude_m=p.altitude_m,
             location_text=_location_text(p),
-            points=getattr(p, points_attr),
+            nmd_qsos=m["nmd"],
+            hb_qsos=m["hb"],
+            eu_qsos=m["eu"],
+            total_qsos=m["nmd"] + m["hb"] + m["eu"],
+            points=m["points"],
             total_weight_g=_station_weight(p),
         ))
     return rows
 
 
-def _station_data(participants: list[Participant]) -> list[StationDataRow]:
-    """Sort by combined points DESC; same tiebreakers as the ranking tables."""
+def _station_data(
+    participants: list[Participant],
+    scoring: dict[int, dict[str, dict[str, int]]],
+) -> list[StationDataRow]:
+    """Sort by combined CW+SSB points DESC; same tiebreakers as the ranking tables."""
+    def total_points(p: Participant) -> int:
+        per = scoring.get(p.id, {})
+        return per.get("CW", _EMPTY_MODE_SUMMARY)["points"] + per.get("SSB", _EMPTY_MODE_SUMMARY)["points"]
+
     annotated = list(participants)
     annotated.sort(
         key=lambda p: (
-            -(p.cw_points + p.ssb_points),
+            -total_points(p),
             _station_weight(p),
             p.callsign,
         ),
@@ -170,7 +240,7 @@ def _station_data(participants: list[Participant]) -> list[StationDataRow]:
         rows.append(StationDataRow(
             rank=i,
             callsign=p.callsign,
-            points_total=p.cw_points + p.ssb_points,
+            points_total=total_points(p),
             trx=comps.get(_TRX_IDX, ""),
             watt=getattr(p.station, "watt", "") if hasattr(p, "station") else "",
             psu=comps.get(_PSU_IDX, ""),

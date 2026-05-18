@@ -64,7 +64,7 @@ def _make_participant(
     return p
 
 
-def _add_qso(participant, *, mode, points, remote="HB9X/P"):
+def _add_qso(participant, *, mode, points, remote="HB9X/P", status="full_match"):
     """Create one scored QSO row for the given participant.
 
     The scoring engine would attach a ScoringRecord; here we shortcut
@@ -81,7 +81,7 @@ def _add_qso(participant, *, mode, points, remote="HB9X/P"):
         rstr="59" if mode == "SSB" else "599",
         txtr="reply " * 3,
     )
-    ScoringRecord.objects.create(qso=qso, status="full_match", points=points)
+    ScoringRecord.objects.create(qso=qso, status=status, points=points)
     return qso
 
 
@@ -183,6 +183,57 @@ def test_ranking_includes_zero_point_participants_who_registered_for_the_mode(pu
         ("HB9A/P", 4),
         ("HB9Z/P", 0),
     ]
+
+
+# --- service: ranking QSO breakdown ----------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_ranking_qso_breakdown_by_status(published_contest):
+    """The four QSO columns map to specific ScoringStatus categories:
+
+    - NMD column: FULL_MATCH + ADMIN_ACCEPTED (4-point matches)
+    - HB column: HB9_QSO (1-point Swiss non-NMD)
+    - EU column: DX_QSO (1-point non-Swiss DX)
+    - Unscored statuses (TEXT_MISMATCH, UNMATCHED, SUSPECTED, DUPE)
+      don't appear in any column.
+    """
+    p = _make_participant(published_contest, username="HB9A", callsign="HB9A/P", modes=1)
+    # 3 NMD matches (= 12 points)
+    _add_qso(p, mode="CW", points=4, status="full_match", remote="HB9B")
+    _add_qso(p, mode="CW", points=4, status="full_match", remote="HB9C")
+    _add_qso(p, mode="CW", points=4, status="admin_accepted", remote="HB9D")
+    # 2 HB QSOs (= 2 points)
+    _add_qso(p, mode="CW", points=1, status="hb9_qso", remote="HB9E")
+    _add_qso(p, mode="CW", points=1, status="hb9_qso", remote="HB9F")
+    # 1 EU/DX QSO (= 1 point)
+    _add_qso(p, mode="CW", points=1, status="dx_qso", remote="DL1ABC")
+    # These should be invisible in all columns:
+    _add_qso(p, mode="CW", points=0, status="text_mismatch", remote="HB9G")
+    _add_qso(p, mode="CW", points=0, status="unmatched", remote="HB9H")
+    _add_qso(p, mode="CW", points=0, status="dupe_deducted", remote="HB9I")
+
+    row = build_ranking_page(published_contest).cw[0]
+    assert row.nmd_qsos == 3
+    assert row.hb_qsos == 2
+    assert row.eu_qsos == 1
+    assert row.total_qsos == 6
+    assert row.points == 15
+
+
+@pytest.mark.django_db
+def test_ranking_qso_breakdown_partitioned_by_mode(published_contest):
+    """CW and SSB QSOs land in their respective mode's ranking only."""
+    p = _make_participant(published_contest, username="HB9A", callsign="HB9A/P", modes=3)
+    _add_qso(p, mode="CW", points=4, status="full_match", remote="HB9B")
+    _add_qso(p, mode="CW", points=1, status="hb9_qso", remote="HB9C")
+    _add_qso(p, mode="SSB", points=4, status="full_match", remote="HB9D")
+
+    page = build_ranking_page(published_contest)
+    cw_row = page.cw[0]
+    ssb_row = page.ssb[0]
+    assert (cw_row.nmd_qsos, cw_row.hb_qsos, cw_row.eu_qsos, cw_row.points) == (1, 1, 0, 5)
+    assert (ssb_row.nmd_qsos, ssb_row.hb_qsos, ssb_row.eu_qsos, ssb_row.points) == (1, 0, 0, 4)
 
 
 # --- service: station data -------------------------------------------------------------------
