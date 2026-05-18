@@ -52,7 +52,6 @@ def initial_from_station(station: StationDescription) -> dict[str, Any]:
     """Map a station + its components to the form's initial dict."""
     data: dict[str, Any] = {
         "op_name": station.op_name,
-        "location_text": station.location_text,
         "watt": station.watt,
     }
     for c in list_components(station):
@@ -74,7 +73,6 @@ def save_station(
     """
     station = get_or_init_station(participant)
     station.op_name = (data.get("op_name") or "").strip()
-    station.location_text = (data.get("location_text") or "").strip()
     station.watt = (data.get("watt") or "").strip()
 
     station.components.all().delete()
@@ -131,8 +129,10 @@ def apply_upload_station_info(
 ) -> UploadOutcome:
     """Persist station data extracted from an .nmd upload's ``#;FIELD=;value`` lines.
 
-    - ``OPNAME`` / ``ORT`` / ``WATT`` / ``STA##BEZ`` / ``STA##GRAMM`` → the
+    - ``OPNAME`` / ``WATT`` / ``STA##BEZ`` / ``STA##GRAMM`` → the
       participant's :class:`StationDescription`.
+    - ``ORT`` → ``Participant.location_text`` (location is registration
+      data, not station data).
     - ``KOORD_X`` / ``KOORD_Y`` (when both are present and parse to a
       location in/near Switzerland) → the :class:`Participant`'s coordinate
       columns; altitude and canton are then re-derived from Swisstopo. The
@@ -148,11 +148,13 @@ def apply_upload_station_info(
 
     _apply_location_from_upload(participant, fields, outcome, actor=actor)
 
+    if "ORT" in fields:
+        participant.location_text = (fields["ORT"] or "").strip()
+        participant.save(update_fields=["location_text"])
+
     data: dict[str, Any] = {}
     if "OPNAME" in fields:
         data["op_name"] = fields["OPNAME"]
-    if "ORT" in fields:
-        data["location_text"] = fields["ORT"]
     if "WATT" in fields:
         data["watt"] = fields["WATT"]
 

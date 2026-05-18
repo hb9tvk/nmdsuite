@@ -89,8 +89,11 @@ class StationDescriptionForm(forms.Form):
     ``station_service.COMPONENT_LABELS``.
     """
 
-    op_name = forms.CharField(label=_("Operator name"), max_length=80, required=False)
-    location_text = forms.CharField(label=_("Location name"), max_length=120, required=False)
+    op_name = forms.CharField(
+        label=_("Operator (first and last name)"),
+        max_length=80,
+        required=False,
+    )
     watt = forms.CharField(label=_("Output power"), max_length=20, required=False)
 
     def __init__(self, *args, **kwargs):

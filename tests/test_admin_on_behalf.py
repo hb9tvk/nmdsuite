@@ -30,6 +30,7 @@ VALID_FORM = {
     "email": "peter@example.org",
     "multi_op": "False",
     "station_chief": "",
+    "location_text": "Niederhorn",
     "coord_input_e": "8.2275",
     "coord_input_n": "46.8182",
     "altitude_m": "1500",
@@ -53,7 +54,7 @@ def _make_participant(contest, *, username, callsign, submitted=False, cancelled
         email=f"{username.lower()}@x.org", coord_system_input="wgs84",
         coord_input_e="8.2", coord_input_n="46.8",
         wgs84_lat=46.8, wgs84_lon=8.2, ch1903p_e=2_600_000, ch1903p_n=1_200_000,
-        altitude_m=1500, canton="BE", operating_modes=3,
+        altitude_m=1500, canton="BE", location_text="Niederhorn", operating_modes=3,
         submitted_at=timezone.now() if submitted else None,
         cancelled_at=timezone.now() if cancelled else None,
     )
@@ -336,6 +337,7 @@ def test_edit_profile_post_saves_and_audits(client, seeded_contest):
     form = {
         "multi_op": "True",
         "station_chief": "HB9CHIEF",
+        "location_text": "Säntis",
         "coord_input_e": "9.0",
         "coord_input_n": "47.0",
         "altitude_m": "2000",
@@ -370,6 +372,7 @@ def test_edit_profile_bypasses_submitted_lock(client, seeded_contest):
     form = {
         "multi_op": "False",
         "station_chief": "",
+        "location_text": "Pas-de-Cheville",
         "coord_input_e": "8.5",
         "coord_input_n": "46.5",
         "altitude_m": "1900",

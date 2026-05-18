@@ -206,9 +206,11 @@ def test_station_description_persists_full_payload(seeded_contest, tmp_path):
         }],
     )
     p = Participant.objects.get(callsign="HB9A/P")
+    # ort lives on the Participant now (location is registration data),
+    # not on the StationDescription.
+    assert p.location_text == "Albispass"
     s = p.station
     assert s.op_name == "Anna"
-    assert s.location_text == "Albispass"
     assert s.watt == "5W"
     assert s.total_weight_g == 3200
 

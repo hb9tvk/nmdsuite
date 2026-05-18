@@ -70,6 +70,10 @@ class Participant(models.Model):
     coord_system_input = models.CharField(max_length=12, choices=CoordSystem.choices)
     coord_input_e = models.CharField(max_length=32, blank=True, help_text=_("Original easting/longitude as entered"))
     coord_input_n = models.CharField(max_length=32, blank=True, help_text=_("Original northing/latitude as entered"))
+    location_text = models.CharField(
+        max_length=120, blank=True,
+        help_text=_("Friendly location name (SOTA ref, summit name, …) — the named counterpart of the coordinates"),
+    )
     # Canonical CH1903+ (LV95) and WGS84 always populated for map / lookups.
     ch1903p_e = models.FloatField(null=True, blank=True)
     ch1903p_n = models.FloatField(null=True, blank=True)
@@ -132,7 +136,6 @@ class StationDescription(models.Model):
 
     participant = models.OneToOneField(Participant, on_delete=models.CASCADE, related_name="station")
     op_name = models.CharField(max_length=80, blank=True)
-    location_text = models.CharField(max_length=120, blank=True, help_text=_("Friendly location name (SOTA ref, summit name, …) — altitude/canton/coords live on Participant"))
     watt = models.CharField(max_length=20, blank=True)
     total_weight_g = models.PositiveIntegerField(default=0, help_text=_("Total station weight (grams) — used as ranking tiebreaker"))
 

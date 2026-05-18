@@ -23,7 +23,7 @@ def participant(seeded_contest):
         email="t@example.org", coord_system_input="wgs84",
         coord_input_e="8.2", coord_input_n="46.8",
         wgs84_lat=46.8, wgs84_lon=8.2, ch1903p_e=2_600_000, ch1903p_n=1_200_000,
-        altitude_m=1500, canton="BE", operating_modes=3,
+        altitude_m=1500, canton="BE", location_text="Niederhorn", operating_modes=3,
     )
     return user, p
 
@@ -36,7 +36,6 @@ def test_save_station_creates_description_and_components(participant):
     user, p = participant
     data = {
         "op_name": "Peter",
-        "location_text": "Pilatus",
         "watt": "5",
         "sta01bez": "Sender + RX (FT-817)",
         "sta01gramm": 1200,
@@ -47,7 +46,6 @@ def test_save_station_creates_description_and_components(participant):
     }
     station = station_service.save_station(participant=p, data=data)
     assert station.op_name == "Peter"
-    assert station.location_text == "Pilatus"
     assert station.total_weight_g == 2000
     components = list(station.components.order_by("idx"))
     assert [c.idx for c in components] == [1, 2]
@@ -79,7 +77,7 @@ def test_initial_from_station_round_trips(participant):
     station_service.save_station(
         participant=p,
         data={
-            "op_name": "Peter", "location_text": "Pilatus", "watt": "5",
+            "op_name": "Peter", "watt": "5",
             "sta01bez": "TX/RX", "sta01gramm": 1200,
             "sta05bez": "Antenna", "sta05gramm": 350,
         },
@@ -120,7 +118,9 @@ def test_station_get_displays_participant_location_readonly(client, participant)
     client.force_login(user)
     response = client.get("/submission/station/")
     body = response.content.decode("utf-8")
-    # Canton + altitude come from Participant (registration) — not editable here.
+    # Location name + canton + altitude come from Participant (registration) —
+    # not editable here, rendered as disabled inputs.
+    assert 'value="Niederhorn"' in body
     assert 'value="BE"' in body
     assert 'value="1500"' in body
     # Coordinates are displayed in CH1903 (LV03) — derived from ch1903p_e/n
@@ -137,12 +137,15 @@ def test_station_get_prefills_from_saved_data(client, participant):
     client.force_login(user)
     station_service.save_station(
         participant=p,
-        data={"op_name": "Peter", "location_text": "Pilatus", "sta01bez": "TX/RX", "sta01gramm": 1200},
+        data={"op_name": "Peter", "sta01bez": "TX/RX", "sta01gramm": 1200},
     )
+    # Location lives on Participant, not the station description.
+    p.location_text = "Pilatus"
+    p.save(update_fields=["location_text"])
     response = client.get("/submission/station/")
     body = response.content.decode("utf-8")
     assert 'value="Peter"' in body
-    assert 'value="Pilatus"' in body
+    assert 'value="Pilatus"' in body  # rendered as the disabled location input
     assert 'value="TX/RX"' in body
     assert 'value="1200"' in body
 
@@ -154,7 +157,7 @@ def test_station_post_saves_form_and_audits(client, participant):
     response = client.post(
         "/submission/station/",
         {
-            "op_name": "Peter", "location_text": "Pilatus", "watt": "5",
+            "op_name": "Peter", "watt": "5",
             "sta01bez": "TX/RX", "sta01gramm": "1200",
             "sta02bez": "Battery", "sta02gramm": "800",
         },
@@ -221,9 +224,11 @@ def test_upload_populates_station_description_from_nmd_comments(client, particip
     assert response.status_code == 302
     station = StationDescription.objects.get(participant=p)
     assert station.op_name == "Peter"
-    assert station.location_text == "Pilatus"
     assert station.watt == "5"
     assert station.total_weight_g == 2000
+    # ORT from the upload now lands on Participant.location_text, not on station.
+    p.refresh_from_db()
+    assert p.location_text == "Pilatus"
     components = list(station.components.order_by("idx"))
     assert components[0].description == "Sender + RX (FT-817)"
     assert components[1].weight_g == 800

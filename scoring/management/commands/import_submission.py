@@ -303,6 +303,7 @@ def _participant_defaults_from_station(row: sqlite3.Row | None) -> dict:
     legacy ``station_description`` row, falling back to stubs."""
     canton = _STUB_CANTON
     altitude = _STUB_ALTITUDE_M
+    location_text = ""
     coord_e_raw, coord_n_raw = "", ""
     ch1903p_e = _STUB_CH1903P_E
     ch1903p_n = _STUB_CH1903P_N
@@ -318,6 +319,7 @@ def _participant_defaults_from_station(row: sqlite3.Row | None) -> dict:
                 altitude = max(0, int(row["qah"]))
             except (TypeError, ValueError):
                 pass
+        location_text = (row["ort"] or "").strip()
         kx, ky = (row["koord_x"] or "").strip(), (row["koord_y"] or "").strip()
         if kx and ky:
             coord_e_raw, coord_n_raw = kx, ky
@@ -337,6 +339,7 @@ def _participant_defaults_from_station(row: sqlite3.Row | None) -> dict:
     return {
         "canton": canton,
         "altitude_m": altitude,
+        "location_text": location_text,
         "coord_system_input": coord_system_input,
         "coord_input_e": coord_e_raw,
         "coord_input_n": coord_n_raw,
@@ -352,7 +355,6 @@ def _upsert_station(participant: Participant, row: sqlite3.Row) -> None:
     slots) from a legacy ``station_description`` row."""
     station, _ = StationDescription.objects.get_or_create(participant=participant)
     station.op_name = (row["opname"] or "").strip()
-    station.location_text = (row["ort"] or "").strip()
     station.watt = (row["watt"] or "").strip()
     try:
         station.total_weight_g = max(0, int(row["gesamtegewicht"] or 0))

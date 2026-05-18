@@ -39,6 +39,11 @@ class RegistrationForm(forms.Form):
         help_text=_("Required only for multi-operator stations."),
     )
 
+    location_text = forms.CharField(
+        label=_("Location name"),
+        max_length=120,
+        help_text=_("Friendly name for your station's location (SOTA reference, summit name, …)."),
+    )
     coord_input_e = forms.CharField(
         label=_("Easting / longitude"),
         max_length=32,

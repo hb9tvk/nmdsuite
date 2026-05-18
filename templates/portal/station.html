@@ -19,7 +19,7 @@
                 <h2>{% trans "Operator information" %}</h2>
                 <div class="station-grid">
                     <div class="form-row">
-                        <label for="{{ form.op_name.id_for_label }}">{% trans "Operator" %}</label>
+                        <label for="{{ form.op_name.id_for_label }}">{{ form.op_name.label }}</label>
                         {{ form.op_name }}
                     </div>
                     <div class="form-row">
@@ -31,10 +31,13 @@
 
             <section class="station-section">
                 <h2>{% trans "Location information" %}</h2>
+                <p class="hint">
+                    {% trans "Location information is part of your registration. Edit it on the registration page." %}
+                </p>
                 <div class="station-grid">
                     <div class="form-row">
-                        <label for="{{ form.location_text.id_for_label }}">{% trans "Location name" %}</label>
-                        {{ form.location_text }}
+                        <label>{% trans "Location name" %}</label>
+                        <input type="text" value="{{ participant.location_text }}" disabled>
                     </div>
                     <div class="form-row">
                         <label>{% trans "Canton" %}</label>

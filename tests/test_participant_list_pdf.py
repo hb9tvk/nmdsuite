@@ -15,7 +15,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from pypdf import PdfReader
 
-from core.models import Contest, Participant, StationDescription
+from core.models import Contest, Participant
 from core.participant_list_pdf import build_participant_list_pdf
 
 User = get_user_model()
@@ -41,10 +41,9 @@ def _make_participant(
         wgs84_lat=46.8, wgs84_lon=8.5,
         altitude_m=1500, canton="ZH", operating_modes=modes,
         multi_op=multi_op, station_chief=station_chief,
+        location_text=location_text or "",
         cancelled_at=timezone.now() if cancelled else None,
     )
-    if location_text:
-        StationDescription.objects.create(participant=p, location_text=location_text)
     return p
 
 
