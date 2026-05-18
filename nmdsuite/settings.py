@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "portal",
     "scoring",
     "admin_module",
+    "public",
 ]
 
 MIDDLEWARE = [

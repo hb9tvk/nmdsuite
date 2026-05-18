@@ -1,0 +1,31 @@
+{% load i18n %}
+<table class="ranking">
+    <thead>
+        <tr>
+            <th class="num">{% trans "Rank" %}</th>
+            <th>{% trans "Callsign" %}</th>
+            <th>{% trans "First name" %}</th>
+            <th>{% trans "Canton" %}</th>
+            <th class="num">{% trans "Altitude (m)" %}</th>
+            <th>{% trans "Site" %}</th>
+            <th class="num">{% trans "Points" %}</th>
+            <th class="num">{% trans "Weight (g)" %}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in rows %}
+            <tr>
+                <td class="num">{{ r.rank }}</td>
+                <td>{{ r.callsign }}</td>
+                <td>{{ r.first_name }}</td>
+                <td>{{ r.canton }}</td>
+                <td class="num">{{ r.altitude_m }}</td>
+                <td>{{ r.location_text }}</td>
+                <td class="num">{{ r.points }}</td>
+                <td class="num">{{ r.total_weight_g }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8">{% trans "No participants." %}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
