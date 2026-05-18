@@ -18,7 +18,6 @@ from core.models import (
     QsoEntry,
     ScoringRecord,
     StationComponent,
-    StationDescription,
 )
 from public.ranking_service import build_ranking_page
 
@@ -52,15 +51,12 @@ def _make_participant(
         wgs84_lat=lat, wgs84_lon=lon,
         altitude_m=altitude_m, canton="ZH", operating_modes=modes,
         location_text=location_text,
+        watt=watt, total_weight_g=weight_g,
         submitted_at=timezone.now() if submitted else None,
         cancelled_at=timezone.now() if cancelled else None,
     )
-    if components is not None or watt or weight_g:
-        station = StationDescription.objects.create(
-            participant=p, watt=watt, total_weight_g=weight_g,
-        )
-        for idx, desc in (components or {}).items():
-            StationComponent.objects.create(station=station, idx=idx, description=desc)
+    for idx, desc in (components or {}).items():
+        StationComponent.objects.create(participant=p, idx=idx, description=desc)
     return p
 
 

@@ -19,7 +19,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 from core.models import AuditLog, Contest, Participant
-from registration.services import register_participant, update_participant_profile
+from registration.services import register_participant
 
 User = get_user_model()
 
@@ -112,61 +112,6 @@ def test_register_participant_with_staff_actor_records_on_behalf(seeded_contest)
     entry = AuditLog.objects.get(action="registration.create", target="HB9TVK")
     assert entry.actor == staff
     assert entry.payload.get("on_behalf") is True
-
-
-@pytest.mark.django_db
-def test_update_profile_with_staff_actor_records_on_behalf(seeded_contest):
-    from registration.coords import parse_coordinate_pair
-
-    participant = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
-    staff = _make_staff_user()
-
-    form_data = {
-        "multi_op": False,
-        "station_chief": "",
-        "coord_input_e": "8.2275",
-        "coord_input_n": "46.8182",
-        "parsed_coords": parse_coordinate_pair("8.2275", "46.8182"),
-        "altitude_m": 1800,
-        "canton": "GR",
-        "operating_modes": 2,
-        "remarks": "edited",
-    }
-    update_participant_profile(participant=participant, form_data=form_data, actor=staff)
-
-    participant.refresh_from_db()
-    assert participant.altitude_m == 1800
-    assert participant.canton == "GR"
-
-    entry = AuditLog.objects.get(action="registration.update", target=participant.callsign)
-    assert entry.actor == staff
-    assert entry.payload.get("on_behalf") is True
-
-
-@pytest.mark.django_db
-def test_update_profile_self_edit_has_no_on_behalf_flag(seeded_contest):
-    from registration.coords import parse_coordinate_pair
-
-    participant = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
-
-    form_data = {
-        "multi_op": False,
-        "station_chief": "",
-        "coord_input_e": "8.2275",
-        "coord_input_n": "46.8182",
-        "parsed_coords": parse_coordinate_pair("8.2275", "46.8182"),
-        "altitude_m": 1800,
-        "canton": "GR",
-        "operating_modes": 2,
-        "remarks": "",
-    }
-    # Pass the participant's own user as actor — equivalent to the default.
-    update_participant_profile(
-        participant=participant, form_data=form_data, actor=participant.user,
-    )
-    entry = AuditLog.objects.get(action="registration.update", target=participant.callsign)
-    assert entry.actor == participant.user
-    assert "on_behalf" not in entry.payload
 
 
 # --- access control --------------------------------------------------------------------------
@@ -316,83 +261,6 @@ def test_detail_404_for_unknown_pk(client, seeded_contest):
     assert response.status_code == 404
 
 
-# --- edit profile ----------------------------------------------------------------------------
-
-
-@pytest.mark.django_db
-def test_edit_profile_get_renders_form(client, seeded_contest):
-    p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
-    client.force_login(_make_staff_user())
-    response = client.get(f"/admin/participants/{p.pk}/edit-profile/")
-    assert response.status_code == 200
-    assert b"Save changes" in response.content
-
-
-@pytest.mark.django_db
-def test_edit_profile_post_saves_and_audits(client, seeded_contest):
-    participant = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
-    staff = _make_staff_user()
-    client.force_login(staff)
-
-    form = {
-        "multi_op": "True",
-        "station_chief": "HB9CHIEF",
-        "location_text": "Säntis",
-        "coord_input_e": "9.0",
-        "coord_input_n": "47.0",
-        "altitude_m": "2000",
-        "canton": "GR",
-        "mode_cw": "on",
-        "mode_ssb": "on",
-        "remarks": "staff edit",
-    }
-    response = client.post(f"/admin/participants/{participant.pk}/edit-profile/", form)
-    assert response.status_code == 302
-
-    participant.refresh_from_db()
-    assert participant.canton == "GR"
-    assert participant.altitude_m == 2000
-    assert participant.multi_op is True
-    assert participant.operating_modes == 3  # CW + SSB
-
-    entry = AuditLog.objects.get(action="registration.update", target=participant.callsign)
-    assert entry.actor == staff
-    assert entry.payload.get("on_behalf") is True
-
-
-@pytest.mark.django_db
-def test_edit_profile_bypasses_submitted_lock(client, seeded_contest):
-    """Operator portal locks edits after submitted_at is set; admin must
-    still be able to fix mistakes."""
-    participant = _make_participant(
-        seeded_contest, username="HB9XYZ", callsign="HB9XYZ", submitted=True,
-    )
-    client.force_login(_make_staff_user())
-
-    form = {
-        "multi_op": "False",
-        "station_chief": "",
-        "location_text": "Pas-de-Cheville",
-        "coord_input_e": "8.5",
-        "coord_input_n": "46.5",
-        "altitude_m": "1900",
-        "canton": "VS",
-        "mode_cw": "on",
-        "mode_ssb": "",
-        "remarks": "",
-    }
-    response = client.post(f"/admin/participants/{participant.pk}/edit-profile/", form)
-    assert response.status_code == 302
-
-    participant.refresh_from_db()
-    assert participant.canton == "VS"
-    assert participant.altitude_m == 1900
-    # submitted_at survived the edit.
-    assert participant.submitted_at is not None
-
-
-@pytest.mark.django_db
-def test_edit_profile_404_for_unknown_pk(client, seeded_contest):
-    client.force_login(_make_staff_user())
-    response = client.get("/admin/participants/9999/edit-profile/")
-    assert response.status_code == 404
+# Note: M4B (merge-station-into-participant) removed the dedicated
+# edit-profile views. Equivalent on-behalf coverage now lives on the
+# unified station-data flow in test_admin_on_behalf_b.py.

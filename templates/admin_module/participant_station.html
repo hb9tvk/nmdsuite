@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% load i18n static %}
-{% block title %}{% trans "Station description" %} {{ participant.callsign }} — {% trans "Administration" %}{% endblock %}
+{% block title %}{% trans "Station data" %} {{ participant.callsign }} — {% trans "Administration" %}{% endblock %}
+
+{% block extra_head %}
+    {% include "partials/_location_head.html" %}
+{% endblock %}
 
 {% block content %}
     <p>
@@ -11,7 +15,7 @@
         <a href="{% url 'admin_module:participant_detail' pk=participant.pk %}">{{ participant.callsign }}</a>
     </p>
 
-    <h1>{% blocktrans with callsign=participant.callsign %}Station description — {{ callsign }}{% endblocktrans %}</h1>
+    <h1>{% blocktrans with callsign=participant.callsign %}Station data — {{ callsign }}{% endblocktrans %}</h1>
     <p class="hint">
         {% trans "On-behalf editing. The portal's post-submit lock is bypassed here." %}
     </p>
@@ -19,12 +23,16 @@
     {% if participant.submitted_at %}
         <div class="banner banner-info">
             {% blocktrans with when=participant.submitted_at|date:"d.m.Y H:i" %}
-                Log was submitted on {{ when }} UTC. Edits will alter the submitted station description.
+                Log was submitted on {{ when }} UTC. Edits will alter the submitted data.
             {% endblocktrans %}
         </div>
     {% endif %}
 
-    <form method="post" class="station-form" autocomplete="off">
+    {% if form.non_field_errors %}
+        <div class="form-errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" class="station-form reg-form" autocomplete="off" novalidate>
         {% csrf_token %}
         <fieldset>
 
@@ -32,47 +40,40 @@
                 <h2>{% trans "Operator information" %}</h2>
                 <div class="station-grid">
                     <div class="form-row">
-                        <label for="{{ form.op_name.id_for_label }}">{{ form.op_name.label }}</label>
-                        {{ form.op_name }}
+                        <label>{% trans "Callsign" %}</label>
+                        <input type="text" value="{{ participant.callsign }}" disabled>
+                    </div>
+                    <div class="form-row">
+                        <label>{% trans "First name" %}</label>
+                        <input type="text" value="{{ participant.first_name }}" disabled>
                     </div>
                     <div class="form-row">
                         <label>{% trans "Email address" %}</label>
                         <input type="text" value="{{ participant.email }}" disabled>
                     </div>
-                </div>
-            </section>
-
-            <section class="station-section">
-                <h2>{% trans "Location information" %}</h2>
-                <p class="hint">
-                    {% trans "Location information is part of the participant's registration. Edit it on the registration page." %}
-                </p>
-                <div class="station-grid">
                     <div class="form-row">
-                        <label>{% trans "Location name" %}</label>
-                        <input type="text" value="{{ participant.location_text }}" disabled>
-                    </div>
-                    <div class="form-row">
-                        <label>{% trans "Canton" %}</label>
-                        <input type="text" value="{{ participant.canton }}" disabled>
-                    </div>
-                    <div class="form-row">
-                        <label>{% trans "X coordinate (CH1903)" %}</label>
-                        <input type="text" value="{{ participant.ch1903_e }}" disabled>
-                    </div>
-                    <div class="form-row">
-                        <label>{% trans "Y coordinate (CH1903)" %}</label>
-                        <input type="text" value="{{ participant.ch1903_n }}" disabled>
-                    </div>
-                    <div class="form-row station-grid-span">
-                        <label>{% trans "Altitude (m)" %}</label>
-                        <input type="text" value="{{ participant.altitude_m }}" disabled>
+                        <label for="{{ form.op_name.id_for_label }}">{{ form.op_name.label }}</label>
+                        {{ form.op_name }}
                     </div>
                 </div>
             </section>
 
+            {% include "partials/_location_fieldset.html" %}
+
+            <fieldset>
+                <legend>{% trans "Station type" %}</legend>
+                {% include "registration/_field.html" with field=form.multi_op %}
+                {% include "registration/_field.html" with field=form.station_chief %}
+            </fieldset>
+
+            <fieldset>
+                <legend>{% trans "Operating modes" %}</legend>
+                {% include "registration/_field.html" with field=form.mode_cw %}
+                {% include "registration/_field.html" with field=form.mode_ssb %}
+            </fieldset>
+
             <section class="station-section">
-                <h2>{% trans "Station data" %}</h2>
+                <h2>{% trans "Station equipment" %}</h2>
                 <p class="hint">
                     {% trans "List every piece of equipment that counts toward the contest weight limit (6 kg)." %}
                 </p>
@@ -100,10 +101,15 @@
                 <p id="station-weight-warning" class="hint" data-warn-text="{% trans 'Total exceeds the 6000 g contest limit.' %}"></p>
             </section>
 
+            <fieldset>
+                <legend>{% trans "Other" %}</legend>
+                {% include "registration/_field.html" with field=form.remarks %}
+            </fieldset>
+
         </fieldset>
 
         <p class="actions">
-            <button type="submit">{% trans "Save station description" %}</button>
+            <button type="submit">{% trans "Save station data" %}</button>
             <a href="{% url 'admin_module:participant_detail' pk=participant.pk %}">← {% trans "Back to participant" %}</a>
         </p>
     </form>
@@ -111,4 +117,5 @@
 
 {% block extra_scripts %}
     <script src="{% static 'js/station_weight.js' %}"></script>
+    {% include "partials/_location_scripts.html" %}
 {% endblock %}

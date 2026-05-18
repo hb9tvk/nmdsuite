@@ -92,7 +92,6 @@ def build_participant_list_pdf(contest: Contest) -> bytes:
     qs = (
         Participant.objects
         .filter(contest=contest, cancelled_at__isnull=True)
-        .select_related("station")
         .order_by("callsign")
     )
     for p in qs:

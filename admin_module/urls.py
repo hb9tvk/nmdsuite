@@ -17,7 +17,6 @@ urlpatterns = [
     path("participants/", views.participants_index, name="participants_index"),
     path("participants/register/", views.participant_register, name="participant_register"),
     path("participants/<int:pk>/", views.participant_detail, name="participant_detail"),
-    path("participants/<int:pk>/edit-profile/", views.participant_edit_profile, name="participant_edit_profile"),
     # On-behalf log + station + submit (M4.3b).
     path("participants/<int:pk>/station/", views.participant_station, name="participant_station"),
     path("participants/<int:pk>/log/", views.participant_log_entry, name="participant_log_entry"),

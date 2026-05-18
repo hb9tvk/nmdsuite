@@ -37,11 +37,10 @@ def submit_log(*, participant: Participant, actor: Any = None) -> Participant:
     participant.submitted_at = timezone.now()
     participant.save(update_fields=["submitted_at"])
 
-    station = getattr(participant, "station", None)
     is_on_behalf = actor is not None and actor != participant.user
     audit_payload: dict[str, Any] = {
         "qso_count": participant.qsos.count(),
-        "total_weight_g": station.total_weight_g if station is not None else 0,
+        "total_weight_g": participant.total_weight_g,
     }
     if is_on_behalf:
         audit_payload["on_behalf"] = True

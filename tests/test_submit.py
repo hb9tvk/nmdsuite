@@ -61,9 +61,8 @@ def test_submit_get_shows_invalid_qso_count(client, participant):
 @pytest.mark.django_db
 def test_submit_get_shows_weight_over_limit_warning(client, participant):
     user, p = participant
-    station = station_service.get_or_init_station(p)
-    station.total_weight_g = 7500
-    station.save()
+    p.total_weight_g = 7500
+    p.save(update_fields=["total_weight_g"])
     client.force_login(user)
     response = client.get("/submission/submit/")
     body = response.content.decode("utf-8")
@@ -160,18 +159,8 @@ def test_station_post_is_blocked_after_submit(client, participant):
     client.force_login(user)
     response = client.post("/submission/station/", {"op_name": "Should Not Save"})
     assert response.status_code == 302
-    station = station_service.get_or_init_station(p)
-    assert station.op_name != "Should Not Save"
-
-
-@pytest.mark.django_db
-def test_edit_profile_is_blocked_after_submit(client, participant):
-    user, p = participant
-    _force_submitted(p)
-    client.force_login(user)
-    response = client.get("/submission/profile/edit/")
-    assert response.status_code == 302
-    assert response["Location"].endswith("/submission/")
+    p.refresh_from_db()
+    assert p.op_name != "Should Not Save"
 
 
 @pytest.mark.django_db
@@ -213,11 +202,11 @@ def test_dashboard_hides_destructive_actions_after_submit(client, participant):
     client.force_login(user)
     response = client.get("/submission/")
     body = response.content.decode("utf-8")
-    # Submit / Cancel / Edit registration / upload form must be gone.
+    # Submit / Cancel / upload form must be gone post-submit.
     assert "Submit log" not in body
     assert "Cancel participation" not in body
-    assert "Edit registration" not in body
     assert "qso-upload-form" not in body
-    # Read-only views still linked.
+    # Read-only views still linked (button stays so the operator can
+    # see the saved data, even though edits are blocked).
     assert "Log entry" in body
-    assert "Station description" in body
+    assert "Station data" in body

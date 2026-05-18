@@ -86,6 +86,16 @@ class Participant(models.Model):
 
     remarks = models.TextField(blank=True)
 
+    # Station equipment data, persisted alongside the registration row.
+    # (Historically lived on a separate StationDescription model — merged
+    # into Participant so operators see one "station data" form, not two.)
+    op_name = models.CharField(max_length=80, blank=True)
+    watt = models.CharField(max_length=20, blank=True)
+    total_weight_g = models.PositiveIntegerField(
+        default=0,
+        help_text=_("Total station weight (grams) — used as ranking tiebreaker"),
+    )
+
     registered_at = models.DateTimeField(auto_now_add=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
     submitted_at = models.DateTimeField(
@@ -131,33 +141,17 @@ class Participant(models.Model):
         return int(round(self.ch1903p_n - 1_000_000))
 
 
-class StationDescription(models.Model):
-    """The station info that goes alongside the submitted log."""
-
-    participant = models.OneToOneField(Participant, on_delete=models.CASCADE, related_name="station")
-    op_name = models.CharField(max_length=80, blank=True)
-    watt = models.CharField(max_length=20, blank=True)
-    total_weight_g = models.PositiveIntegerField(default=0, help_text=_("Total station weight (grams) — used as ranking tiebreaker"))
-
-    class Meta:
-        verbose_name = _("Station description")
-        verbose_name_plural = _("Station descriptions")
-
-    def __str__(self) -> str:
-        return f"Station {self.participant.callsign}"
-
-
 class StationComponent(models.Model):
     """One physical part of the station (Sender, Antenne, Akku, …) with its weight."""
 
-    station = models.ForeignKey(StationDescription, on_delete=models.CASCADE, related_name="components")
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name="components")
     idx = models.PositiveSmallIntegerField()
     description = models.CharField(max_length=120)
     weight_g = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ["idx"]
-        unique_together = [("station", "idx")]
+        unique_together = [("participant", "idx")]
 
 
 # --- QSO log + scoring ------------------------------------------------------------------------

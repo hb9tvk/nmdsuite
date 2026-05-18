@@ -6,7 +6,6 @@ from .forms import CallsignAuthenticationForm
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
-    path("profile/edit/", views.edit_profile, name="edit_profile"),
     path("profile/cancel/", views.cancel, name="cancel"),
     path("log/", views.log_entry, name="log_entry"),
     path("log/save/", views.qso_save, name="qso_save"),
