@@ -10,7 +10,10 @@ Stationsgewicht:   {{ total_weight_g }} g
 
 Weitere Änderungen am Log oder an der Stationsbeschreibung sind nicht mehr möglich. Bei Fragen wende dich an nmd@uska.ch.
 
-Teilnehmer-Portal: {{ portal_url }}
+Du kannst dein Log jederzeit aus dem Teilnehmer-Portal als ADIF-Datei herunterladen.
+
+Teilnehmer-Portal:  {{ portal_url }}
+Log-Download (ADIF): {{ adif_url }}
 
 === Français ===
 
@@ -24,7 +27,10 @@ Poids de station : {{ total_weight_g }} g
 
 Plus aucune modification du journal ou de la description de la station n'est possible. Pour toute question : nmd@uska.ch.
 
+Tu peux à tout moment télécharger ton journal au format ADIF depuis le portail.
+
 Portail des participants : {{ portal_url }}
+Téléchargement (ADIF) :    {{ adif_url }}
 
 === Italiano ===
 
@@ -38,6 +44,9 @@ Peso stazione:     {{ total_weight_g }} g
 
 Non sono più possibili modifiche al log o alla descrizione della stazione. Per domande: nmd@uska.ch.
 
+Puoi scaricare in qualsiasi momento il tuo log in formato ADIF dal portale.
+
 Portale partecipanti: {{ portal_url }}
+Download log (ADIF):  {{ adif_url }}
 
 — USKA NMD

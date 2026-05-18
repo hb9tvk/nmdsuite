@@ -435,6 +435,37 @@ def participant_list(request):
     return response
 
 
+# --- ADIF export -----------------------------------------------------------------------------
+
+
+@login_required
+def adif_download(request):
+    """Stream the operator's submitted log as ADIF.
+
+    Self-service only: each operator pulls their own log. Gated on
+    ``submitted_at`` because the file is the canonical post-submit
+    snapshot — exporting a half-edited draft would mislead the
+    receiving logger.
+    """
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None or participant.submitted_at is None:
+        messages.info(
+            request,
+            _("Your ADIF download will be available once you submit your log."),
+        )
+        return redirect("portal:dashboard")
+
+    from core.adif_export import build_participant_adif
+
+    text = build_participant_adif(participant)
+    safe_call = participant.callsign.replace("/", "-")
+    filename = f"nmd-{contest.year}-{safe_call}.adi"
+    response = HttpResponse(text, content_type="text/plain; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
 # --- scoring view (M2.6) ---------------------------------------------------------------------
 #
 # The operator's per-QSO scoring breakdown, gated on the contest having

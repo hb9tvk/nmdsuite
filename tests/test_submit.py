@@ -90,6 +90,9 @@ def test_submit_post_locks_participant_and_sends_email(client, participant, sett
     sent = mail.outbox[0]
     assert sent.to == ["t@example.org"]
     assert "HB9TVK/P" in sent.subject
+    # Confirmation body links to the ADIF download in all three languages.
+    assert "/submission/log.adi" in sent.body
+    assert "ADIF" in sent.body
     assert EmailLog.objects.filter(recipient="t@example.org", status=EmailLog.Status.SENT).exists()
 
 

@@ -15,12 +15,14 @@ log = logging.getLogger("nmdsuite.email")
 def send_log_submitted_confirmation(*, participant: Participant) -> EmailLog:
     """Render the trilingual log-submitted confirmation and send it."""
     portal_url = f"{settings.NMD_BASE_URL.rstrip('/')}/submission/"
+    adif_url = f"{portal_url}log.adi"
 
     station = getattr(participant, "station", None)
     context = {
         "participant": participant,
         "contest": participant.contest,
         "portal_url": portal_url,
+        "adif_url": adif_url,
         "qso_count": participant.qsos.count(),
         "total_weight_g": station.total_weight_g if station is not None else 0,
         "submitted_at": participant.submitted_at,

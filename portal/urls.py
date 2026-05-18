@@ -17,6 +17,7 @@ urlpatterns = [
     path("submit/", views.submit, name="submit"),
     path("scoring/", views.scoring, name="scoring"),
     path("participant-list.pdf", views.participant_list, name="participant_list"),
+    path("log.adi", views.adif_download, name="adif_download"),
     path(
         "login/",
         auth_views.LoginView.as_view(
