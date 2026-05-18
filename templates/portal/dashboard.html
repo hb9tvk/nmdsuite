@@ -59,6 +59,9 @@
             {% if participant_list_available %}
                 <a href="{% url 'portal:participant_list' %}" class="btn">{% trans "Participant list (PDF)" %}</a>
             {% endif %}
+            {% if participant.submitted_at %}
+                <a href="{% url 'portal:adif_download' %}" class="btn">{% trans "Download log (ADIF)" %}</a>
+            {% endif %}
             {% if contest.results_published_at %}
                 <a href="{% url 'portal:scoring' %}" class="btn">{% trans "View your scoring" %}</a>
             {% endif %}
