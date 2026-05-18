@@ -18,10 +18,10 @@ from django.views.decorators.http import require_http_methods
 
 from core.models import Contest, Participant, QsoEntry
 from core.picker import map_picker_context
-from registration.services import cancel_participation, update_participant_profile
+from registration.services import cancel_participation
 
 from . import qso_service, station_service, submit_service
-from .forms import ProfileEditForm, QsoEntryForm, StationDescriptionForm
+from .forms import QsoEntryForm, StationDataForm
 from .qso_upload import UploadParseError, parse_upload
 
 
@@ -79,52 +79,6 @@ def dashboard(request):
 
 
 # --- profile edit ----------------------------------------------------------------------------
-
-
-def _profile_initial(participant: Participant) -> dict:
-    return {
-        "multi_op": participant.multi_op,
-        "station_chief": participant.station_chief,
-        "location_text": participant.location_text,
-        "coord_input_e": participant.coord_input_e,
-        "coord_input_n": participant.coord_input_n,
-        "altitude_m": participant.altitude_m,
-        "canton": participant.canton,
-        "mode_cw": bool(participant.operating_modes & 1),
-        "mode_ssb": bool(participant.operating_modes & 2),
-        "remarks": participant.remarks,
-    }
-
-
-@login_required
-def edit_profile(request):
-    participant, redirected = _editable_participation_or_redirect(request)
-    if redirected is not None:
-        return redirected
-    contest = _active_contest()
-
-    if request.method == "POST":
-        form = ProfileEditForm(request.POST)
-        if form.is_valid():
-            payload = dict(form.cleaned_data)
-            payload["operating_modes"] = form.operating_modes_value()
-            update_participant_profile(participant=participant, form_data=payload)
-            messages.success(request, _("Your registration data has been updated."))
-            return redirect("portal:dashboard")
-    else:
-        form = ProfileEditForm(initial=_profile_initial(participant))
-
-    return render(
-        request,
-        "portal/edit_profile.html",
-        {
-            "form": form,
-            "participant": participant,
-            "contest": contest,
-            "registrations_url": reverse("registration:registrations_json"),
-            **map_picker_context(request),
-        },
-    )
 
 
 # --- cancel participation --------------------------------------------------------------------
@@ -319,7 +273,7 @@ def qso_upload(request):
     )
     outcome = station_service.apply_upload_station_info(participant, parsed.station_info.fields)
     parts = [_("Imported %(count)d QSO entries from %(name)s.") % {"count": count, "name": uploaded.name}]
-    if outcome.station is not None:
+    if outcome.station_updated:
         parts.append(_("Station description updated."))
     if outcome.location_updated:
         parts.append(_("Location updated from the file; altitude and canton refreshed from Swisstopo."))
@@ -337,6 +291,12 @@ def qso_upload(request):
 
 @login_required
 def station(request):
+    """Unified station-data form.
+
+    Covers everything the operator can edit after registration: equipment
+    (operator name, output power, components) plus the editable
+    registration fields (multi-op, location, coordinates, modes, remarks).
+    """
     contest = _active_contest()
     participant = _active_participation(request.user, contest)
     if participant is None:
@@ -344,22 +304,31 @@ def station(request):
         return redirect("portal:dashboard")
 
     if request.method == "POST":
-        # Submitted log → POST forbidden, GET still renders read-only.
         if participant.submitted_at is not None:
             messages.info(request, _("Your log has been submitted; further changes are not possible."))
             return redirect("portal:dashboard")
-        form = StationDescriptionForm(request.POST)
-        form.is_valid()  # permissive: save what parses
-        station_service.save_station(participant=participant, data=form.cleaned_data)
-        messages.success(request, _("Station description saved."))
-        return redirect("portal:station")
+        form = StationDataForm(request.POST)
+        if form.is_valid():
+            payload = dict(form.cleaned_data)
+            payload["operating_modes"] = form.operating_modes_value()
+            station_service.save_station(participant=participant, data=payload)
+            messages.success(request, _("Station data saved."))
+            return redirect("portal:station")
+    else:
+        form = StationDataForm(
+            initial=station_service.initial_from_participant(participant),
+        )
 
-    existing = station_service.get_or_init_station(participant)
-    form = StationDescriptionForm(initial=station_service.initial_from_station(existing))
     return render(
         request,
         "portal/station.html",
-        {"form": form, "station": existing, "participant": participant},
+        {
+            "form": form,
+            "participant": participant,
+            "contest": contest,
+            "registrations_url": reverse("registration:registrations_json"),
+            **map_picker_context(request),
+        },
     )
 
 
@@ -386,7 +355,6 @@ def submit(request):
 
     qsos = list(qso_service.list_qsos(participant))
     invalid_count = sum(1 for q in qsos if not q.is_fully_valid)
-    station = station_service.get_or_init_station(participant)
     return render(
         request,
         "portal/submit_confirm.html",
@@ -395,8 +363,7 @@ def submit(request):
             "contest": contest,
             "qso_count": len(qsos),
             "invalid_qso_count": invalid_count,
-            "station": station,
-            "weight_over_limit": station.total_weight_g > 6000,
+            "weight_over_limit": participant.total_weight_g > 6000,
         },
     )
 

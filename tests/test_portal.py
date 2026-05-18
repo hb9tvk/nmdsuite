@@ -71,29 +71,29 @@ def test_dashboard_for_registered_user_shows_data(client, registered_user):
     assert b"1500" in response.content
 
 
-# --- edit -------------------------------------------------------------------------------------
+# --- edit (via the unified station form) -----------------------------------------------------
 
 
 @pytest.mark.django_db
-def test_edit_get_prefills_with_current_data(client, registered_user):
+def test_station_get_prefills_with_current_registration_data(client, registered_user):
     user, participant = registered_user
     client.force_login(user)
-    response = client.get("/submission/profile/edit/")
+    response = client.get("/submission/station/")
     assert response.status_code == 200
     assert b"8.2275" in response.content
     assert b"46.8182" in response.content
-    # Immutable fields are shown as plain text, not as form inputs.
+    # Identity fields are displayed read-only (no `name=` form input).
     assert b"HB9TVK/P" in response.content
     assert b'name="callsign"' not in response.content
     assert b'name="email"' not in response.content
 
 
 @pytest.mark.django_db
-def test_edit_post_updates_only_editable_fields(client, registered_user):
+def test_station_post_updates_editable_fields(client, registered_user):
     user, participant = registered_user
     client.force_login(user)
     response = client.post(
-        "/submission/profile/edit/",
+        "/submission/station/",
         {
             "multi_op": "True",
             "station_chief": "HB9XYZ",
@@ -105,10 +105,12 @@ def test_edit_post_updates_only_editable_fields(client, registered_user):
             "mode_cw": "on",
             "mode_ssb": "",
             "remarks": "moved location",
+            "op_name": "Peter Kohler",
+            "watt": "5",
         },
         follow=False,
     )
-    assert response.status_code == 302  # redirect to dashboard
+    assert response.status_code == 302
 
     participant.refresh_from_db()
     assert participant.multi_op is True
@@ -117,20 +119,21 @@ def test_edit_post_updates_only_editable_fields(client, registered_user):
     assert participant.operating_modes == 1  # CW only
     assert participant.remarks == "moved location"
     assert participant.wgs84_lat == pytest.approx(46.9480, abs=1e-4)
+    assert participant.op_name == "Peter Kohler"
     # Identity fields untouched.
     assert participant.callsign == "HB9TVK/P"
     assert participant.first_name == "Peter"
     assert participant.email == "peter@example.org"
 
-    assert AuditLog.objects.filter(action="registration.update", target="HB9TVK/P").exists()
+    assert AuditLog.objects.filter(action="station.update", target="HB9TVK/P").exists()
 
 
 @pytest.mark.django_db
-def test_edit_rejects_altitude_below_800(client, registered_user):
+def test_station_rejects_altitude_below_800(client, registered_user):
     user, participant = registered_user
     client.force_login(user)
     response = client.post(
-        "/submission/profile/edit/",
+        "/submission/station/",
         {
             "multi_op": "False",
             "station_chief": "",
@@ -147,15 +150,6 @@ def test_edit_rejects_altitude_below_800(client, registered_user):
     assert response.status_code == 200  # form re-rendered with errors
     participant.refresh_from_db()
     assert participant.altitude_m == 1500  # unchanged
-
-
-@pytest.mark.django_db
-def test_edit_redirects_when_not_registered(client, seeded_contest):
-    other = User.objects.create_user(username="HB9XYZ", password="strong-pass-1234")
-    client.force_login(other)
-    response = client.get("/submission/profile/edit/")
-    assert response.status_code == 302
-    assert response["Location"].endswith("/submission/")
 
 
 # --- cancel -----------------------------------------------------------------------------------

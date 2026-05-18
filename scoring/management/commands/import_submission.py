@@ -58,7 +58,6 @@ from core.models import (
     Contest,
     Participant,
     StationComponent,
-    StationDescription,
 )
 from portal.qso_service import replace_qsos_from_upload
 from portal.station_service import COMPONENT_SLOTS
@@ -351,20 +350,20 @@ def _participant_defaults_from_station(row: sqlite3.Row | None) -> dict:
 
 
 def _upsert_station(participant: Participant, row: sqlite3.Row) -> None:
-    """Create/refresh the ``StationDescription`` (+ its 11 component
-    slots) from a legacy ``station_description`` row."""
-    station, _ = StationDescription.objects.get_or_create(participant=participant)
-    station.op_name = (row["opname"] or "").strip()
-    station.watt = (row["watt"] or "").strip()
+    """Write the legacy station fields onto the Participant directly
+    (Participant + StationDescription were merged in migration 0007)
+    and rebuild the 11 component slots."""
+    participant.op_name = (row["opname"] or "").strip()
+    participant.watt = (row["watt"] or "").strip()
     try:
-        station.total_weight_g = max(0, int(row["gesamtegewicht"] or 0))
+        participant.total_weight_g = max(0, int(row["gesamtegewicht"] or 0))
     except (TypeError, ValueError):
-        station.total_weight_g = 0
-    station.save()
+        participant.total_weight_g = 0
+    participant.save(update_fields=["op_name", "watt", "total_weight_g"])
 
     # Wipe and re-create components so re-running the importer doesn't
     # leave stale rows behind.
-    StationComponent.objects.filter(station=station).delete()
+    StationComponent.objects.filter(participant=participant).delete()
     for i in range(1, COMPONENT_SLOTS + 1):
         bez = (row[f"sta{i:02d}bez"] or "").strip()
         try:
@@ -374,5 +373,5 @@ def _upsert_station(participant: Participant, row: sqlite3.Row) -> None:
         if not bez and gramm == 0:
             continue
         StationComponent.objects.create(
-            station=station, idx=i, description=bez, weight_g=gramm,
+            participant=participant, idx=i, description=bez, weight_g=gramm,
         )

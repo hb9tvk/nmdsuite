@@ -12,7 +12,6 @@ from core.models import (
     Participant,
     QsoEntry,
     StationComponent,
-    StationDescription,
 )
 
 User = get_user_model()
@@ -206,15 +205,14 @@ def test_station_description_persists_full_payload(seeded_contest, tmp_path):
         }],
     )
     p = Participant.objects.get(callsign="HB9A/P")
-    # ort lives on the Participant now (location is registration data),
-    # not on the StationDescription.
+    # The legacy station_description's fields are merged onto Participant
+    # (migration 0007).
     assert p.location_text == "Albispass"
-    s = p.station
-    assert s.op_name == "Anna"
-    assert s.watt == "5W"
-    assert s.total_weight_g == 3200
+    assert p.op_name == "Anna"
+    assert p.watt == "5W"
+    assert p.total_weight_g == 3200
 
-    comps = {c.idx: (c.description, c.weight_g) for c in s.components.all()}
+    comps = {c.idx: (c.description, c.weight_g) for c in p.components.all()}
     assert comps[1] == ("FT-857", 1500)
     assert comps[2] == ("LiFePO4 12V", 1200)
     assert comps[5] == ("Linked dipole", 500)
@@ -224,16 +222,20 @@ def test_station_description_persists_full_payload(seeded_contest, tmp_path):
 
 
 @pytest.mark.django_db
-def test_no_station_row_means_no_station_description(seeded_contest, tmp_path):
+def test_no_station_row_means_empty_equipment_fields(seeded_contest, tmp_path):
     """A logger that exists in user but not in station_description still
-    becomes a Participant — without a StationDescription row."""
+    becomes a Participant — with the equipment fields left at their
+    defaults."""
     _run(
         tmp_path,
         users=[{"callsign": "HB9A"}],
         stations=[],
     )
     p = Participant.objects.get(callsign="HB9A/P")
-    assert not StationDescription.objects.filter(participant=p).exists()
+    assert p.op_name == ""
+    assert p.watt == ""
+    assert p.total_weight_g == 0
+    assert not p.components.exists()
 
 
 # --- coordinates -----------------------------------------------------------------------------
@@ -368,7 +370,7 @@ def test_rerunning_import_is_idempotent(seeded_contest, tmp_path):
     assert Participant.objects.filter(callsign="HB9A/P").count() == 1
     p = Participant.objects.get(callsign="HB9A/P")
     assert QsoEntry.objects.filter(participant=p).count() == 1
-    assert StationComponent.objects.filter(station__participant=p).count() == 1
+    assert StationComponent.objects.filter(participant=p).count() == 1
 
 
 @pytest.mark.django_db

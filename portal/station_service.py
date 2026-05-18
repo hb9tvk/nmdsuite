@@ -1,8 +1,14 @@
-"""Persistence layer for the participant station description.
+"""Persistence layer for the participant's combined station data.
 
-The station data is a 1:1 ``StationDescription`` (header fields) plus an
-ordered child list of ``StationComponent`` rows. The 11 slots have fixed
-semantic positions inherited from the legacy nmdlogsubmission app, so
+What used to be split across two forms (registration data + station
+description) lives on a single ``Participant`` row now (migration
+0007). One save path covers everything the operator can edit:
+identity-locked registration fields (multi_op, coords, location,
+modes, remarks) plus equipment-side fields (op_name, watt, the 11
+component slots).
+
+The 11 ``StationComponent`` slots have fixed semantic positions
+inherited from the legacy nmdlogsubmission app, so
 ``COMPONENT_LABELS[i-1]`` is the kind of thing slot ``i`` represents
 (Transceiver, Stromversorgung, …). Rows the operator left blank are
 skipped at save time so the DB never carries empty placeholders.
@@ -16,7 +22,7 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
 from core.audit import audit
-from core.models import Participant, StationComponent, StationDescription
+from core.models import Participant, StationComponent
 from registration import swisstopo
 from registration.coords import CoordinateError, parse_coordinate_pair
 
@@ -39,22 +45,33 @@ COMPONENT_LABELS: tuple[str, ...] = (
 COMPONENT_SLOTS = len(COMPONENT_LABELS)
 
 
-def get_or_init_station(participant: Participant) -> StationDescription:
-    station, _created = StationDescription.objects.get_or_create(participant=participant)
-    return station
+def list_components(participant: Participant) -> list[StationComponent]:
+    return list(participant.components.all().order_by("idx"))
 
 
-def list_components(station: StationDescription) -> list[StationComponent]:
-    return list(station.components.all().order_by("idx"))
+def initial_from_participant(participant: Participant) -> dict[str, Any]:
+    """Pre-fill the unified station-data form from a Participant row.
 
-
-def initial_from_station(station: StationDescription) -> dict[str, Any]:
-    """Map a station + its components to the form's initial dict."""
+    Includes both the equipment-side fields and the editable
+    registration fields (the form covers both halves now).
+    """
     data: dict[str, Any] = {
-        "op_name": station.op_name,
-        "watt": station.watt,
+        # Equipment side.
+        "op_name": participant.op_name,
+        "watt": participant.watt,
+        # Editable registration fields.
+        "multi_op": participant.multi_op,
+        "station_chief": participant.station_chief,
+        "location_text": participant.location_text,
+        "coord_input_e": participant.coord_input_e,
+        "coord_input_n": participant.coord_input_n,
+        "altitude_m": participant.altitude_m,
+        "canton": participant.canton,
+        "mode_cw": bool(participant.operating_modes & 1),
+        "mode_ssb": bool(participant.operating_modes & 2),
+        "remarks": participant.remarks,
     }
-    for c in list_components(station):
+    for c in list_components(participant):
         if 1 <= c.idx <= COMPONENT_SLOTS:
             data[f"sta{c.idx:02d}bez"] = c.description
             data[f"sta{c.idx:02d}gramm"] = c.weight_g
@@ -64,20 +81,52 @@ def initial_from_station(station: StationDescription) -> dict[str, Any]:
 @transaction.atomic
 def save_station(
     *, participant: Participant, data: dict[str, Any], actor: Any = None,
-) -> StationDescription:
-    """Persist the station header + replace the component rows from form data.
+) -> Participant:
+    """Persist the unified station-data form.
 
-    ``actor`` defaults to the participant's own user (portal self-edit). When
-    admin staff edit on behalf (M4.3b), the staff user is passed in and an
+    Applies every editable field — equipment, location, multi-op,
+    operating modes, remarks — and replaces the component rows. The
+    callsign / first_name / email triplet stays immutable.
+
+    ``actor`` defaults to the participant's own user (portal self-edit).
+    When admin staff edit on behalf, the staff user is passed in and an
     ``on_behalf=True`` flag is recorded in the audit payload.
     """
-    station = get_or_init_station(participant)
-    station.op_name = (data.get("op_name") or "").strip()
-    station.watt = (data.get("watt") or "").strip()
+    # --- registration-side fields (only set what's present in `data`
+    # so callers that pass partial dicts — e.g. .nmd uploads — don't
+    # blank out fields they didn't carry).
+    if "multi_op" in data:
+        participant.multi_op = bool(data["multi_op"])
+    if "station_chief" in data:
+        participant.station_chief = (data.get("station_chief") or "").strip()
+    if "location_text" in data:
+        participant.location_text = (data.get("location_text") or "").strip()
+    if "parsed_coords" in data:
+        parsed = data["parsed_coords"]
+        participant.coord_system_input = parsed.detected_system
+        participant.coord_input_e = data.get("coord_input_e", "")
+        participant.coord_input_n = data.get("coord_input_n", "")
+        participant.ch1903p_e = parsed.ch1903p_e
+        participant.ch1903p_n = parsed.ch1903p_n
+        participant.wgs84_lat = parsed.wgs84_lat
+        participant.wgs84_lon = parsed.wgs84_lon
+    if "altitude_m" in data:
+        participant.altitude_m = int(data["altitude_m"])
+    if "canton" in data:
+        participant.canton = data["canton"]
+    if "operating_modes" in data:
+        participant.operating_modes = int(data["operating_modes"])
+    if "remarks" in data:
+        participant.remarks = (data.get("remarks") or "").strip()
 
-    station.components.all().delete()
+    # --- equipment-side fields.
+    participant.op_name = (data.get("op_name") or "").strip()
+    participant.watt = (data.get("watt") or "").strip()
+
+    # --- component rows: replace wholesale; skip blank slots.
+    StationComponent.objects.filter(participant=participant).delete()
     total = 0
-    new_rows = []
+    new_rows: list[StationComponent] = []
     for i in range(1, COMPONENT_SLOTS + 1):
         bez = (data.get(f"sta{i:02d}bez") or "").strip()
         gramm = data.get(f"sta{i:02d}gramm") or 0
@@ -87,15 +136,22 @@ def save_station(
             gramm = 0
         if not bez and gramm == 0:
             continue
-        new_rows.append(StationComponent(station=station, idx=i, description=bez, weight_g=gramm))
+        new_rows.append(
+            StationComponent(participant=participant, idx=i, description=bez, weight_g=gramm),
+        )
         total += gramm
     StationComponent.objects.bulk_create(new_rows)
 
-    station.total_weight_g = total
-    station.save()
+    participant.total_weight_g = total
+    participant.save()
 
     audit_actor = actor or participant.user
-    audit_payload: dict[str, Any] = {"total_weight_g": total, "component_count": len(new_rows)}
+    audit_payload: dict[str, Any] = {
+        "total_weight_g": total,
+        "component_count": len(new_rows),
+        "canton": participant.canton,
+        "altitude_m": participant.altitude_m,
+    }
     if actor is not None and actor != participant.user:
         audit_payload["on_behalf"] = True
     audit(
@@ -105,7 +161,7 @@ def save_station(
         contest=participant.contest,
         payload=audit_payload,
     )
-    return station
+    return participant
 
 
 @dataclass
@@ -115,12 +171,12 @@ class UploadOutcome:
     None of the three flags being True means the upload's ``#;FIELD=;value``
     lines were empty or didn't carry anything we accept.
     """
-    station: StationDescription | None = None
+    station_updated: bool = False
     location_updated: bool = False
     location_invalid: bool = False  # KOORD_X/Y present but outside Switzerland / unparseable
 
     def __bool__(self) -> bool:
-        return self.station is not None or self.location_updated or self.location_invalid
+        return self.station_updated or self.location_updated or self.location_invalid
 
 
 @transaction.atomic
@@ -130,13 +186,12 @@ def apply_upload_station_info(
     """Persist station data extracted from an .nmd upload's ``#;FIELD=;value`` lines.
 
     - ``OPNAME`` / ``WATT`` / ``STA##BEZ`` / ``STA##GRAMM`` → the
-      participant's :class:`StationDescription`.
-    - ``ORT`` → ``Participant.location_text`` (location is registration
-      data, not station data).
+      participant's equipment fields and component slots.
+    - ``ORT`` → ``Participant.location_text``.
     - ``KOORD_X`` / ``KOORD_Y`` (when both are present and parse to a
-      location in/near Switzerland) → the :class:`Participant`'s coordinate
-      columns; altitude and canton are then re-derived from Swisstopo. The
-      file's own ``QAH`` and ``KANTON`` are intentionally ignored —
+      location in/near Switzerland) → the participant's coordinate
+      columns; altitude and canton are then re-derived from Swisstopo.
+      The file's own ``QAH`` and ``KANTON`` are intentionally ignored —
       Swisstopo is the authority once coordinates are accepted.
 
     ``actor`` flows through to the audit rows so admin on-behalf uploads
@@ -169,7 +224,8 @@ def apply_upload_station_info(
                 pass
 
     if data:
-        outcome.station = save_station(participant=participant, data=data, actor=actor)
+        save_station(participant=participant, data=data, actor=actor)
+        outcome.station_updated = True
     return outcome
 
 
@@ -204,7 +260,7 @@ def _apply_location_from_upload(
 
     # Altitude + canton come from Swisstopo, never from the file. A failed
     # lookup leaves the previous value in place — the operator can fix it
-    # via the registration-edit page if it really matters.
+    # via the station-data form if it really matters.
     new_altitude = swisstopo.lookup_altitude(parsed.ch1903p_e, parsed.ch1903p_n)
     if new_altitude is not None:
         participant.altitude_m = new_altitude

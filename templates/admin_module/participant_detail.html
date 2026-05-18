@@ -71,19 +71,15 @@
         <h2>{% trans "Log" %}</h2>
         <dl class="kv">
             <dt>{% trans "QSO entries" %}</dt><dd>{{ qso_count }}</dd>
-            <dt>{% trans "Station description" %}</dt>
-            <dd>{% if station %}{% trans "present" %}{% else %}{% trans "missing" %}{% endif %}</dd>
+            <dt>{% trans "Total station weight" %}</dt><dd>{{ participant.total_weight_g }} g</dd>
         </dl>
     </section>
 
     <section class="admin-transitions">
         <h2>{% trans "Actions" %}</h2>
         <p class="actions">
-            <a href="{% url 'admin_module:participant_edit_profile' pk=participant.pk %}" class="btn">
-                {% trans "Edit registration data" %}
-            </a>
             <a href="{% url 'admin_module:participant_station' pk=participant.pk %}" class="btn">
-                {% trans "Station description" %}
+                {% trans "Edit station data" %}
             </a>
             <a href="{% url 'admin_module:participant_log_entry' pk=participant.pk %}" class="btn">
                 {% trans "Log entry / upload" %}

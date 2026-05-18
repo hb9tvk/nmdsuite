@@ -17,14 +17,13 @@ def send_log_submitted_confirmation(*, participant: Participant) -> EmailLog:
     portal_url = f"{settings.NMD_BASE_URL.rstrip('/')}/submission/"
     adif_url = f"{portal_url}log.adi"
 
-    station = getattr(participant, "station", None)
     context = {
         "participant": participant,
         "contest": participant.contest,
         "portal_url": portal_url,
         "adif_url": adif_url,
         "qso_count": participant.qsos.count(),
-        "total_weight_g": station.total_weight_g if station is not None else 0,
+        "total_weight_g": participant.total_weight_g,
         "submitted_at": participant.submitted_at,
     }
 

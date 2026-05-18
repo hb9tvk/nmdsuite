@@ -22,21 +22,8 @@ class CallsignAuthenticationForm(AuthenticationForm):
         return login_username(normalize_callsign(raw))
 
 
-class ProfileEditForm(RegistrationForm):
-    """Profile-edit form for the participant portal.
-
-    Same validators and UX as the public registration form, minus the three
-    immutable identity fields (callsign, first name, email) — which the spec
-    explicitly forbids changing after signup. Their current values are shown
-    as plain text in the template instead.
-    """
-
-    IMMUTABLE_FIELDS = ("callsign", "first_name", "email")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name in self.IMMUTABLE_FIELDS:
-            self.fields.pop(name, None)
+# Identity fields that the operator can never change after registration.
+_IMMUTABLE_REGISTRATION_FIELDS = ("callsign", "first_name", "email")
 
 
 class QsoEntryForm(forms.Form):
@@ -77,30 +64,36 @@ class QsoEntryForm(forms.Form):
     )
 
 
-class StationDescriptionForm(forms.Form):
-    """Station description header + 11 semantic component slots (M2.4).
+class StationDataForm(RegistrationForm):
+    """The unified post-registration edit form.
 
-    Permissive: blank component rows are skipped on save. The 6 kg contest
-    limit is enforced by the M2.5 submit-log action — here it's only a
-    client-side warning so the operator sees they're over before submitting.
+    Inherits every registration field (with its validators and the
+    coordinate-detection logic in ``RegistrationForm.clean``), drops
+    the three identity fields the operator can never change, and adds
+    the equipment-side fields (operator name, output power, 11
+    component slots).
 
-    Slot meaning is positional (STA01 = Transceiver, STA02 = power supply,
-    …) inherited from the legacy nmdlogsubmission app; see
-    ``station_service.COMPONENT_LABELS``.
+    Single form, single save path, single template — no more "two
+    forms for what's logically one record".
     """
 
-    op_name = forms.CharField(
-        label=_("Operator (first and last name)"),
-        max_length=80,
-        required=False,
-    )
-    watt = forms.CharField(label=_("Output power"), max_length=20, required=False)
-
     def __init__(self, *args, **kwargs):
-        # Local import dodges the circular dependency portal.forms ↔ portal.station_service.
+        # Local import dodges the circular dep portal.forms ↔ portal.station_service.
         from .station_service import COMPONENT_LABELS
 
         super().__init__(*args, **kwargs)
+        for name in _IMMUTABLE_REGISTRATION_FIELDS:
+            self.fields.pop(name, None)
+
+        # Equipment fields after the registration ones in iteration order.
+        self.fields["op_name"] = forms.CharField(
+            label=_("Operator (first and last name)"),
+            max_length=80,
+            required=False,
+        )
+        self.fields["watt"] = forms.CharField(
+            label=_("Output power"), max_length=20, required=False,
+        )
         self._component_labels = COMPONENT_LABELS
         for i, label in enumerate(COMPONENT_LABELS, start=1):
             self.fields[f"sta{i:02d}bez"] = forms.CharField(

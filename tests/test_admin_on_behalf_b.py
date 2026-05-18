@@ -34,10 +34,27 @@ def _make_participant(contest, *, username, callsign, submitted=False, auto_subm
         email=f"{username.lower()}@x.org", coord_system_input="wgs84",
         coord_input_e="8.2", coord_input_n="46.8",
         wgs84_lat=46.8, wgs84_lon=8.2, ch1903p_e=2_600_000, ch1903p_n=1_200_000,
-        altitude_m=1500, canton="BE", operating_modes=3,
+        altitude_m=1500, canton="BE", location_text="Niederhorn", operating_modes=3,
         submitted_at=timezone.now() if submitted else None,
         auto_submitted=auto_submitted,
     )
+
+
+# The unified station-data form inherits every registration field. Tests
+# that POST to it need the full payload; this helper keeps the noise
+# out of each test body.
+_VALID_STATION_FORM = {
+    "multi_op": "False",
+    "station_chief": "",
+    "location_text": "Niederhorn",
+    "coord_input_e": "8.2",
+    "coord_input_n": "46.8",
+    "altitude_m": "1500",
+    "canton": "BE",
+    "mode_cw": "on",
+    "mode_ssb": "on",
+    "remarks": "",
+}
 
 
 # --- service: save_station ---------------------------------------------------------------------
@@ -169,7 +186,7 @@ def test_station_get_renders(client, seeded_contest):
     response = client.get(f"/admin/participants/{p.pk}/station/")
     assert response.status_code == 200
     body = response.content.decode()
-    assert "Station description" in body
+    assert "Station data" in body
     assert p.callsign in body
 
 
@@ -179,6 +196,7 @@ def test_station_post_saves_and_audits(client, seeded_contest):
     staff = _make_staff_user()
     client.force_login(staff)
     form = {
+        **_VALID_STATION_FORM,
         "op_name": "Peter",
         "watt": "5",
         "sta01bez": "TX",
@@ -187,9 +205,9 @@ def test_station_post_saves_and_audits(client, seeded_contest):
     response = client.post(f"/admin/participants/{p.pk}/station/", form)
     assert response.status_code == 302
 
-    station = station_service.get_or_init_station(p)
-    assert station.op_name == "Peter"
-    assert station.total_weight_g == 800
+    p.refresh_from_db()
+    assert p.op_name == "Peter"
+    assert p.total_weight_g == 800
 
     entry = AuditLog.objects.get(action="station.update", target=p.callsign)
     assert entry.actor == staff
@@ -203,11 +221,12 @@ def test_station_post_bypasses_submitted_lock(client, seeded_contest):
     )
     client.force_login(_make_staff_user())
     response = client.post(
-        f"/admin/participants/{p.pk}/station/", {"op_name": "Edited After Submit"},
+        f"/admin/participants/{p.pk}/station/",
+        {**_VALID_STATION_FORM, "op_name": "Edited After Submit"},
     )
     assert response.status_code == 302
-    station = station_service.get_or_init_station(p)
-    assert station.op_name == "Edited After Submit"
+    p.refresh_from_db()
+    assert p.op_name == "Edited After Submit"
 
 
 # --- log entry view --------------------------------------------------------------------------

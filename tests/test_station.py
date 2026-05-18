@@ -7,7 +7,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from core.models import AuditLog, Participant, StationComponent, StationDescription
+from core.models import AuditLog, Participant, StationComponent
 from portal import station_service
 
 User = get_user_model()
@@ -32,7 +32,7 @@ def participant(seeded_contest):
 
 
 @pytest.mark.django_db
-def test_save_station_creates_description_and_components(participant):
+def test_save_station_persists_equipment_and_components(participant):
     user, p = participant
     data = {
         "op_name": "Peter",
@@ -44,10 +44,11 @@ def test_save_station_creates_description_and_components(participant):
         "sta03bez": "",
         "sta03gramm": 0,
     }
-    station = station_service.save_station(participant=p, data=data)
-    assert station.op_name == "Peter"
-    assert station.total_weight_g == 2000
-    components = list(station.components.order_by("idx"))
+    station_service.save_station(participant=p, data=data)
+    p.refresh_from_db()
+    assert p.op_name == "Peter"
+    assert p.total_weight_g == 2000
+    components = list(p.components.order_by("idx"))
     assert [c.idx for c in components] == [1, 2]
     assert components[0].description == "Sender + RX (FT-817)"
     assert components[1].weight_g == 800
@@ -61,18 +62,19 @@ def test_save_station_replaces_components_on_re_save(participant):
         participant=p,
         data={"sta01bez": "Old", "sta01gramm": 500, "sta02bez": "Other", "sta02gramm": 300},
     )
-    station = station_service.save_station(
+    station_service.save_station(
         participant=p,
         data={"sta01bez": "New only", "sta01gramm": 1000},
     )
-    components = list(station.components.all())
+    p.refresh_from_db()
+    components = list(p.components.all())
     assert len(components) == 1
     assert components[0].description == "New only"
-    assert station.total_weight_g == 1000
+    assert p.total_weight_g == 1000
 
 
 @pytest.mark.django_db
-def test_initial_from_station_round_trips(participant):
+def test_initial_from_participant_round_trips(participant):
     user, p = participant
     station_service.save_station(
         participant=p,
@@ -82,8 +84,8 @@ def test_initial_from_station_round_trips(participant):
             "sta05bez": "Antenna", "sta05gramm": 350,
         },
     )
-    station = StationDescription.objects.get(participant=p)
-    init = station_service.initial_from_station(station)
+    p.refresh_from_db()
+    init = station_service.initial_from_participant(p)
     assert init["op_name"] == "Peter"
     assert init["sta01bez"] == "TX/RX"
     assert init["sta01gramm"] == 1200
@@ -104,8 +106,9 @@ def test_station_get_renders_form_with_fixed_labels(client, participant):
     body = response.content.decode("utf-8")
     assert "station-form" in body
     assert "station-total-display" in body
-    # 11 component slots present.
-    assert body.count('name="sta') == 22  # bez + gramm per slot
+    # 11 component slots present (sta01bez/gramm … sta11bez/gramm).
+    import re
+    assert len(re.findall(r'name="sta\d{2}', body)) == 22  # bez + gramm per slot
     # Fixed semantic labels from the legacy app, not generic "Component N".
     assert "Transceiver" in body
     assert "Power supply" in body
@@ -113,22 +116,25 @@ def test_station_get_renders_form_with_fixed_labels(client, participant):
 
 
 @pytest.mark.django_db
-def test_station_get_displays_participant_location_readonly(client, participant):
+def test_station_get_prefills_registration_data(client, participant):
+    """The unified station form pre-fills every editable field from
+    the Participant row (location, raw coord inputs, altitude, canton)
+    so the operator can edit them in place."""
     user, p = participant
     client.force_login(user)
     response = client.get("/submission/station/")
     body = response.content.decode("utf-8")
-    # Location name + canton + altitude come from Participant (registration) —
-    # not editable here, rendered as disabled inputs.
+    # Location-name + raw coord inputs come straight from the
+    # participant; canton is a <select> with the option marked selected.
     assert 'value="Niederhorn"' in body
-    assert 'value="BE"' in body
+    assert 'value="8.2"' in body
+    assert 'value="46.8"' in body
     assert 'value="1500"' in body
-    # Coordinates are displayed in CH1903 (LV03) — derived from ch1903p_e/n
-    # (2_600_000 - 2_000_000 = 600_000; 1_200_000 - 1_000_000 = 200_000).
-    assert 'value="600000"' in body
-    assert 'value="200000"' in body
-    # Email is displayed read-only from Participant.
+    assert 'value="BE" selected' in body
+    # Identity fields shown read-only (no `name="callsign"` etc. input).
     assert "t@example.org" in body
+    assert b'name="callsign"' not in response.content
+    assert b'name="email"' not in response.content
 
 
 @pytest.mark.django_db
@@ -157,16 +163,23 @@ def test_station_post_saves_form_and_audits(client, participant):
     response = client.post(
         "/submission/station/",
         {
+            # Registration-side fields (form requires them all now).
+            "multi_op": "False", "station_chief": "",
+            "location_text": "Niederhorn",
+            "coord_input_e": "8.2", "coord_input_n": "46.8",
+            "altitude_m": "1500", "canton": "BE",
+            "mode_cw": "on", "mode_ssb": "on", "remarks": "",
+            # Equipment side.
             "op_name": "Peter", "watt": "5",
             "sta01bez": "TX/RX", "sta01gramm": "1200",
             "sta02bez": "Battery", "sta02gramm": "800",
         },
     )
     assert response.status_code == 302  # redirect after save
-    station = StationDescription.objects.get(participant=p)
-    assert station.op_name == "Peter"
-    assert station.total_weight_g == 2000
-    assert StationComponent.objects.filter(station=station).count() == 2
+    p.refresh_from_db()
+    assert p.op_name == "Peter"
+    assert p.total_weight_g == 2000
+    assert StationComponent.objects.filter(participant=p).count() == 2
 
 
 @pytest.mark.django_db
@@ -181,7 +194,7 @@ def test_station_submitted_state_is_read_only(client, participant):
     # The disabled <fieldset> wrapper blocks all child inputs in one go.
     assert "<fieldset disabled>" in body
     # No save button in submitted state.
-    assert "Save station description" not in body
+    assert "Save station data" not in body
 
 
 @pytest.mark.django_db
@@ -222,30 +235,26 @@ def test_upload_populates_station_description_from_nmd_comments(client, particip
     )
     # Upload view redirects to dashboard after applying the file.
     assert response.status_code == 302
-    station = StationDescription.objects.get(participant=p)
-    assert station.op_name == "Peter"
-    assert station.watt == "5"
-    assert station.total_weight_g == 2000
-    # ORT from the upload now lands on Participant.location_text, not on station.
     p.refresh_from_db()
+    assert p.op_name == "Peter"
+    assert p.watt == "5"
+    assert p.total_weight_g == 2000
     assert p.location_text == "Pilatus"
-    components = list(station.components.order_by("idx"))
+    components = list(p.components.order_by("idx"))
     assert components[0].description == "Sender + RX (FT-817)"
     assert components[1].weight_g == 800
 
 
 @pytest.mark.django_db
 def test_upload_ignores_qah_from_nmd_comments(participant):
-    """QAH is not stored on StationDescription. Altitude only changes when
-    KOORD_X/KOORD_Y are present (and then it comes from Swisstopo, not from
-    the file's own QAH value)."""
+    """Altitude only changes when KOORD_X/KOORD_Y are present (and then
+    it comes from Swisstopo, not from the file's own QAH value)."""
     user, p = participant
     original_altitude = p.altitude_m
     station_service.apply_upload_station_info(p, {"OPNAME": "Peter", "QAH": "9999"})
     p.refresh_from_db()
     assert p.altitude_m == original_altitude
-    station = StationDescription.objects.get(participant=p)
-    assert station.op_name == "Peter"
+    assert p.op_name == "Peter"
 
 
 @pytest.mark.django_db

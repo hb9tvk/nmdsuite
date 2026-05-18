@@ -108,8 +108,7 @@ def build_ranking_page(contest: Contest) -> RankingPage:
             cancelled_at__isnull=True,
             submitted_at__isnull=False,
         )
-        .select_related("station")
-        .prefetch_related("station__components")
+        .prefetch_related("components")
         .order_by("callsign")
     )
     scoring = _scoring_summary(contest)
@@ -193,7 +192,7 @@ def _ranking_for_mode(
     eligible.sort(
         key=lambda p: (
             -per_mode(p)["points"],
-            _station_weight(p),
+            p.total_weight_g,
             p.callsign,
         ),
     )
@@ -212,7 +211,7 @@ def _ranking_for_mode(
             eu_qsos=m["eu"],
             total_qsos=m["nmd"] + m["hb"] + m["eu"],
             points=m["points"],
-            total_weight_g=_station_weight(p),
+            total_weight_g=p.total_weight_g,
         ))
     return rows
 
@@ -230,7 +229,7 @@ def _station_data(
     annotated.sort(
         key=lambda p: (
             -total_points(p),
-            _station_weight(p),
+            p.total_weight_g,
             p.callsign,
         ),
     )
@@ -242,10 +241,10 @@ def _station_data(
             callsign=p.callsign,
             points_total=total_points(p),
             trx=comps.get(_TRX_IDX, ""),
-            watt=getattr(p.station, "watt", "") if hasattr(p, "station") else "",
+            watt=p.watt,
             psu=comps.get(_PSU_IDX, ""),
             antenna=comps.get(_ANTENNA_IDX, ""),
-            total_weight_g=_station_weight(p),
+            total_weight_g=p.total_weight_g,
         ))
     return rows
 
@@ -267,9 +266,7 @@ def _markers(participants: list[Participant]) -> list[MapMarker]:
 
 
 def _station_weight(p: Participant) -> int:
-    """Total station weight in grams; 0 if no station description yet."""
-    station = getattr(p, "station", None)
-    return station.total_weight_g if station else 0
+    return p.total_weight_g
 
 
 def _location_text(p: Participant) -> str:
@@ -277,10 +274,7 @@ def _location_text(p: Participant) -> str:
 
 
 def _components_by_idx(p: Participant) -> dict[int, str]:
-    station = getattr(p, "station", None)
-    if station is None:
-        return {}
-    return {c.idx: c.description for c in station.components.all()}
+    return {c.idx: c.description for c in p.components.all()}
 
 
 # Re-exported so the view/template can label the component columns from

@@ -17,7 +17,6 @@ from .models import (
     ScoringOverride,
     ScoringRecord,
     StationComponent,
-    StationDescription,
 )
 
 
@@ -32,17 +31,15 @@ class StationComponentInline(admin.TabularInline):
     extra = 0
 
 
-@admin.register(StationDescription)
-class StationDescriptionAdmin(admin.ModelAdmin):
-    list_display = ("participant", "total_weight_g")
-    inlines = [StationComponentInline]
-
-
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ("callsign", "contest", "first_name", "canton", "operating_modes", "submitted_at", "cancelled_at")
+    list_display = (
+        "callsign", "contest", "first_name", "canton",
+        "operating_modes", "total_weight_g", "submitted_at", "cancelled_at",
+    )
     list_filter = ("contest", "canton", "operating_modes", "multi_op")
     search_fields = ("callsign", "first_name", "email")
+    inlines = [StationComponentInline]
 
 
 @admin.register(QsoEntry)

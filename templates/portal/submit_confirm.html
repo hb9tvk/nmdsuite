@@ -26,7 +26,7 @@
         {% endif %}
         <dt>{% trans "Total station weight" %}</dt>
         <dd>
-            {{ station.total_weight_g }} g
+            {{ participant.total_weight_g }} g
             {% if weight_over_limit %}
                 <span class="warn-text">— {% trans "exceeds the 6 kg contest limit." %}</span>
             {% endif %}

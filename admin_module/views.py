@@ -25,10 +25,10 @@ from django.views.decorators.http import require_http_methods
 from core.models import AuditLog, Contest, Participant, QsoEntry
 from core.picker import map_picker_context
 from portal import qso_service, station_service, submit_service
-from portal.forms import ProfileEditForm, QsoEntryForm, StationDescriptionForm
+from portal.forms import QsoEntryForm, StationDataForm
 from portal.qso_upload import UploadParseError, parse_upload
 from registration.forms import RegistrationForm
-from registration.services import register_participant, update_participant_profile
+from registration.services import register_participant
 
 from . import backup_service, email_service, services
 from .forms import BulkEmailForm
@@ -268,7 +268,6 @@ def participant_detail(request, pk: int):
     participant = _participant_or_404(contest, pk)
 
     qso_count = participant.qsos.count()
-    station = getattr(participant, "station", None)
 
     return render(
         request,
@@ -278,7 +277,6 @@ def participant_detail(request, pk: int):
             "participant": participant,
             "status": _status_label(participant),
             "qso_count": qso_count,
-            "station": station,
         },
     )
 
@@ -331,64 +329,6 @@ def participant_register(request):
     )
 
 
-def _profile_initial(participant: Participant) -> dict:
-    """Mirror of portal.views._profile_initial — kept local so the admin view
-    doesn't reach into the portal view module."""
-    return {
-        "multi_op": participant.multi_op,
-        "station_chief": participant.station_chief,
-        "location_text": participant.location_text,
-        "coord_input_e": participant.coord_input_e,
-        "coord_input_n": participant.coord_input_n,
-        "altitude_m": participant.altitude_m,
-        "canton": participant.canton,
-        "mode_cw": bool(participant.operating_modes & 1),
-        "mode_ssb": bool(participant.operating_modes & 2),
-        "remarks": participant.remarks,
-    }
-
-
-@_staff_required
-def participant_edit_profile(request, pk: int):
-    """On-behalf edit of a participant's registration data.
-
-    The portal lock on ``submitted_at`` is intentionally NOT enforced here —
-    this view exists so staff can correct mistakes after the operator has
-    already submitted.
-    """
-    contest = _active_contest()
-    if contest is None:
-        messages.error(request, _("No active contest."))
-        return redirect("admin_module:index")
-    participant = _participant_or_404(contest, pk)
-
-    if request.method == "POST":
-        form = ProfileEditForm(request.POST)
-        if form.is_valid():
-            payload = dict(form.cleaned_data)
-            payload["operating_modes"] = form.operating_modes_value()
-            update_participant_profile(
-                participant=participant, form_data=payload, actor=request.user,
-            )
-            messages.success(
-                request,
-                _("Updated registration data for %(call)s.") % {"call": participant.callsign},
-            )
-            return redirect("admin_module:participant_detail", pk=participant.pk)
-    else:
-        form = ProfileEditForm(initial=_profile_initial(participant))
-
-    return render(
-        request,
-        "admin_module/participant_edit_profile.html",
-        {
-            "form": form,
-            "participant": participant,
-            "contest": contest,
-            "registrations_url": reverse("registration:registrations_json"),
-            **map_picker_context(request),
-        },
-    )
 
 
 # --- on-behalf log + station + submit (M4.3b) -------------------------------------------------
@@ -462,7 +402,7 @@ def _render_qso_app(request, participant: Participant, *, form=None, editing_id=
 
 @_staff_required
 def participant_station(request, pk: int):
-    """On-behalf edit of a participant's station description. Mirrors the
+    """On-behalf edit of a participant's station data. Mirrors the
     portal flow but with breadcrumb navigation back to the detail page."""
     contest = _active_contest()
     if contest is None:
@@ -471,22 +411,32 @@ def participant_station(request, pk: int):
     participant = _participant_or_404(contest, pk)
 
     if request.method == "POST":
-        form = StationDescriptionForm(request.POST)
-        form.is_valid()  # permissive: save whatever parses
-        station_service.save_station(
-            participant=participant, data=form.cleaned_data, actor=request.user,
+        form = StationDataForm(request.POST)
+        if form.is_valid():
+            payload = dict(form.cleaned_data)
+            payload["operating_modes"] = form.operating_modes_value()
+            station_service.save_station(
+                participant=participant, data=payload, actor=request.user,
+            )
+            messages.success(
+                request, _("Station data updated for %(call)s.") % {"call": participant.callsign},
+            )
+            return redirect("admin_module:participant_station", pk=participant.pk)
+    else:
+        form = StationDataForm(
+            initial=station_service.initial_from_participant(participant),
         )
-        messages.success(
-            request, _("Station description updated for %(call)s.") % {"call": participant.callsign},
-        )
-        return redirect("admin_module:participant_station", pk=participant.pk)
 
-    station = station_service.get_or_init_station(participant)
-    form = StationDescriptionForm(initial=station_service.initial_from_station(station))
     return render(
         request,
         "admin_module/participant_station.html",
-        {"form": form, "station": station, "participant": participant, "contest": contest},
+        {
+            "form": form,
+            "participant": participant,
+            "contest": contest,
+            "registrations_url": reverse("registration:registrations_json"),
+            **map_picker_context(request),
+        },
     )
 
 
@@ -593,7 +543,7 @@ def participant_qso_upload(request, pk: int):
         participant, parsed.station_info.fields, actor=request.user,
     )
     parts = [_("Imported %(count)d QSO entries from %(name)s.") % {"count": count, "name": uploaded.name}]
-    if outcome.station is not None:
+    if outcome.station_updated:
         parts.append(_("Station description updated."))
     if outcome.location_updated:
         parts.append(_("Location updated from the file; altitude and canton refreshed from Swisstopo."))
