@@ -265,6 +265,7 @@ def score_contest(contest: Contest) -> dict[str, int]:
     status (DUPE_DEDUCTED rows naturally fall to 0).
     """
     from .dupes import mark_dupes
+    from .invalid_callsigns import apply_invalid_callsigns
     from .overrides import apply_overrides
     from .points import assign_points
     from .suspected import detect_suspected
@@ -309,15 +310,17 @@ def score_contest(contest: Contest) -> dict[str, int]:
                 suspected_correct_call=result.suspected_correct_call,
             ))
 
-    # Order matters: detect suspected BEFORE overrides BEFORE dedupe.
-    # A SUSPECTED upgrade can win over plain UNMATCHED in dedup, and an
-    # admin override sits at the top of the priority list.
+    # Order matters: detect suspected BEFORE invalid-callsign BEFORE
+    # overrides BEFORE dedupe. A SUSPECTED upgrade can win over plain
+    # UNMATCHED in dedup. INVALID_CALL downgrades non-NMD before admin
+    # overrides get a chance to put a specific QSO back on the books.
     detect_suspected(
         records,
         qsos_by_key=qsos_by_key,
         participants_by_key=participants_by_key,
         key_by_participant_id=key_by_participant_id,
     )
+    apply_invalid_callsigns(records, contest)
     apply_overrides(records, contest)
     mark_dupes(records)
     assign_points(records)

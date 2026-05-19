@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Fixstation Review" %} — {% trans "Administration" %}{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .fixstation-table { width: 100%; border-collapse: collapse; }
+        .fixstation-table th, .fixstation-table td {
+            padding: 0.4rem 0.6rem; border-bottom: 1px solid #ddd; vertical-align: top;
+        }
+        .fixstation-table th { background: #f0f0f0; text-align: left; }
+        .fixstation-table td.num, .fixstation-table th.num { text-align: right; }
+        .fixstation-table .lookup a { margin-right: 0.6rem; }
+        .fixstation-table .loggers { font-size: 0.85rem; color: #555; }
+        .fixstation-table tr.nmd-typo td { color: #c0392b; }
+        .fixstation-table tr.nmd-typo .loggers { color: #a94236; }
+        .fixstation-table tr.nmd-typo .note { font-size: 0.85rem; font-style: italic; }
+        .fixstation-actions { margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <p>
+        <a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a>
+    </p>
+
+    <h1>{% trans "Fixstation Review" %} — NMD {{ contest.year }}</h1>
+    <p>
+        {% blocktrans %}
+            Non-NMD remote callsigns that were logged by only 1 or 2 participants.
+            Use the external lookups to verify each callsign. Tick the ones that
+            don't check out — flagged callsigns score as <strong>0 points</strong>
+            (deducted from every NMD station that logged them).
+        {% endblocktrans %}
+    </p>
+
+    {% if not candidates %}
+        <div class="banner banner-info">
+            {% trans "No suspicious callsigns found. Every non-NMD remote callsign was logged by 3 or more participants." %}
+        </div>
+    {% else %}
+        <form method="post">
+            {% csrf_token %}
+            <table class="fixstation-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "Callsign" %}</th>
+                        <th class="num">{% trans "Logged by" %}</th>
+                        <th>{% trans "NMD stations" %}</th>
+                        <th>{% trans "External lookup" %}</th>
+                        <th class="num">{% trans "Invalid?" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in candidates %}
+                        <tr {% if c.is_nmd_call %}class="nmd-typo"{% endif %}>
+                            <td><strong>{{ c.callsign }}</strong></td>
+                            <td class="num">{{ c.logger_count }}</td>
+                            <td class="loggers">{{ c.logger_callsigns|join:", " }}</td>
+                            <td class="lookup">
+                                <a href="https://www.qrz.com/db/{{ c.callsign }}" target="_blank" rel="noopener">QRZ.com</a>
+                                <a href="https://www.qrzcq.com/call/{{ c.callsign }}" target="_blank" rel="noopener">QRZCQ</a>
+                                <a href="https://www.hamqth.com/{{ c.callsign }}" target="_blank" rel="noopener">HamQTH</a>
+                            </td>
+                            <td class="num">
+                                {% if c.is_nmd_call %}
+                                    <span class="note">{% trans "NMD station — likely missing /P" %}</span>
+                                {% else %}
+                                    <input type="checkbox" name="invalid" value="{{ c.callsign }}"
+                                           {% if c.is_invalid %}checked{% endif %}>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <p class="fixstation-actions">
+                <button type="submit">{% trans "Save and re-score" %}</button>
+                <span class="hint">
+                    {% trans "Saving rebuilds the invalid-callsign list and re-runs the scoring pipeline." %}
+                </span>
+            </p>
+        </form>
+    {% endif %}
+{% endblock %}

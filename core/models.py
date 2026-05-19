@@ -254,6 +254,7 @@ class ScoringStatus(models.TextChoices):
     ADMIN_ACCEPTED = "admin_accepted", _("Admin-accepted unmatched")
     DUPE_DEDUCTED = "dupe_deducted", _("Duplicate (deducted)")
     SUSPECTED_CALL_MISMATCH = "suspected_call_mismatch", _("Possibly wrong remote callsign")
+    INVALID_CALL = "invalid_call", _("Admin-flagged invalid callsign")
 
 
 class ScoringRecord(models.Model):
@@ -297,6 +298,31 @@ class ScoringOverride(models.Model):
 
     class Meta:
         unique_together = [("participant", "utc_time", "remote_call", "mode")]
+
+
+class InvalidCallsign(models.Model):
+    """Admin-flagged non-NMD callsign that does not award points (M4B).
+
+    The Fixstation Review surface lets staff verify suspicious-looking
+    remote callsigns against external ham databases. Marking a callsign
+    here causes every QSO whose remote_call normalises to the same
+    `core_callsign` to score as ``INVALID_CALL`` (0 pt) regardless of
+    whether it was Swiss or DX. Stored normalised — no /P, no F/ prefix.
+    """
+
+    contest = models.ForeignKey(Contest, on_delete=models.CASCADE, related_name="invalid_callsigns")
+    callsign = models.CharField(max_length=20)
+    flagged_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    flagged_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("contest", "callsign")]
+        ordering = ["callsign"]
+
+    def __str__(self) -> str:
+        return f"{self.callsign} ({self.contest_id})"
 
 
 # --- Cross-cutting: audit log + email log -----------------------------------------------------

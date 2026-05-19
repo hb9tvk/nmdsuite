@@ -40,3 +40,27 @@ def login_username(raw: str) -> str:
     if len(parts) >= 2 and parts[-1].isalpha() and len(parts[-1]) <= 2:
         return "/".join(parts[:-1])
     return call
+
+
+def core_callsign(raw: str) -> str:
+    """Return the operator's "home" callsign, stripping any country
+    prefix and portable/mobile postfix.
+
+    Used for external callsign-database lookups where we want the
+    identity ITU registers (no /P, no foreign-jurisdiction prefix):
+
+        HB9TVK/P       → HB9TVK
+        OE/HB9TVK/P    → HB9TVK
+        F/HB9AFI/P     → HB9AFI
+        DL1ABC         → DL1ABC
+        WB9XYZ/4       → WB9XYZ
+
+    Heuristic: the longest /-separated segment is the home callsign.
+    Prefixes (``F``, ``OE``) and suffixes (``P``, ``M``, ``MM``,
+    digits) are all shorter than the home callsign in real-world data.
+    """
+    norm = normalize_callsign(raw)
+    if not norm:
+        return ""
+    parts = norm.split("/")
+    return max(parts, key=len)
