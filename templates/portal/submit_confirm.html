@@ -7,35 +7,48 @@
 
     <div class="banner banner-warn">
         <strong>{% trans "This action is final." %}</strong>
-        {% trans "After submission you cannot change your QSO log, station description, or registration data." %}
+        {% trans "After submission you cannot change your QSO log, station data, or registration data." %}
     </div>
 
     <h2>{% trans "Summary" %}</h2>
     <dl class="kv">
         <dt>{% trans "Callsign" %}</dt><dd>{{ participant.callsign }}</dd>
         <dt>{% trans "QSOs in log" %}</dt><dd>{{ qso_count }}</dd>
-        {% if invalid_qso_count %}
-            <dt>{% trans "QSO rows with invalid fields" %}</dt>
-            <dd class="warn-text">
-                {% blocktrans count counter=invalid_qso_count %}
-                    {{ counter }} row has errors that may lead to a deduction of points.
-                {% plural %}
-                    {{ counter }} rows have errors that may lead to a deduction of points.
-                {% endblocktrans %}
-            </dd>
-        {% endif %}
         <dt>{% trans "Total station weight" %}</dt>
-        <dd>
-            {{ participant.total_weight_g }} g
-            {% if weight_over_limit %}
-                <span class="warn-text">— {% trans "exceeds the 6 kg contest limit." %}</span>
-            {% endif %}
-        </dd>
+        <dd>{{ participant.total_weight_g }} g</dd>
     </dl>
+
+    {% if validation.blocking_errors %}
+        <div class="banner banner-error">
+            <strong>{% trans "Submission is blocked." %}</strong>
+            {% trans "Fix the following first:" %}
+            <ul>
+                {% for err in validation.blocking_errors %}
+                    <li>{{ err }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if validation.warnings %}
+        <div class="banner banner-warn">
+            <strong>{% trans "Please review before submitting." %}</strong>
+            <ul>
+                {% for w in validation.warnings %}
+                    <li>{{ w }}</li>
+                {% endfor %}
+            </ul>
+            <p class="hint">
+                {% trans "These don't block submission — you can still proceed, but issues remain in the submitted record." %}
+            </p>
+        </div>
+    {% endif %}
 
     <form method="post" class="actions">
         {% csrf_token %}
-        <button type="submit">{% trans "Confirm and submit" %}</button>
+        {% if validation.can_submit %}
+            <button type="submit">{% trans "Confirm and submit" %}</button>
+        {% endif %}
         <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
     </form>
 {% endblock %}

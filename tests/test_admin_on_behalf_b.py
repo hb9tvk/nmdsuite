@@ -15,7 +15,7 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 
-from core.models import AuditLog, Participant, QsoEntry
+from core.models import AuditLog, Participant, QsoEntry, StationComponent
 from portal import qso_service, station_service, submit_service
 
 User = get_user_model()
@@ -55,6 +55,23 @@ _VALID_STATION_FORM = {
     "mode_ssb": "on",
     "remarks": "",
 }
+
+
+def _make_submittable(p: Participant) -> Participant:
+    """Give ``p`` the minimum data submit_log's validator requires."""
+    QsoEntry.objects.create(
+        participant=p, utc_raw="0700", utc_time=p.contest.start_utc, mode="CW",
+        remote_call="HB9X/P", rsts="599", rstr="599",
+        txts="text exchange long enough",
+        txtr="reply exchange long enough",
+    )
+    p.watt = "5W"
+    p.total_weight_g = 3000
+    p.save(update_fields=["watt", "total_weight_g"])
+    StationComponent.objects.create(participant=p, idx=1, description="TX")
+    StationComponent.objects.create(participant=p, idx=2, description="PSU")
+    StationComponent.objects.create(participant=p, idx=5, description="Antenna")
+    return p
 
 
 # --- service: save_station ---------------------------------------------------------------------
@@ -110,6 +127,7 @@ def test_replace_qsos_with_staff_actor_records_on_behalf(seeded_contest):
 def test_submit_log_default_sends_email(seeded_contest, settings):
     settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
     p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
+    _make_submittable(p)
     submit_service.submit_log(participant=p)
     p.refresh_from_db()
     assert p.submitted_at is not None

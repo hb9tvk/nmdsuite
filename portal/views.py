@@ -349,12 +349,17 @@ def submit(request):
         return redirect("portal:dashboard")
 
     if request.method == "POST":
-        submit_service.submit_log(participant=participant)
+        try:
+            submit_service.submit_log(participant=participant)
+        except submit_service.SubmissionRejected as exc:
+            for err in exc.errors:
+                messages.error(request, err)
+            return redirect("portal:submit")
         messages.success(request, _("Your log has been submitted. A confirmation email is on its way."))
         return redirect("portal:dashboard")
 
     qsos = list(qso_service.list_qsos(participant))
-    invalid_count = sum(1 for q in qsos if not q.is_fully_valid)
+    validation = submit_service.validate_for_submission(participant)
     return render(
         request,
         "portal/submit_confirm.html",
@@ -362,8 +367,7 @@ def submit(request):
             "participant": participant,
             "contest": contest,
             "qso_count": len(qsos),
-            "invalid_qso_count": invalid_count,
-            "weight_over_limit": participant.total_weight_g > 6000,
+            "validation": validation,
         },
     )
 
