@@ -180,8 +180,24 @@ footer { color: var(--muted); padding-bottom: 2rem; }
     color: var(--accent-fg);
     cursor: pointer;
 }
+.btn-danger,
 .actions .btn-danger,
-.actions button.btn-danger { background: #c0392b; border-color: #c0392b; }
+.actions a.btn-danger,
+.actions a.btn.btn-danger,
+.actions button.btn-danger {
+    background: #c0392b !important;
+    border-color: #a93226 !important;
+    color: #ffffff !important;
+}
+.btn-danger:hover,
+.actions .btn-danger:hover,
+.actions a.btn-danger:hover,
+.actions a.btn.btn-danger:hover,
+.actions button.btn-danger:hover {
+    background: #a93226 !important;
+    border-color: #922b21 !important;
+    color: #ffffff !important;
+}
 .actions a:not(.btn) { color: var(--accent); }
 
 .placeholder-list { color: var(--muted); }
