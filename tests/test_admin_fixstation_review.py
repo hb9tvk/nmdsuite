@@ -78,14 +78,50 @@ def test_candidates_normalise_to_core_callsign(seeded_contest):
 
 
 @pytest.mark.django_db
-def test_candidates_exclude_nmd_registered_callsigns(seeded_contest):
-    """An NMD-registered callsign that someone logged isn't a candidate
-    even if it appears in only one log — it's not 'non-NMD'."""
+def test_candidates_skip_correctly_logged_nmd_stations(seeded_contest):
+    """When the NMD callsign is logged in its registered form
+    (with /P), it's a normal NMD↔NMD attempt — not suspicious."""
     a = _make_participant(seeded_contest, username="HB9A", callsign="HB9A/P")
     _make_participant(seeded_contest, username="HB9B", callsign="HB9B/P")
-    _add_qso(a, remote="HB9B/P")  # NMD station — corroborated by its own log
+    _add_qso(a, remote="HB9B/P")
 
     assert build_candidates(seeded_contest) == []
+
+
+@pytest.mark.django_db
+def test_candidates_surface_nmd_call_logged_without_p(seeded_contest):
+    """A registered NMD callsign logged in its bare form (no /P) is
+    surfaced as a likely typo — flagged ``is_nmd_call=True`` so the
+    template can highlight it."""
+    a = _make_participant(seeded_contest, username="HB9A", callsign="HB9A/P")
+    _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    _add_qso(a, remote="HB9TVK")  # missing /P
+
+    candidates = build_candidates(seeded_contest)
+    assert [c.callsign for c in candidates] == ["HB9TVK"]
+    assert candidates[0].is_nmd_call is True
+    assert candidates[0].logger_count == 1
+
+
+@pytest.mark.django_db
+def test_candidates_nmd_correctly_logged_does_not_inflate_typo_count(seeded_contest):
+    """If HB9TVK is registered, 10 stations logging ``HB9TVK/P``
+    correctly + 1 logging ``HB9TVK`` bare should surface the 1 bare
+    sighting — the 10 correct ones shouldn't dilute the count."""
+    typo_logger = _make_participant(seeded_contest, username="HB9TYPO", callsign="HB9TYPO/P")
+    _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    _add_qso(typo_logger, remote="HB9TVK")  # bare — typo
+    for n in range(3):
+        correct = _make_participant(
+            seeded_contest, username=f"HB9OK{n}", callsign=f"HB9OK{n}/P",
+        )
+        _add_qso(correct, remote="HB9TVK/P")  # correct form
+
+    candidates = build_candidates(seeded_contest)
+    by_call = {c.callsign: c for c in candidates}
+    # Only the typo-side surfaced; logger_count counts the bare sighting only.
+    assert by_call["HB9TVK"].is_nmd_call is True
+    assert by_call["HB9TVK"].logger_count == 1
 
 
 @pytest.mark.django_db

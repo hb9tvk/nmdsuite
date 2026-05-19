@@ -12,6 +12,9 @@
         .fixstation-table td.num, .fixstation-table th.num { text-align: right; }
         .fixstation-table .lookup a { margin-right: 0.6rem; }
         .fixstation-table .loggers { font-size: 0.85rem; color: #555; }
+        .fixstation-table tr.nmd-typo td { color: #c0392b; }
+        .fixstation-table tr.nmd-typo .loggers { color: #a94236; }
+        .fixstation-table tr.nmd-typo .note { font-size: 0.85rem; font-style: italic; }
         .fixstation-actions { margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; }
     </style>
 {% endblock %}
@@ -50,7 +53,7 @@
                 </thead>
                 <tbody>
                     {% for c in candidates %}
-                        <tr>
+                        <tr {% if c.is_nmd_call %}class="nmd-typo"{% endif %}>
                             <td><strong>{{ c.callsign }}</strong></td>
                             <td class="num">{{ c.logger_count }}</td>
                             <td class="loggers">{{ c.logger_callsigns|join:", " }}</td>
@@ -60,8 +63,12 @@
                                 <a href="https://www.hamqth.com/{{ c.callsign }}" target="_blank" rel="noopener">HamQTH</a>
                             </td>
                             <td class="num">
-                                <input type="checkbox" name="invalid" value="{{ c.callsign }}"
-                                       {% if c.is_invalid %}checked{% endif %}>
+                                {% if c.is_nmd_call %}
+                                    <span class="note">{% trans "NMD station — likely missing /P" %}</span>
+                                {% else %}
+                                    <input type="checkbox" name="invalid" value="{{ c.callsign }}"
+                                           {% if c.is_invalid %}checked{% endif %}>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}

@@ -29,11 +29,22 @@ class FixstationCandidate:
     logger_count: int  # distinct NMD participants who logged this call
     logger_callsigns: list[str]  # for display
     is_invalid: bool  # whether currently flagged via InvalidCallsign
+    is_nmd_call: bool  # core matches a registered NMD station — likely missing /P typo
 
 
 def build_candidates(contest: Contest) -> list[FixstationCandidate]:
     """Return the candidate list, sorted by logger_count ASC then
-    callsign ASC (most suspicious first)."""
+    callsign ASC (most suspicious first).
+
+    Two flavours of candidate are surfaced:
+    - **Non-NMD remotes** (1-2 loggers): operator could have misheard
+      the call; admin verifies against external databases.
+    - **NMD callsigns logged without /P** (the bare form): the
+      operator forgot the portable suffix. The pairing engine already
+      treats this as SUSPECTED_CALL_MISMATCH (0 pt), but surfacing
+      it on this page lets the admin notice and follow up. Marked
+      ``is_nmd_call=True`` so the template can highlight it.
+    """
     registered_keys = {
         normalize_callsign(c).split("/")[0]
         for c in Participant.objects
@@ -42,6 +53,8 @@ def build_candidates(contest: Contest) -> list[FixstationCandidate]:
     }
 
     # Group QSO remote calls by core_callsign → set of NMD logger callsigns.
+    # Non-NMD: every sighting counts. NMD bare: only sightings without a
+    # slash count (correct /P loggings aren't suspicious).
     loggers_by_call: dict[str, set[str]] = defaultdict(set)
     for qso in (
         QsoEntry.objects
@@ -53,12 +66,14 @@ def build_candidates(contest: Contest) -> list[FixstationCandidate]:
         .exclude(remote_call="")
         .select_related("participant")
     ):
+        norm = normalize_callsign(qso.remote_call)
         core = core_callsign(qso.remote_call)
         if not core:
             continue
-        # Exclude NMD-registered callsigns; only suspicious non-NMD remotes.
         if core in registered_keys:
-            continue
+            # NMD station — only count loggings that omitted the /P.
+            if "/" in norm:
+                continue
         loggers_by_call[core].add(qso.participant.callsign)
 
     flagged = set(
@@ -76,6 +91,7 @@ def build_candidates(contest: Contest) -> list[FixstationCandidate]:
             logger_count=len(loggers),
             logger_callsigns=sorted(loggers),
             is_invalid=call in flagged,
+            is_nmd_call=call in registered_keys,
         ))
     # Most suspicious first (lowest logger count); callsign breaks ties.
     out.sort(key=lambda c: (c.logger_count, c.callsign))
