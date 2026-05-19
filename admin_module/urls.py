@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("", views.index, name="index"),
     path("audit/", views.audit_log, name="audit_log"),
+    path("fixstation/", views.fixstation_review, name="fixstation_review"),
     # Contest lifecycle transitions (M4.2). All POST-only.
     path("contest/close-registration/", views.close_registration, name="close_registration"),
     path("contest/open-logs/", views.open_log_submission, name="open_log_submission"),

@@ -34,6 +34,7 @@ POINTS_BY_STATUS: dict[str, int] = {
     ScoringStatus.UNMATCHED: 0,
     ScoringStatus.SUSPECTED_CALL_MISMATCH: 0,
     ScoringStatus.DUPE_DEDUCTED: 0,
+    ScoringStatus.INVALID_CALL: 0,
 }
 
 

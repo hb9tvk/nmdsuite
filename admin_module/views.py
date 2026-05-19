@@ -22,15 +22,17 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
+from core.audit import audit
 from core.models import AuditLog, Contest, Participant, QsoEntry
 from core.picker import map_picker_context
 from portal import qso_service, station_service, submit_service
 from portal.forms import QsoEntryForm, StationDataForm
 from portal.qso_upload import UploadParseError, parse_upload
+from registration.callsigns import normalize_callsign
 from registration.forms import RegistrationForm
 from registration.services import register_participant
 
-from . import backup_service, email_service, services
+from . import backup_service, email_service, fixstation_service, services
 from .forms import BulkEmailForm
 
 
@@ -711,6 +713,61 @@ def bulk_email(request):
             "recipients": recipients,
             "recipient_count": recipient_count,
         },
+    )
+
+
+# --- Fixstation Review (M4B) ----------------------------------------------------------------
+
+
+@_staff_required
+def fixstation_review(request):
+    """Surface suspicious non-NMD remote callsigns for manual verification.
+
+    Candidates are non-NMD callsigns logged by 1 or 2 participants — the
+    risk of a misheard or mistyped call is highest there. Admin ticks the
+    ones that fail external-database lookup; saving rebuilds the contest's
+    :class:`InvalidCallsign` set and re-runs the scoring pipeline so
+    points reflect the new flags immediately.
+    """
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    if request.method == "POST":
+        marked = {
+            normalize_callsign(c)
+            for c in request.POST.getlist("invalid")
+            if c.strip()
+        }
+        added, removed = fixstation_service.apply_invalid_flags(
+            contest=contest, marked_invalid=marked, actor=request.user,
+        )
+        if added or removed:
+            # Re-score so the per-QSO points reflect the new flags.
+            from scoring.pairing import score_contest
+
+            score_contest(contest)
+            audit(
+                action="fixstation.update",
+                actor=request.user,
+                contest=contest,
+                payload={"added": added, "removed": removed},
+            )
+            messages.success(
+                request,
+                _("Updated invalid-callsign list: %(added)d added, %(removed)d removed. "
+                  "Scoring has been re-run.") % {"added": added, "removed": removed},
+            )
+        else:
+            messages.info(request, _("No changes to the invalid-callsign list."))
+        return redirect("admin_module:fixstation_review")
+
+    candidates = fixstation_service.build_candidates(contest)
+    return render(
+        request,
+        "admin_module/fixstation_review.html",
+        {"contest": contest, "candidates": candidates},
     )
 
 
