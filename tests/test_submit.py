@@ -309,9 +309,9 @@ def test_dashboard_hides_destructive_actions_after_submit(client, participant):
     client.force_login(user)
     response = client.get("/submission/")
     body = response.content.decode("utf-8")
-    # Submit / Cancel / upload form must be gone post-submit.
+    # Submit / Unsubscribe / upload form must be gone post-submit.
     assert "Submit log" not in body
-    assert "Cancel participation" not in body
+    assert "Unsubscribe" not in body
     assert "qso-upload-form" not in body
     # Read-only views still linked (button stays so the operator can
     # see the saved data, even though edits are blocked).

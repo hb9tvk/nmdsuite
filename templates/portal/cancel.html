@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% trans "Cancel participation" %} — NMD{% endblock %}
+{% block title %}{% trans "Unsubscribe" %} — NMD{% endblock %}
 
 {% block content %}
-    <h1>{% trans "Cancel participation" %}</h1>
+    <h1>{% trans "Unsubscribe" %}</h1>
 
     <p>
         {% blocktrans with year=contest.year callsign=participant.callsign %}
-            You're about to cancel your registration for NMD {{ year }} as {{ callsign }}.
+            You're about to unsubscribe from NMD {{ year }} as {{ callsign }}.
         {% endblocktrans %}
     </p>
     <p>
@@ -17,7 +17,7 @@
     <form method="post" class="cancel-form">
         {% csrf_token %}
         <p class="actions">
-            <button type="submit" class="btn-danger">{% trans "Yes, cancel my participation" %}</button>
+            <button type="submit" class="btn-danger">{% trans "Yes, unsubscribe" %}</button>
             <a href="{% url 'portal:dashboard' %}">{% trans "Keep my registration" %}</a>
         </p>
     </form>

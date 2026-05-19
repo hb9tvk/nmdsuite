@@ -57,6 +57,9 @@
         <p class="actions">
             <a href="{% url 'portal:log_entry' %}" class="btn">{% trans "Log entry" %}</a>
             <a href="{% url 'portal:station' %}" class="btn">{% trans "Station data" %}</a>
+            {% if not participant.submitted_at %}
+                <a href="{% url 'portal:cancel' %}" class="btn btn-danger">{% trans "Unsubscribe" %}</a>
+            {% endif %}
             {% if participant_list_available %}
                 <a href="{% url 'portal:participant_list' %}" class="btn">{% trans "Participant list (PDF)" %}</a>
             {% endif %}
@@ -94,7 +97,6 @@
                 </p>
                 <p class="actions">
                     <a href="{% url 'portal:submit' %}" class="btn btn-primary">{% trans "Submit log" %}</a>
-                    <a href="{% url 'portal:cancel' %}" class="btn btn-danger">{% trans "Cancel participation" %}</a>
                 </p>
             </section>
         {% endif %}
