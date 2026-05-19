@@ -32,12 +32,32 @@ def _force_submitted(p):
     p.save(update_fields=["submitted_at"])
 
 
+def _make_submittable(p):
+    """Give ``p`` the minimum data required to pass submission validation:
+    a logged QSO + the three required components + output power + weight."""
+    from core.models import StationComponent
+    QsoEntry.objects.create(
+        participant=p, utc_raw="0700", utc_time=p.contest.start_utc, mode="CW",
+        remote_call="HB9X/P", rsts="599", rstr="599",
+        txts="text exchange that is long enough",
+        txtr="reply exchange long enough too",
+    )
+    p.watt = "5W"
+    p.total_weight_g = 4500
+    p.save(update_fields=["watt", "total_weight_g"])
+    StationComponent.objects.create(participant=p, idx=1, description="FT-857", weight_g=1500)
+    StationComponent.objects.create(participant=p, idx=2, description="LiFePO4", weight_g=1200)
+    StationComponent.objects.create(participant=p, idx=5, description="Linked dipole", weight_g=500)
+    return p
+
+
 # --- confirm page ----------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
 def test_submit_get_renders_confirm_page(client, participant):
     user, p = participant
+    _make_submittable(p)
     client.force_login(user)
     response = client.get("/submission/submit/")
     assert response.status_code == 200
@@ -49,18 +69,21 @@ def test_submit_get_renders_confirm_page(client, participant):
 @pytest.mark.django_db
 def test_submit_get_shows_invalid_qso_count(client, participant):
     user, p = participant
+    _make_submittable(p)
+    # Add an invalid QSO on top of the submittable baseline.
     QsoEntry.objects.create(participant=p, utc_raw="bad", remote_call="", rsts="", rstr="")
     client.force_login(user)
     response = client.get("/submission/submit/")
     body = response.content.decode("utf-8")
-    # 1 invalid row is surfaced as a warning but not a blocker.
-    assert "1" in body
-    assert "Confirm and submit" in body
+    # Invalid row is surfaced as a warning but not a blocker.
+    assert "invalid fields" in body or "ungültige" in body.lower()
+    assert "Confirm and submit" in body  # still submittable
 
 
 @pytest.mark.django_db
 def test_submit_get_shows_weight_over_limit_warning(client, participant):
     user, p = participant
+    _make_submittable(p)
     p.total_weight_g = 7500
     p.save(update_fields=["total_weight_g"])
     client.force_login(user)
@@ -76,6 +99,7 @@ def test_submit_get_shows_weight_over_limit_warning(client, participant):
 def test_submit_post_locks_participant_and_sends_email(client, participant, settings):
     settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
     user, p = participant
+    _make_submittable(p)
     client.force_login(user)
     response = client.post("/submission/submit/")
     assert response.status_code == 302
@@ -193,6 +217,89 @@ def test_log_entry_get_renders_read_only_after_submit(client, participant):
     assert "Submitted" in body or "submitted" in body
     # The QSO itself is still rendered.
     assert "HB9ABC/P" in body
+
+
+# --- submission validation -------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_submit_blocked_when_log_is_empty(client, participant):
+    """Empty logs cannot be submitted. The confirm page shows the blocker
+    and hides the submit button."""
+    user, p = participant
+    # Equipment is fine, just no QSOs.
+    from core.models import StationComponent
+    p.watt = "5W"
+    p.total_weight_g = 3000
+    p.save(update_fields=["watt", "total_weight_g"])
+    StationComponent.objects.create(participant=p, idx=1, description="TX")
+    StationComponent.objects.create(participant=p, idx=2, description="PSU")
+    StationComponent.objects.create(participant=p, idx=5, description="Antenna")
+
+    client.force_login(user)
+    body = client.get("/submission/submit/").content.decode()
+    assert "log is empty" in body.lower() or "leer" in body.lower()
+    assert "Confirm and submit" not in body  # button hidden
+
+    # POST is rejected too.
+    response = client.post("/submission/submit/")
+    assert response.status_code == 302
+    p.refresh_from_db()
+    assert p.submitted_at is None
+
+
+@pytest.mark.django_db
+def test_submit_blocked_when_required_equipment_missing(client, participant):
+    """TRX / PSU / Antenna / Watt / weight > 0 are all required."""
+    user, p = participant
+    QsoEntry.objects.create(
+        participant=p, utc_raw="0700", utc_time=p.contest.start_utc, mode="CW",
+        remote_call="HB9X/P", rsts="599", rstr="599",
+    )
+    # No equipment at all.
+    client.force_login(user)
+    body = client.get("/submission/submit/").content.decode()
+    assert "Transceiver" in body
+    assert "Power supply" in body
+    assert "Antenna" in body
+    assert "Output power" in body
+    assert "weight" in body.lower()
+    assert "Confirm and submit" not in body
+
+
+@pytest.mark.django_db
+def test_submit_post_rejected_by_service_if_blocking_state(client, participant):
+    """If the operator slips through the form and POSTs while still
+    invalid, the service refuses defensively."""
+    user, p = participant
+    # No QSOs, no equipment — every blocker triggers.
+    client.force_login(user)
+    response = client.post("/submission/submit/")
+    assert response.status_code == 302
+    p.refresh_from_db()
+    assert p.submitted_at is None
+    # Reasons surface as flash messages on the redirect target.
+    follow = client.get(response["Location"])
+    body = follow.content.decode()
+    assert "log is empty" in body.lower() or "leer" in body.lower()
+
+
+@pytest.mark.django_db
+def test_submit_allows_invalid_qso_rows_as_warning(client, participant):
+    """Invalid UTC / short text / dupe QSOs are warnings, not blockers —
+    the operator can still confirm."""
+    user, p = participant
+    _make_submittable(p)
+    QsoEntry.objects.create(
+        participant=p, utc_raw="zzzz", remote_call="", rsts="", rstr="",
+    )
+
+    client.force_login(user)
+    response = client.post("/submission/submit/")
+    assert response.status_code == 302
+    assert response["Location"].endswith("/submission/")
+    p.refresh_from_db()
+    assert p.submitted_at is not None
 
 
 @pytest.mark.django_db

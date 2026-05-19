@@ -35,7 +35,7 @@
             </div>
         {% endif %}
 
-        <h2>{% trans "Station data" %}</h2>
+        <h2>{% trans "Registration data" %}</h2>
         <dl class="kv">
             <dt>{% trans "Callsign" %}</dt><dd>{{ participant.callsign }}</dd>
             <dt>{% trans "First name" %}</dt><dd>{{ participant.first_name }}</dd>
@@ -66,10 +66,6 @@
             {% if contest.results_published_at %}
                 <a href="{% url 'portal:scoring' %}" class="btn">{% trans "View your scoring" %}</a>
             {% endif %}
-            {% if not participant.submitted_at %}
-                <a href="{% url 'portal:submit' %}" class="btn btn-primary">{% trans "Submit log" %}</a>
-                <a href="{% url 'portal:cancel' %}" class="btn btn-danger">{% trans "Cancel participation" %}</a>
-            {% endif %}
         </p>
 
         {% if not participant.submitted_at %}
@@ -87,6 +83,19 @@
                     <input type="file" name="file" accept=".csv,.nmd" required>
                     <button type="submit">{% trans "Upload" %}</button>
                 </form>
+            </section>
+
+            <hr class="dashboard-divider">
+
+            <section class="dashboard-finalise">
+                <h2>{% trans "Finalise" %}</h2>
+                <p class="hint">
+                    {% trans "When your log and station data are complete, submit them — submission is final." %}
+                </p>
+                <p class="actions">
+                    <a href="{% url 'portal:submit' %}" class="btn btn-primary">{% trans "Submit log" %}</a>
+                    <a href="{% url 'portal:cancel' %}" class="btn btn-danger">{% trans "Cancel participation" %}</a>
+                </p>
             </section>
         {% endif %}
 
