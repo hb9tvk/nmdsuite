@@ -4,6 +4,20 @@ from __future__ import annotations
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def english_for_tests(settings):
+    """Pin every test to the English locale.
+
+    The project defaults to German (``LANGUAGE_CODE = "de"``), and after M5
+    the .po files actually contain translations — so response bodies
+    render in German. Tests assert against the English msgid strings
+    (the source-code form), so we force ``LANGUAGE_CODE = "en"`` here.
+    Browser-driven Playwright tests, if any, would need their own locale
+    handling.
+    """
+    settings.LANGUAGE_CODE = "en"
+
+
 @pytest.fixture
 def seeded_contest(db):
     """A 2026 contest row seeded via the management command."""

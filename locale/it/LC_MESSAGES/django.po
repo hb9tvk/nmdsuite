@@ -1,11 +1,2060 @@
-# NMDSuite Italian translation.
+# NMDSuite German translation.
 # This file is distributed under the same license as the NMDSuite package.
 msgid ""
 msgstr ""
 "Project-Id-Version: nmdsuite 0.1\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-19 15:44+0000\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin_module/forms.py:17
+msgid "Subject"
+msgstr "Oggetto"
+
+#: admin_module/forms.py:22 templates/admin_module/bulk_email.html:34
+msgid "Message"
+msgstr "Messaggio"
+
+#: admin_module/views.py:82 admin_module/views.py:137 admin_module/views.py:223
+#: admin_module/views.py:268 admin_module/views.py:294
+#: admin_module/views.py:411 admin_module/views.py:451
+#: admin_module/views.py:521 admin_module/views.py:571
+#: admin_module/views.py:591 admin_module/views.py:675
+#: admin_module/views.py:734
+msgid "No active contest."
+msgstr "Nessun contest attivo."
+
+#: admin_module/views.py:98
+msgid "Registration closed."
+msgstr "Iscrizione chiusa."
+
+#: admin_module/views.py:107
+msgid "Log submission opened."
+msgstr "Invio dei log aperto."
+
+#: admin_module/views.py:116
+#, python-format
+msgid "Log submission closed; %(n)d pending logs were auto-submitted."
+msgstr "Invio chiuso; %(n)d log in attesa sono stati inviati automaticamente."
+
+#: admin_module/views.py:125
+msgid "Results published."
+msgstr "Risultati pubblicati."
+
+#: admin_module/views.py:140
+msgid "Registration reopened."
+msgstr "Iscrizione riaperta."
+
+#: admin_module/views.py:141
+msgid "Reverted to registration closed."
+msgstr "Tornato a iscrizione chiusa."
+
+#: admin_module/views.py:144
+#, python-format
+msgid "Log submission reopened; %(n)d auto-submitted logs unlocked."
+msgstr "Invio riaperto; %(n)d log auto-inviati sbloccati."
+
+#: admin_module/views.py:146
+msgid "Results unpublished."
+msgstr "Pubblicazione dei risultati annullata."
+
+#: admin_module/views.py:150
+msgid "Nothing to revert from this state."
+msgstr "Nulla da annullare da questo stato."
+
+#: admin_module/views.py:171
+msgid "Invalid year."
+msgstr "Anno non valido."
+
+#: admin_module/views.py:180
+#, python-format
+msgid ""
+"Archived previous contests and deactivated participant accounts. NMD %(y)d "
+"seeded."
+msgstr "Contest precedenti archiviati e account partecipanti disattivati. NMD %(y)d creato."
+
+#: admin_module/views.py:309 registration/views.py:46
+msgid "This callsign is already registered for the current contest."
+msgstr "Questo nominativo è già iscritto al contest in corso."
+
+#: admin_module/views.py:314
+#, python-format
+msgid "Registered %(call)s on behalf."
+msgstr "%(call)s iscritto per conto dell'operatore."
+
+#: admin_module/views.py:424
+#, python-format
+msgid "Station data updated for %(call)s."
+msgstr "Dati stazione aggiornati per %(call)s."
+
+#: admin_module/views.py:527 portal/views.py:257
+msgid "Please choose a file to upload."
+msgstr "Selezionare un file da caricare."
+
+#: admin_module/views.py:532 portal/views.py:262
+msgid "Only .csv and .nmd files are supported."
+msgstr "Sono supportati solo i file .csv e .nmd."
+
+#: admin_module/views.py:547 portal/views.py:275
+#, python-format
+msgid "Imported %(count)d QSO entries from %(name)s."
+msgstr "Importati %(count)d QSO da %(name)s."
+
+#: admin_module/views.py:549 portal/views.py:277
+msgid "Station description updated."
+msgstr "Descrizione stazione aggiornata."
+
+#: admin_module/views.py:551 portal/views.py:279
+msgid ""
+"Location updated from the file; altitude and canton refreshed from Swisstopo."
+msgstr "Posizione aggiornata dal file; altitudine e cantone aggiornati da Swisstopo."
+
+#: admin_module/views.py:556
+msgid ""
+"The coordinates in the file are outside Switzerland or could not be parsed — "
+"the registered location was kept."
+msgstr "Le coordinate del file sono fuori dalla Svizzera o illeggibili — la posizione registrata è stata mantenuta."
+
+#: admin_module/views.py:576
+msgid "Already submitted; nothing to do."
+msgstr "Già inviato; nulla da fare."
+
+#: admin_module/views.py:580
+#, python-format
+msgid "Submitted log on behalf of %(call)s."
+msgstr "Log inviato per conto di %(call)s."
+
+#: admin_module/views.py:596
+msgid "Not currently submitted; nothing to release."
+msgstr "Non attualmente inviato; nulla da sbloccare."
+
+#: admin_module/views.py:600
+#, python-format
+msgid "Released submission for %(call)s."
+msgstr "Invio sbloccato per %(call)s."
+
+#: admin_module/views.py:644
+msgid "Please choose a backup file to upload."
+msgstr "Selezionare un file di backup da caricare."
+
+#: admin_module/views.py:694
+#, python-format
+msgid "Sent %(sent)d of %(total)d messages; %(failed)d failed."
+msgstr "Inviati %(sent)d di %(total)d messaggi; %(failed)d falliti."
+
+#: admin_module/views.py:701
+#, python-format
+msgid "Sent %(sent)d messages."
+msgstr "Inviati %(sent)d messaggi."
+
+#: admin_module/views.py:759
+#, python-format
+msgid ""
+"Updated invalid-callsign list: %(added)d added, %(removed)d removed. Scoring "
+"has been re-run."
+msgstr "Lista nominativi non validi aggiornata: %(added)d aggiunti, %(removed)d rimossi. Il punteggio è stato ricalcolato."
+
+#: admin_module/views.py:763
+msgid "No changes to the invalid-callsign list."
+msgstr "Nessuna modifica alla lista dei nominativi non validi."
+
+#: core/models.py:21
+msgid "Registration open"
+msgstr "Iscrizione aperta"
+
+#: core/models.py:22 templates/registration/closed.html:3
+msgid "Registration closed"
+msgstr "Iscrizione chiusa"
+
+#: core/models.py:23
+msgid "Log submission open"
+msgstr "Invio dei log aperto"
+
+#: core/models.py:24
+msgid "Log submission closed"
+msgstr "Invio dei log chiuso"
+
+#: core/models.py:25
+msgid "Scored"
+msgstr "Valutato"
+
+#: core/models.py:26 templates/admin_module/index.html:18
+msgid "Results published"
+msgstr "Risultati pubblicati"
+
+#: core/models.py:27
+msgid "Archived"
+msgstr "Archiviato"
+
+#: core/models.py:30
+msgid "UTC date of the contest"
+msgstr "Data UTC del contest"
+
+#: core/models.py:31
+msgid "Contest start (06:00 UTC)"
+msgstr "Inizio del contest (06:00 UTC)"
+
+#: core/models.py:32
+msgid "Contest end (09:59:59 UTC)"
+msgstr "Fine del contest (09:59:59 UTC)"
+
+#: core/models.py:33
+msgid "Boundary between H1 and H2 (08:00 UTC)"
+msgstr "Confine tra H1 e H2 (08:00 UTC)"
+
+#: core/models.py:58 templates/portal/dashboard.html:51
+msgid "CW + SSB"
+msgstr "CW + SSB"
+
+#: core/models.py:63
+msgid "Operator/station callsign without /P"
+msgstr "Nominativo operatore/stazione senza /P"
+
+#: core/models.py:71
+msgid "Original easting/longitude as entered"
+msgstr "Coordinata est/longitudine inserita originale"
+
+#: core/models.py:72
+msgid "Original northing/latitude as entered"
+msgstr "Coordinata nord/latitudine inserita originale"
+
+#: core/models.py:75
+msgid ""
+"Friendly location name (SOTA ref, summit name, …) — the named counterpart of "
+"the coordinates"
+msgstr "Nome del luogo (riferimento SOTA, nome della vetta, …) — il corrispettivo nominale delle coordinate"
+
+#: core/models.py:84
+msgid "2-letter Swiss canton code"
+msgstr "Codice di 2 lettere del cantone svizzero"
+
+#: core/models.py:96
+msgid "Total station weight (grams) — used as ranking tiebreaker"
+msgstr "Peso totale della stazione (grammi) — usato come spareggio nella classifica"
+
+#: core/models.py:103
+msgid ""
+"Set when the operator finalises and locks their log + station description"
+msgstr "Impostato quando l'operatore finalizza e blocca il proprio log e la descrizione della stazione"
+
+#: core/models.py:108
+msgid ""
+"True if submitted_at was set by admin's 'close log submission' (rather than "
+"by the operator). Used to scope the un-submit when reverting the LOGS_CLOSED "
+"→ LOGS_OPEN transition."
+msgstr "Vero se submitted_at è stato impostato dall'azione admin «chiudere l'invio» (non dall'operatore). Usato per limitare l'annullamento dell'invio quando si torna da LOGS_CLOSED a LOGS_OPEN."
+
+#: core/models.py:249
+msgid "Unmatched NMD QSO"
+msgstr "QSO NMD non appaiato"
+
+#: core/models.py:250
+msgid "Full NMD match"
+msgstr "Appaiamento NMD completo"
+
+#: core/models.py:251
+msgid "NMD match with text errors"
+msgstr "Appaiamento NMD con errori di testo"
+
+#: core/models.py:252
+msgid "Swiss non-NMD QSO"
+msgstr "QSO svizzero non-NMD"
+
+#: core/models.py:253
+msgid "DX QSO"
+msgstr "QSO DX"
+
+#: core/models.py:254
+msgid "Admin-accepted unmatched"
+msgstr "Non appaiato accettato dall'admin"
+
+#: core/models.py:255
+msgid "Duplicate (deducted)"
+msgstr "Duplicato (dedotto)"
+
+#: core/models.py:256
+msgid "Possibly wrong remote callsign"
+msgstr "Nominativo remoto errato"
+
+#: core/models.py:257
+msgid "Admin-flagged invalid callsign"
+msgstr "Nominativo segnalato non valido dall'admin"
+
+#: core/models.py:274
+msgid "1 = 06–08 UTC, 2 = 08–10 UTC"
+msgstr "1 = 06–08 UTC, 2 = 08–10 UTC"
+
+#: core/models.py:338
+msgid "Free-text actor (e.g. 'system')"
+msgstr "Attore in testo libero (es. «system»)"
+
+#: core/models.py:356
+msgid "Queued"
+msgstr "In coda"
+
+#: core/models.py:357
+msgid "Sent"
+msgstr "Inviato"
+
+#: core/models.py:358
+msgid "Failed"
+msgstr "Fallito"
+
+#: portal/forms.py:42
+msgid "UTC (HHMM)"
+msgstr "UTC (HHMM)"
+
+#: portal/forms.py:46 registration/forms.py:21
+#: templates/admin_module/fixstation_review.html:47
+#: templates/admin_module/participant_station.html:43
+#: templates/admin_module/participants_index.html:42
+#: templates/portal/_qso_app.html:27 templates/portal/_qso_form.html:25
+#: templates/portal/dashboard.html:40 templates/portal/login.html:12
+#: templates/portal/station.html:30 templates/portal/submit_confirm.html:15
+#: templates/public/_ranking_table.html:6 templates/public/ranking.html:52
+msgid "Callsign"
+msgstr "Nominativo"
+
+#: portal/forms.py:50 templates/portal/_qso_app.html:28
+#: templates/portal/_qso_form.html:29
+msgid "RST sent"
+msgstr "RST inviato"
+
+#: portal/forms.py:54 templates/portal/_qso_app.html:29
+#: templates/portal/_qso_form.html:33
+msgid "Text sent"
+msgstr "Testo inviato"
+
+#: portal/forms.py:58 templates/portal/_qso_app.html:30
+msgid "RST received"
+msgstr "RST ricevuto"
+
+#: portal/forms.py:62 templates/portal/_qso_app.html:31
+#: templates/portal/_qso_form.html:41
+msgid "Text received"
+msgstr "Testo ricevuto"
+
+#: portal/forms.py:90
+msgid "Operator (first and last name)"
+msgstr "Operatore (nome e cognome)"
+
+#: portal/forms.py:95 templates/admin_module/participant_station.html:82
+#: templates/portal/station.html:69 templates/public/ranking.html:55
+msgid "Output power"
+msgstr "Potenza d'uscita"
+
+#: portal/forms.py:105 templates/admin_module/participant_station.html:92
+#: templates/portal/station.html:79
+msgid "Weight (g)"
+msgstr "Peso (g)"
+
+#: portal/station_service.py:33
+msgid "Transceiver"
+msgstr "Ricetrasmettitore"
+
+#: portal/station_service.py:34
+msgid "Power supply"
+msgstr "Alimentazione"
+
+#: portal/station_service.py:35
+msgid "Headphones / speaker"
+msgstr "Cuffie / altoparlante"
+
+#: portal/station_service.py:36
+msgid "Key / paddle / microphone"
+msgstr "Tasto / paddle / microfono"
+
+#: portal/station_service.py:37
+msgid "Antenna / matching unit"
+msgstr "Antenna / accordatore"
+
+#: portal/station_service.py:38
+msgid "Feedline"
+msgstr "Linea di alimentazione"
+
+#: portal/station_service.py:39
+msgid "Masts / counterweights"
+msgstr "Pali / contrappesi"
+
+#: portal/station_service.py:40
+msgid "Guying / insulators"
+msgstr "Tiranti / isolatori"
+
+#: portal/station_service.py:41
+msgid "PC and accessories"
+msgstr "PC e accessori"
+
+#: portal/station_service.py:42 portal/station_service.py:43
+msgid "Additional station component"
+msgstr "Componente stazione aggiuntivo"
+
+#: portal/submit_service.py:67
+msgid "Your log is empty — submit at least one QSO before finalising."
+msgstr "Il tuo log è vuoto — inserisci almeno un QSO prima di finalizzare."
+
+#: portal/submit_service.py:72
+msgid "Output power (Watt) is required in the station data."
+msgstr "La potenza d'uscita (Watt) è obbligatoria nei dati della stazione."
+
+#: portal/submit_service.py:74
+msgid "Total station weight must be greater than 0 g."
+msgstr "Il peso totale della stazione deve essere maggiore di 0 g."
+
+#: portal/submit_service.py:84
+#, python-format
+msgid "Station data is missing required component: %(label)s."
+msgstr "Manca un componente obbligatorio nei dati stazione: %(label)s."
+
+#: portal/submit_service.py:91
+#, python-format
+msgid "%(n)d QSO row(s) have invalid fields (UTC, RST, text length, etc.)."
+msgstr "%(n)d riga/righe QSO contengono campi non validi (UTC, RST, lunghezza testo, ecc.)."
+
+#: portal/submit_service.py:97
+#, python-format
+msgid "%(n)d QSO(s) look like duplicates and will be deducted at scoring."
+msgstr "%(n)d QSO sembrano duplicati e saranno dedotti dal punteggio."
+
+#: portal/submit_service.py:102
+msgid "Total station weight exceeds the 6 kg contest limit."
+msgstr "Il peso totale della stazione supera il limite contest di 6 kg."
+
+#: portal/views.py:57 portal/views.py:119 portal/views.py:303
+#: portal/views.py:345 portal/views.py:455
+msgid "You are not registered for the current contest."
+msgstr "Non sei iscritto al contest in corso."
+
+#: portal/views.py:60 portal/views.py:308
+msgid "Your log has been submitted; further changes are not possible."
+msgstr "Il tuo log è stato inviato; ulteriori modifiche non sono possibili."
+
+#: portal/views.py:99
+msgid ""
+"Your participation has been cancelled. You can register again any time "
+"before the contest."
+msgstr "La tua partecipazione è stata annullata. Puoi iscriverti nuovamente in qualsiasi momento prima del contest."
+
+#: portal/views.py:284
+msgid ""
+"The coordinates in the file are outside Switzerland or could not be parsed — "
+"your registered location was kept."
+msgstr "Le coordinate del file sono fuori dalla Svizzera o illeggibili — la tua posizione registrata è stata mantenuta."
+
+#: portal/views.py:315
+msgid "Station data saved."
+msgstr "Dati stazione salvati."
+
+#: portal/views.py:348
+msgid "Your log has already been submitted."
+msgstr "Il tuo log è già stato inviato."
+
+#: portal/views.py:358
+msgid "Your log has been submitted. A confirmation email is on its way."
+msgstr "Il tuo log è stato inviato. Una mail di conferma è in arrivo."
+
+#: portal/views.py:397
+msgid "The participant list will be available once registration closes."
+msgstr "L'elenco partecipanti sarà disponibile alla chiusura delle iscrizioni."
+
+#: portal/views.py:427
+msgid "Your ADIF download will be available once you submit your log."
+msgstr "Il download ADIF sarà disponibile dopo l'invio del tuo log."
+
+#: registration/constants.py:8
+msgid "Aargau"
+msgstr "Argovia"
+
+#: registration/constants.py:9
+msgid "Appenzell Innerrhoden"
+msgstr "Appenzello Interno"
+
+#: registration/constants.py:10
+msgid "Appenzell Ausserrhoden"
+msgstr "Appenzello Esterno"
+
+#: registration/constants.py:11
+msgid "Bern"
+msgstr "Berna"
+
+#: registration/constants.py:12
+msgid "Basel-Landschaft"
+msgstr "Basilea Campagna"
+
+#: registration/constants.py:13
+msgid "Basel-Stadt"
+msgstr "Basilea Città"
+
+#: registration/constants.py:14
+msgid "Fribourg"
+msgstr "Friborgo"
+
+#: registration/constants.py:15
+msgid "Genève"
+msgstr "Ginevra"
+
+#: registration/constants.py:16
+msgid "Glarus"
+msgstr "Glarona"
+
+#: registration/constants.py:17
+msgid "Graubünden"
+msgstr "Grigioni"
+
+#: registration/constants.py:18
+msgid "Jura"
+msgstr "Giura"
+
+#: registration/constants.py:19
+msgid "Luzern"
+msgstr "Lucerna"
+
+#: registration/constants.py:20
+msgid "Neuchâtel"
+msgstr "Neuchâtel"
+
+#: registration/constants.py:21
+msgid "Nidwalden"
+msgstr "Nidvaldo"
+
+#: registration/constants.py:22
+msgid "Obwalden"
+msgstr "Obvaldo"
+
+#: registration/constants.py:23
+msgid "St. Gallen"
+msgstr "San Gallo"
+
+#: registration/constants.py:24
+msgid "Schaffhausen"
+msgstr "Sciaffusa"
+
+#: registration/constants.py:25
+msgid "Solothurn"
+msgstr "Soletta"
+
+#: registration/constants.py:26
+msgid "Schwyz"
+msgstr "Svitto"
+
+#: registration/constants.py:27
+msgid "Thurgau"
+msgstr "Turgovia"
+
+#: registration/constants.py:28
+msgid "Ticino"
+msgstr "Ticino"
+
+#: registration/constants.py:29
+msgid "Uri"
+msgstr "Uri"
+
+#: registration/constants.py:30
+msgid "Vaud"
+msgstr "Vaud"
+
+#: registration/constants.py:31
+msgid "Valais"
+msgstr "Vallese"
+
+#: registration/constants.py:32
+msgid "Zug"
+msgstr "Zugo"
+
+#: registration/constants.py:33
+msgid "Zürich"
+msgstr "Zurigo"
+
+#: registration/forms.py:23
+msgid "Your contest callsign, with /P if you use it on air."
+msgstr "Il tuo nominativo contest, con /P se lo usi così in aria."
+
+#: registration/forms.py:25 templates/admin_module/participant_station.html:47
+#: templates/portal/dashboard.html:41 templates/portal/station.html:34
+msgid "First name"
+msgstr "Nome"
+
+#: registration/forms.py:26 templates/admin_module/participant_detail.html:21
+#: templates/portal/dashboard.html:42
+msgid "Email"
+msgstr "E-mail"
+
+#: registration/forms.py:29 templates/portal/dashboard.html:43
+msgid "Multi-operator station"
+msgstr "Stazione multi-operatore"
+
+#: registration/forms.py:30
+msgid "No (single operator)"
+msgstr "No (operatore singolo)"
+
+#: registration/forms.py:30 templates/portal/dashboard.html:44
+msgid "Yes"
+msgstr "Sì"
+
+#: registration/forms.py:36
+msgid "Station chief callsign"
+msgstr "Nominativo del capo stazione"
+
+#: registration/forms.py:39
+msgid "Required only for multi-operator stations."
+msgstr "Richiesto solo per stazioni multi-operatore."
+
+#: registration/forms.py:43 templates/portal/dashboard.html:45
+msgid "Location name"
+msgstr "Nome del luogo"
+
+#: registration/forms.py:45
+msgid ""
+"Friendly name for your station's location (SOTA reference, summit name, …)."
+msgstr "Nome del luogo della tua stazione (riferimento SOTA, nome della vetta, …)."
+
+#: registration/forms.py:48
+msgid "Easting / longitude"
+msgstr "Coordinata est / longitudine"
+
+#: registration/forms.py:50
+msgid "WGS84 e.g. 8.2275 — CH1903 e.g. 660000 — CH1903+ e.g. 2660000"
+msgstr "WGS84 es. 8.2275 — CH1903 es. 660000 — CH1903+ es. 2660000"
+
+#: registration/forms.py:54
+msgid "Northing / latitude"
+msgstr "Coordinata nord / latitudine"
+
+#: registration/forms.py:56
+msgid "WGS84 e.g. 46.8182 — CH1903 e.g. 190000 — CH1903+ e.g. 1190000"
+msgstr "WGS84 es. 46.8182 — CH1903 es. 190000 — CH1903+ es. 1190000"
+
+#: registration/forms.py:60
+msgid "Altitude (m a.s.l.)"
+msgstr "Altitudine (m s.l.m.)"
+
+#: registration/forms.py:63 registration/forms.py:77
+msgid ""
+"Filled automatically from Swisstopo when you pick a location on the map."
+msgstr "Compilato automaticamente da Swisstopo quando selezioni un luogo sulla mappa."
+
+#: registration/forms.py:75 templates/admin_module/participant_detail.html:23
+#: templates/admin_module/participants_index.html:44
+#: templates/portal/dashboard.html:46
+msgid "Canton"
+msgstr "Cantone"
+
+#: registration/forms.py:76
+msgid "— select —"
+msgstr "— selezionare —"
+
+#: registration/forms.py:84
+msgid "CW"
+msgstr "CW"
+
+#: registration/forms.py:85
+msgid "SSB"
+msgstr "SSB"
+
+#: registration/forms.py:88 templates/portal/dashboard.html:53
+msgid "Remarks"
+msgstr "Note"
+
+#: registration/forms.py:96 registration/forms.py:105
+msgid "Not a recognizable callsign."
+msgstr "Nominativo non riconosciuto."
+
+#: registration/forms.py:112 templates/partials/_location_scripts.html:22
+msgid "Below 800 m — contest rules require minimum 800 m a.s.l."
+msgstr "Sotto i 800 m — il regolamento del contest richiede almeno 800 m s.l.m."
+
+#: registration/forms.py:124
+msgid "Please provide the station chief callsign for multi-operator stations."
+msgstr "Inserisci il nominativo del capo stazione per stazioni multi-operatore."
+
+#: registration/forms.py:131
+msgid "Select at least one operating mode (CW or SSB)."
+msgstr "Seleziona almeno un modo (CW o SSB)."
+
+#: templates/admin_module/audit_log.html:3
+#: templates/admin_module/audit_log.html:6
+#: templates/admin_module/index.html:121
+msgid "Audit log"
+msgstr "Log di controllo"
+
+#: templates/admin_module/audit_log.html:10
+#: templates/admin_module/audit_log.html:41
+#: templates/admin_module/index.html:134
+msgid "Action"
+msgstr "Azione"
+
+#: templates/admin_module/audit_log.html:12
+msgid "(all)"
+msgstr "(tutti)"
+
+#: templates/admin_module/audit_log.html:19
+msgid "Actor (username)"
+msgstr "Attore (nome utente)"
+
+#: templates/admin_module/audit_log.html:23
+msgid "Target contains"
+msgstr "Destinatario contiene"
+
+#: templates/admin_module/audit_log.html:26
+#: templates/admin_module/participants_index.html:30
+msgid "Filter"
+msgstr "Filtra"
+
+#: templates/admin_module/audit_log.html:27
+msgid "Reset"
+msgstr "Reimposta"
+
+#: templates/admin_module/audit_log.html:31
+msgid "No entries match."
+msgstr "Nessuna voce corrispondente."
+
+#: templates/admin_module/audit_log.html:34
+#, python-format
+msgid "%(total)s entries"
+msgstr "%(total)s voci"
+
+#: templates/admin_module/audit_log.html:39
+#: templates/admin_module/index.html:132
+msgid "When (UTC)"
+msgstr "Quando (UTC)"
+
+#: templates/admin_module/audit_log.html:40
+#: templates/admin_module/index.html:133
+msgid "Actor"
+msgstr "Attore"
+
+#: templates/admin_module/audit_log.html:42
+#: templates/admin_module/index.html:135
+msgid "Target"
+msgstr "Destinatario"
+
+#: templates/admin_module/audit_log.html:43
+#: templates/admin_module/index.html:12
+msgid "Contest"
+msgstr "Contest"
+
+#: templates/admin_module/audit_log.html:44
+msgid "Payload"
+msgstr "Payload"
+
+#: templates/admin_module/audit_log.html:64
+msgid "Previous"
+msgstr "Precedente"
+
+#: templates/admin_module/audit_log.html:66
+#, python-format
+msgid "Page %(n)s of %(total)s"
+msgstr "Pagina %(n)s di %(total)s"
+
+#: templates/admin_module/audit_log.html:68
+msgid "Next"
+msgstr "Successivo"
+
+#: templates/admin_module/audit_log.html:74
+msgid "Back to administration"
+msgstr "Torna all'amministrazione"
+
+#: templates/admin_module/backup.html:3 templates/admin_module/backup.html:10
+#: templates/admin_module/index.html:118
+msgid "Backup / restore"
+msgstr "Backup / ripristino"
+
+#: templates/admin_module/backup.html:3 templates/admin_module/backup.html:7
+#: templates/admin_module/bulk_email.html:3
+#: templates/admin_module/bulk_email.html:7
+#: templates/admin_module/fixstation_review.html:3
+#: templates/admin_module/fixstation_review.html:24
+#: templates/admin_module/index.html:3 templates/admin_module/index.html:6
+#: templates/admin_module/participant_detail.html:3
+#: templates/admin_module/participant_detail.html:9
+#: templates/admin_module/participant_log_entry.html:3
+#: templates/admin_module/participant_log_entry.html:11
+#: templates/admin_module/participant_register.html:9
+#: templates/admin_module/participant_station.html:3
+#: templates/admin_module/participant_station.html:11
+#: templates/admin_module/participants_index.html:6 templates/base.html:19
+msgid "Administration"
+msgstr "Amministrazione"
+
+#: templates/admin_module/backup.html:14
+msgid "Restore complete in this worker."
+msgstr "Ripristino completato in questo worker."
+
+#: templates/admin_module/backup.html:15
+msgid ""
+"\n"
+"                The container runs multiple gunicorn workers; the others "
+"still\n"
+"                have open file handles to the previous database file. "
+"Restart\n"
+"                the container (e.g. <code>docker compose restart</code>) to\n"
+"                make sure every worker is using the restored database. You\n"
+"                will need to log in again.\n"
+"            "
+msgstr "\n                Il container avvia più worker gunicorn; gli altri hanno ancora\n                handle aperti sul precedente database. Riavvia il container\n                (es. <code>docker compose restart</code>) affinché tutti i\n                worker usino il database ripristinato. Sarà necessario\n                effettuare nuovamente l'accesso.\n            "
+
+#: templates/admin_module/backup.html:26
+msgid "Backup"
+msgstr "Backup"
+
+#: templates/admin_module/backup.html:28
+msgid ""
+"Download a transaction-consistent SQLite snapshot of the current database. "
+"Safe to run any time — does not pause writes."
+msgstr "Scarica un'istantanea SQLite coerente dal punto di vista transazionale del database attuale. Sicuro in qualsiasi momento — non blocca le scritture."
+
+#: templates/admin_module/backup.html:33
+msgid "Download backup"
+msgstr "Scarica backup"
+
+#: templates/admin_module/backup.html:39
+msgid "Restore"
+msgstr "Ripristina"
+
+#: templates/admin_module/backup.html:41
+msgid ""
+"Uploads a previously-downloaded SQLite file and replaces the live database "
+"with it. The previous database is moved aside as a .bak file on the server."
+msgstr "Carica un file SQLite scaricato in precedenza e sostituisce con esso il database attivo. Il precedente database viene messo da parte come file .bak sul server."
+
+#: templates/admin_module/backup.html:44
+msgid ""
+"This REPLACES the entire database with the uploaded file. All current data "
+"will be moved aside as a .bak file. After restore, the container should be "
+"restarted to ensure all workers pick up the new data. Continue?"
+msgstr "Questo SOSTITUISCE l'intero database con il file caricato. Tutti i dati attuali saranno spostati come file .bak. Dopo il ripristino, riavvia il container affinché tutti i worker utilizzino i nuovi dati. Continuare?"
+
+#: templates/admin_module/backup.html:51
+msgid "Backup file (.sqlite3):"
+msgstr "File di backup (.sqlite3):"
+
+#: templates/admin_module/backup.html:55
+msgid "Restore from file"
+msgstr "Ripristina dal file"
+
+#: templates/admin_module/backup.html:56
+#: templates/admin_module/bulk_email.html:63
+#: templates/admin_module/participant_register.html:54
+#: templates/portal/_qso_form.html:53
+msgid "Cancel"
+msgstr "Annulla"
+
+#: templates/admin_module/bulk_email.html:3
+#: templates/admin_module/index.html:117
+msgid "Bulk email"
+msgstr "Email di massa"
+
+#: templates/admin_module/bulk_email.html:10
+#, python-format
+msgid "Bulk email — NMD %(year)s"
+msgstr "Email di massa — NMD %(year)s"
+
+#: templates/admin_module/bulk_email.html:13
+msgid "Recipients"
+msgstr "Destinatari"
+
+#: templates/admin_module/bulk_email.html:15
+#, python-format
+msgid ""
+"\n"
+"                %(n)s active participant will receive this message.\n"
+"            "
+msgid_plural ""
+"\n"
+"                %(n)s active participants will receive this message.\n"
+"            "
+msgstr[0] "\n                %(n)s partecipante attivo riceverà questo messaggio.\n            "
+msgstr[1] "\n                %(n)s partecipanti attivi riceveranno questo messaggio.\n            "
+
+#: templates/admin_module/bulk_email.html:23
+msgid "Show recipient list"
+msgstr "Mostra elenco destinatari"
+
+#: templates/admin_module/bulk_email.html:36
+#, python-brace-format
+msgid ""
+"Plain text. You can use {callsign} and {first_name} in subject or body; each "
+"recipient sees their own values."
+msgstr "Testo semplice. Puoi usare {callsign} e {first_name} nell'oggetto o nel corpo; ogni destinatario vede i propri valori."
+
+#: templates/admin_module/bulk_email.html:39
+#, python-format
+msgid "Send this message to %(n)s participant?"
+msgid_plural "Send this message to %(n)s participants?"
+msgstr[0] "Inviare questo messaggio a %(n)s partecipante?"
+msgstr[1] "Inviare questo messaggio a %(n)s partecipanti?"
+
+#: templates/admin_module/bulk_email.html:62
+msgid "Send now"
+msgstr "Invia ora"
+
+#: templates/admin_module/fixstation_review.html:3
+#: templates/admin_module/fixstation_review.html:27
+msgid "Fixstation Review"
+msgstr "Verifica fixstation"
+
+#: templates/admin_module/fixstation_review.html:29
+msgid ""
+"\n"
+"            Non-NMD remote callsigns that were logged by only 1 or 2 "
+"participants.\n"
+"            Use the external lookups to verify each callsign. Tick the ones "
+"that\n"
+"            don't check out — flagged callsigns score as <strong>0 points</"
+"strong>\n"
+"            (deducted from every NMD station that logged them).\n"
+"        "
+msgstr "\n            Nominativi remoti non-NMD registrati da soli 1 o 2 partecipanti.\n            Usa le banche dati esterne per verificare ogni nominativo. Spunta quelli\n            che non convincono — i nominativi segnalati valgono <strong>0 punti</strong>\n            (dedotti da ogni stazione NMD che li ha registrati).\n        "
+
+#: templates/admin_module/fixstation_review.html:39
+msgid ""
+"No suspicious callsigns found. Every non-NMD remote callsign was logged by 3 "
+"or more participants."
+msgstr "Nessun nominativo sospetto trovato. Ogni nominativo remoto non-NMD è stato registrato da 3 o più partecipanti."
+
+#: templates/admin_module/fixstation_review.html:48
+msgid "Logged by"
+msgstr "Registrato da"
+
+#: templates/admin_module/fixstation_review.html:49
+msgid "NMD stations"
+msgstr "Stazioni NMD"
+
+#: templates/admin_module/fixstation_review.html:50
+msgid "External lookup"
+msgstr "Ricerca esterna"
+
+#: templates/admin_module/fixstation_review.html:51
+msgid "Invalid?"
+msgstr "Non valido?"
+
+#: templates/admin_module/fixstation_review.html:67
+msgid "NMD station — likely missing /P"
+msgstr "Stazione NMD — probabilmente manca /P"
+
+#: templates/admin_module/fixstation_review.html:79
+msgid "Save and re-score"
+msgstr "Salva e ricalcola"
+
+#: templates/admin_module/fixstation_review.html:81
+msgid ""
+"Saving rebuilds the invalid-callsign list and re-runs the scoring pipeline."
+msgstr "Il salvataggio ricostruisce l'elenco dei nominativi non validi e ricalcola il punteggio."
+
+#: templates/admin_module/index.html:9
+msgid "No active contest. Seed one via"
+msgstr "Nessun contest attivo. Crearne uno tramite"
+
+#: templates/admin_module/index.html:14
+msgid "Year"
+msgstr "Anno"
+
+#: templates/admin_module/index.html:15
+msgid "Date"
+msgstr "Data"
+
+#: templates/admin_module/index.html:16
+msgid "State"
+msgstr "Stato"
+
+#: templates/admin_module/index.html:25
+msgid "Contest lifecycle"
+msgstr "Ciclo di vita del contest"
+
+#: templates/admin_module/index.html:26
+msgid "Each step is one-way; the audit log records every transition."
+msgstr "Ogni passaggio è unidirezionale; il log di audit registra ogni transizione."
+
+#: templates/admin_module/index.html:30
+msgid "Close registration? No new participants can sign up after this."
+msgstr "Chiudere l'iscrizione? Dopo questo nessun nuovo partecipante potrà iscriversi."
+
+#: templates/admin_module/index.html:32
+msgid "Close registration"
+msgstr "Chiudere l'iscrizione"
+
+#: templates/admin_module/index.html:38
+msgid "Open log submission"
+msgstr "Aprire l'invio dei log"
+
+#: templates/admin_module/index.html:43
+msgid ""
+"Close log submission? Pending logs will be auto-submitted in their current "
+"state."
+msgstr "Chiudere l'invio? I log in attesa saranno inviati automaticamente nel loro stato attuale."
+
+#: templates/admin_module/index.html:45
+msgid "Close log submission (auto-submit pending)"
+msgstr "Chiudere l'invio (auto-invio in attesa)"
+
+#: templates/admin_module/index.html:50
+msgid ""
+"Publish results? Participants will be able to see their scoring breakdown."
+msgstr "Pubblicare i risultati? I partecipanti potranno vedere il dettaglio del proprio punteggio."
+
+#: templates/admin_module/index.html:52
+msgid "Publish results"
+msgstr "Pubblicare i risultati"
+
+#: templates/admin_module/index.html:56
+msgid ""
+"Contest published. Use the 'Setup new contest' form below when ready to "
+"start a new edition."
+msgstr "Contest pubblicato. Usa il modulo «Nuovo contest» qui sotto quando sei pronto a iniziare una nuova edizione."
+
+#: templates/admin_module/index.html:60
+msgid ""
+"Revert to the previous state? If reverting 'log submission closed', the auto-"
+"submitted logs will be unlocked so operators can edit again."
+msgstr "Tornare allo stato precedente? Annullando «invio chiuso», i log auto-inviati saranno sbloccati."
+
+#: templates/admin_module/index.html:63
+msgid "Revert to previous state"
+msgstr "Tornare allo stato precedente"
+
+#: templates/admin_module/index.html:70
+msgid "Setup new contest"
+msgstr "Nuovo contest"
+
+#: templates/admin_module/index.html:72
+msgid ""
+"Archives the current contest and deactivates all non-staff accounts. "
+"Participants will need to re-register."
+msgstr "Archivia il contest attuale e disattiva tutti gli account non-staff. I partecipanti dovranno iscriversi nuovamente."
+
+#: templates/admin_module/index.html:75
+msgid ""
+"This archives the current contest AND deactivates every participant account. "
+"Are you sure?"
+msgstr "Questo archivia il contest attuale E disattiva ogni account partecipante. Sei sicuro?"
+
+#: templates/admin_module/index.html:78 templates/scoring/review.html:10
+msgid "Year:"
+msgstr "Anno:"
+
+#: templates/admin_module/index.html:81
+msgid "Archive + create"
+msgstr "Archivia + crea"
+
+#: templates/admin_module/index.html:86 templates/admin_module/index.html:115
+#: templates/admin_module/participant_detail.html:11
+#: templates/admin_module/participant_log_entry.html:13
+#: templates/admin_module/participant_register.html:11
+#: templates/admin_module/participant_station.html:13
+#: templates/admin_module/participants_index.html:3
+#: templates/admin_module/participants_index.html:8
+#: templates/scoring/review.html:27
+msgid "Participants"
+msgstr "Partecipanti"
+
+#: templates/admin_module/index.html:90
+msgid "Registered (incl. cancelled)"
+msgstr "Iscritti (inclusi annullati)"
+
+#: templates/admin_module/index.html:94
+msgid "Active"
+msgstr "Attivi"
+
+#: templates/admin_module/index.html:98
+msgid "Logs submitted"
+msgstr "Log inviati"
+
+#: templates/admin_module/index.html:102
+msgid "Pending submission"
+msgstr "Invio in attesa"
+
+#: templates/admin_module/index.html:106
+#: templates/admin_module/participants_index.html:27
+msgid "Cancelled"
+msgstr "Annullati"
+
+#: templates/admin_module/index.html:113
+msgid "Tools"
+msgstr "Strumenti"
+
+#: templates/admin_module/index.html:115
+msgid "on-behalf registration and editing"
+msgstr "Iscrizione e modifica per conto"
+
+#: templates/admin_module/index.html:116 templates/portal/dashboard.html:64
+msgid "Participant list (PDF)"
+msgstr "Elenco partecipanti (PDF)"
+
+#: templates/admin_module/index.html:116
+msgid "downloadable roster (available after registration closes)"
+msgstr "Elenco scaricabile (disponibile dopo la chiusura delle iscrizioni)"
+
+#: templates/admin_module/index.html:117
+msgid "send a message to all active participants"
+msgstr "Inviare un messaggio a tutti i partecipanti attivi"
+
+#: templates/admin_module/index.html:118
+msgid "download a SQLite snapshot or restore from one"
+msgstr "Scaricare un'istantanea SQLite o ripristinare da una di esse"
+
+#: templates/admin_module/index.html:119 templates/scoring/review.html:3
+#: templates/scoring/review.html:6
+msgid "Scoring review"
+msgstr "Verifica punteggio"
+
+#: templates/admin_module/index.html:119
+msgid "per-QSO status, points, suspected calls"
+msgstr "Per QSO: stato, punti, nominativi sospetti"
+
+#: templates/admin_module/index.html:120
+msgid "Fixstation review"
+msgstr "Verifica fixstation"
+
+#: templates/admin_module/index.html:120
+msgid "verify suspicious non-NMD callsigns against external databases"
+msgstr "Verificare nominativi non-NMD sospetti tramite banche dati esterne"
+
+#: templates/admin_module/index.html:121
+msgid "every admin/system action with filters"
+msgstr "Ogni azione admin/sistema con filtri"
+
+#: templates/admin_module/index.html:122
+msgid "Django admin"
+msgstr "Admin Django"
+
+#: templates/admin_module/index.html:122
+msgid "low-level data inspection (registrations, QSOs, emails, etc.)"
+msgstr "Ispezione a basso livello dei dati (iscrizioni, QSO, e-mail, ecc.)"
+
+#: templates/admin_module/index.html:128
+msgid "Recent activity"
+msgstr "Attività recente"
+
+#: templates/admin_module/index.html:149
+msgid "Full audit log →"
+msgstr "Log di controllo completo →"
+
+#: templates/admin_module/participant_detail.html:15
+msgid "On-behalf editing surface. Changes are audited with you as the actor."
+msgstr "Interfaccia di modifica per conto. Le modifiche sono registrate con te come attore."
+
+#: templates/admin_module/participant_detail.html:18 templates/base.html:15
+msgid "Registration"
+msgstr "Iscrizione"
+
+#: templates/admin_module/participant_detail.html:20
+#: templates/admin_module/participants_index.html:43
+msgid "Name"
+msgstr "Nome"
+
+#: templates/admin_module/participant_detail.html:22
+#: templates/partials/_location_fieldset.html:5
+#: templates/public/_ranking_table.html:7
+msgid "Location"
+msgstr "Luogo"
+
+#: templates/admin_module/participant_detail.html:24
+#: templates/portal/dashboard.html:47
+msgid "Altitude"
+msgstr "Altitudine"
+
+#: templates/admin_module/participant_detail.html:26
+msgid "Coordinates (WGS84)"
+msgstr "Coordinate (WGS84)"
+
+#: templates/admin_module/participant_detail.html:30
+#: templates/portal/dashboard.html:48
+msgid "Coordinates (CH1903)"
+msgstr "Coordinate (CH1903)"
+
+#: templates/admin_module/participant_detail.html:33
+#: templates/admin_module/participants_index.html:45
+msgid "Multi-op"
+msgstr "Multi-op"
+
+#: templates/admin_module/participant_detail.html:36
+msgid "yes"
+msgstr "sì"
+
+#: templates/admin_module/participant_detail.html:36
+msgid "chief:"
+msgstr "capo:"
+
+#: templates/admin_module/participant_detail.html:38
+msgid "no"
+msgstr "no"
+
+#: templates/admin_module/participant_detail.html:41
+msgid "Modes"
+msgstr "Modi"
+
+#: templates/admin_module/participant_detail.html:48
+msgid "Registered at"
+msgstr "Iscritto il"
+
+#: templates/admin_module/participant_detail.html:49
+#: templates/admin_module/participants_index.html:46
+#: templates/portal/scoring.html:71 templates/scoring/review.html:63
+msgid "Status"
+msgstr "Stato"
+
+#: templates/admin_module/participant_detail.html:51
+msgid "Submitted at"
+msgstr "Inviato il"
+
+#: templates/admin_module/participant_detail.html:54
+msgid "auto-submitted"
+msgstr "auto-inviato"
+
+#: templates/admin_module/participant_detail.html:58
+msgid "Cancelled at"
+msgstr "Annullato il"
+
+#: templates/admin_module/participant_detail.html:71
+msgid "Log"
+msgstr "Log"
+
+#: templates/admin_module/participant_detail.html:73
+msgid "QSO entries"
+msgstr "Voci QSO"
+
+#: templates/admin_module/participant_detail.html:74
+#: templates/admin_module/participant_station.html:97
+#: templates/portal/station.html:84 templates/portal/submit_confirm.html:17
+msgid "Total station weight"
+msgstr "Peso totale della stazione"
+
+#: templates/admin_module/participant_detail.html:79
+#: templates/portal/_qso_app.html:33
+msgid "Actions"
+msgstr "Azioni"
+
+#: templates/admin_module/participant_detail.html:82
+msgid "Edit station data"
+msgstr "Modifica dati stazione"
+
+#: templates/admin_module/participant_detail.html:85
+msgid "Log entry / upload"
+msgstr "Inserimento log / upload"
+
+#: templates/admin_module/participant_detail.html:90
+msgid "Release this submission so the operator can edit again?"
+msgstr "Sbloccare questo invio così che l'operatore possa modificarlo di nuovo?"
+
+#: templates/admin_module/participant_detail.html:95
+msgid "Release submission"
+msgstr "Sbloccare l'invio"
+
+#: templates/admin_module/participant_detail.html:98
+msgid ""
+"Submit this participant's log on their behalf? No confirmation email is sent."
+msgstr "Inviare il log di questo partecipante per suo conto? Non viene inviata alcuna mail di conferma."
+
+#: templates/admin_module/participant_detail.html:103
+msgid "Submit log on behalf"
+msgstr "Inviare il log per conto"
+
+#: templates/admin_module/participant_log_entry.html:3
+#: templates/portal/dashboard.html:58 templates/portal/log_entry.html:3
+msgid "Log entry"
+msgstr "Inserimento log"
+
+#: templates/admin_module/participant_log_entry.html:18
+#: templates/portal/log_entry.html:10
+#, python-format
+msgid "Log entry — %(callsign)s"
+msgstr "Inserimento log — %(callsign)s"
+
+#: templates/admin_module/participant_log_entry.html:20
+msgid ""
+"On-behalf editing. The portal's post-submit lock is bypassed here so staff "
+"can amend a submitted log if needed."
+msgstr "Modifica per conto. Il blocco post-invio del portale viene aggirato qui per permettere allo staff di correggere un log inviato se necessario."
+
+#: templates/admin_module/participant_log_entry.html:25
+#, python-format
+msgid ""
+"\n"
+"                Log was submitted on %(when)s UTC. Edits will alter the "
+"submitted log.\n"
+"            "
+msgstr "\n                Il log è stato inviato il %(when)s UTC. Le modifiche alterano il log inviato.\n            "
+
+#: templates/admin_module/participant_log_entry.html:34
+#: templates/portal/dashboard.html:77
+msgid "Upload .nmd or .csv file"
+msgstr "Carica un file .nmd o .csv"
+
+#: templates/admin_module/participant_log_entry.html:35
+msgid ""
+"Replaces the QSO list and (if present in the file) the station description."
+msgstr "Sostituisce l'elenco QSO e (se presente nel file) la descrizione della stazione."
+
+#: templates/admin_module/participant_log_entry.html:36
+msgid "This replaces the existing QSO list and station description. Continue?"
+msgstr "Questo sostituisce l'elenco QSO esistente e la descrizione della stazione. Continuare?"
+
+#: templates/admin_module/participant_log_entry.html:43
+#: templates/portal/dashboard.html:87
+msgid "Upload"
+msgstr "Carica"
+
+#: templates/admin_module/participant_log_entry.html:48
+#: templates/admin_module/participant_station.html:113
+msgid "Back to participant"
+msgstr "Torna al partecipante"
+
+#: templates/admin_module/participant_register.html:3
+#: templates/admin_module/participant_register.html:14
+#: templates/admin_module/participants_index.html:12
+msgid "Register on behalf"
+msgstr "Iscrivere per conto"
+
+#: templates/admin_module/participant_register.html:16
+msgid ""
+"Same registration form the operator would see. Bypasses the contest's "
+"registration-open state, so this works even after registration has been "
+"closed. Audited under your account."
+msgstr "Lo stesso modulo d'iscrizione che vedrebbe l'operatore. Aggira lo stato di apertura del contest, quindi funziona anche dopo la chiusura delle iscrizioni. Registrato sotto il tuo account."
+
+#: templates/admin_module/participant_register.html:27
+#: templates/registration/index.html:24
+msgid "Operator"
+msgstr "Operatore"
+
+#: templates/admin_module/participant_register.html:36
+#: templates/admin_module/participant_station.html:64
+#: templates/portal/station.html:51 templates/registration/index.html:33
+msgid "Station type"
+msgstr "Tipo di stazione"
+
+#: templates/admin_module/participant_register.html:42
+#: templates/admin_module/participant_station.html:70
+#: templates/portal/dashboard.html:50 templates/portal/station.html:57
+#: templates/registration/index.html:39
+msgid "Operating modes"
+msgstr "Modi operativi"
+
+#: templates/admin_module/participant_register.html:48
+#: templates/admin_module/participant_station.html:105
+#: templates/portal/station.html:92 templates/registration/index.html:45
+msgid "Other"
+msgstr "Altro"
+
+#: templates/admin_module/participant_register.html:53
+msgid "Register"
+msgstr "Iscrivere"
+
+#: templates/admin_module/participant_station.html:3
+#: templates/portal/dashboard.html:59 templates/portal/station.html:3
+#: templates/public/ranking.html:47
+msgid "Station data"
+msgstr "Dati stazione"
+
+#: templates/admin_module/participant_station.html:18
+#: templates/portal/station.html:10
+#, python-format
+msgid "Station data — %(callsign)s"
+msgstr "Dati stazione — %(callsign)s"
+
+#: templates/admin_module/participant_station.html:20
+msgid "On-behalf editing. The portal's post-submit lock is bypassed here."
+msgstr "Modifica per conto. Il blocco post-invio del portale viene aggirato qui."
+
+#: templates/admin_module/participant_station.html:25
+#, python-format
+msgid ""
+"\n"
+"                Log was submitted on %(when)s UTC. Edits will alter the "
+"submitted data.\n"
+"            "
+msgstr "\n                Il log è stato inviato il %(when)s UTC. Le modifiche alterano i dati inviati.\n            "
+
+#: templates/admin_module/participant_station.html:40
+#: templates/portal/station.html:27
+msgid "Operator information"
+msgstr "Informazioni operatore"
+
+#: templates/admin_module/participant_station.html:51
+#: templates/portal/station.html:38
+msgid "Email address"
+msgstr "Indirizzo e-mail"
+
+#: templates/admin_module/participant_station.html:76
+#: templates/portal/station.html:63
+msgid "Station equipment"
+msgstr "Equipaggiamento stazione"
+
+#: templates/admin_module/participant_station.html:78
+#: templates/portal/station.html:65
+msgid ""
+"List every piece of equipment that counts toward the contest weight limit (6 "
+"kg)."
+msgstr "Elenca ogni equipaggiamento che conta ai fini del limite di peso del contest (6 kg)."
+
+#: templates/admin_module/participant_station.html:84
+#: templates/portal/station.html:71
+msgid "Watt"
+msgstr "Watt"
+
+#: templates/admin_module/participant_station.html:101
+#: templates/portal/station.html:88
+msgid "Total exceeds the 6000 g contest limit."
+msgstr "Il totale supera il limite contest di 6000 g."
+
+#: templates/admin_module/participant_station.html:112
+#: templates/portal/station.html:100
+msgid "Save station data"
+msgstr "Salva dati stazione"
+
+#: templates/admin_module/participants_index.html:18
+msgid "Callsign contains:"
+msgstr "Nominativo contiene:"
+
+#: templates/admin_module/participants_index.html:22
+msgid "Status:"
+msgstr "Stato:"
+
+#: templates/admin_module/participants_index.html:24
+msgid "Any"
+msgstr "Qualsiasi"
+
+#: templates/admin_module/participants_index.html:25
+msgid "Pending"
+msgstr "In attesa"
+
+#: templates/admin_module/participants_index.html:26
+msgid "Submitted"
+msgstr "Inviato"
+
+#: templates/admin_module/participants_index.html:32
+msgid "Clear"
+msgstr "Cancella"
+
+#: templates/admin_module/participants_index.html:36
+#, python-format
+msgid "%(n)s participant."
+msgid_plural "%(n)s participants."
+msgstr[0] "%(n)s partecipante."
+msgstr[1] "%(n)s partecipanti."
+
+#: templates/admin_module/participants_index.html:59
+#: templates/portal/_qso_rows.html:37
+msgid "Edit"
+msgstr "Modifica"
+
+#: templates/admin_module/participants_index.html:66
+msgid "No participants match."
+msgstr "Nessun partecipante corrispondente."
+
+#: templates/base.html:16 templates/portal/dashboard.html:3
+msgid "Portal"
+msgstr "Portale"
+
+#: templates/base.html:18
+msgid "Scoring"
+msgstr "Punteggio"
+
+#: templates/base.html:28
+msgid "Logout"
+msgstr "Disconnetti"
+
+#: templates/base.html:31 templates/portal/login.html:3
+#: templates/portal/login.html:5
+msgid "Login"
+msgstr "Accesso"
+
+#: templates/base.html:51
+#, python-format
+msgid "NMD %(year)s — %(date)s"
+msgstr "NMD %(year)s — %(date)s"
+
+#: templates/partials/_location_fieldset.html:7
+msgid ""
+"\n"
+"            Pick your station on the map — or enter coordinates directly\n"
+"            in WGS84, CH1903, or CH1903+. The system is detected "
+"automatically.\n"
+"            Existing registrations are shown in green.\n"
+"        "
+msgstr "\n            Seleziona la tua stazione sulla mappa — o inserisci direttamente le\n            coordinate in WGS84, CH1903 o CH1903+. Il sistema è rilevato automaticamente.\n            Le iscrizioni esistenti sono mostrate in verde.\n        "
+
+#: templates/partials/_location_scripts.html:19
+msgid "Your station"
+msgstr "La tua stazione"
+
+#: templates/partials/_location_scripts.html:20
+msgid "Coordinates could not be parsed."
+msgstr "Impossibile interpretare le coordinate."
+
+#: templates/partials/_location_scripts.html:21
+msgid "Coordinates are outside Switzerland."
+msgstr "Le coordinate sono fuori dalla Svizzera."
+
+#: templates/partials/_location_scripts.html:23
+#, python-brace-format
+msgid "Altitude from Swisstopo: {n} m"
+msgstr "Altitudine da Swisstopo: {n} m"
+
+#: templates/placeholder.html:6
+msgid "This module is not implemented yet."
+msgstr "Questo modulo non è ancora implementato."
+
+#: templates/portal/_qso_app.html:26 templates/portal/_qso_form.html:21
+msgid "UTC"
+msgstr "UTC"
+
+#: templates/portal/_qso_app.html:32 templates/portal/scoring.html:26
+#: templates/portal/scoring.html:67 templates/scoring/review.html:59
+msgid "Mode"
+msgstr "Modo"
+
+#: templates/portal/_qso_form.html:37
+msgid "RST recv"
+msgstr "RST ric."
+
+#: templates/portal/_qso_form.html:45
+msgid "Update"
+msgstr "Aggiorna"
+
+#: templates/portal/_qso_form.html:45
+msgid "Save"
+msgstr "Salva"
+
+#: templates/portal/_qso_rows.html:7
+msgid ""
+"Looks like a duplicate of another QSO in this log. Saving is allowed — fix "
+"the time or callsign if this was a typo."
+msgstr "Sembra un duplicato di un altro QSO in questo log. Il salvataggio è consentito — correggi l'ora o il nominativo se è un refuso."
+
+#: templates/portal/_qso_rows.html:11
+#, python-format
+msgid ""
+"Registered NMD callsign is %(correct)s. Saving is allowed, but the QSO will "
+"not score unless the callsign matches exactly (per the on-air /P rule)."
+msgstr "Il nominativo NMD registrato è %(correct)s. Il salvataggio è consentito, ma il QSO non verrà conteggiato a meno che il nominativo non coincida esattamente (regola /P in trasmissione)."
+
+#: templates/portal/_qso_rows.html:44
+msgid "Delete this QSO?"
+msgstr "Eliminare questo QSO?"
+
+#: templates/portal/_qso_rows.html:53
+msgid "No QSOs in the submitted log."
+msgstr "Nessun QSO nel log inviato."
+
+#: templates/portal/_qso_rows.html:53
+msgid "No QSOs yet — add one using the form above."
+msgstr "Ancora nessun QSO — aggiungine uno con il modulo qui sopra."
+
+#: templates/portal/cancel.html:3 templates/portal/cancel.html:6
+#: templates/portal/dashboard.html:61
+msgid "Unsubscribe"
+msgstr "Annulla iscrizione"
+
+#: templates/portal/cancel.html:9
+#, python-format
+msgid ""
+"\n"
+"            You're about to unsubscribe from NMD %(year)s as %(callsign)s.\n"
+"        "
+msgstr "\n            Stai per annullare la tua iscrizione al NMD %(year)s come %(callsign)s.\n        "
+
+#: templates/portal/cancel.html:14
+msgid ""
+"Your QSO log and station data — if any — will be removed. You can register "
+"again any time before the contest."
+msgstr "Il tuo log QSO e i dati stazione — se presenti — saranno rimossi. Puoi iscriverti nuovamente in qualsiasi momento prima del contest."
+
+#: templates/portal/cancel.html:20
+msgid "Yes, unsubscribe"
+msgstr "Sì, annulla iscrizione"
+
+#: templates/portal/cancel.html:21
+msgid "Keep my registration"
+msgstr "Mantieni l'iscrizione"
+
+#: templates/portal/dashboard.html:6
+#, python-format
+msgid "Portal — %(callsign)s"
+msgstr "Portale — %(callsign)s"
+
+#: templates/portal/dashboard.html:9 templates/registration/closed.html:8
+msgid "There is no active contest at the moment."
+msgstr "Al momento non c'è alcun contest attivo."
+
+#: templates/portal/dashboard.html:13
+#, python-format
+msgid ""
+"\n"
+"                You are not registered for NMD %(year)s.\n"
+"            "
+msgstr "\n                Non sei iscritto al NMD %(year)s.\n            "
+
+#: templates/portal/dashboard.html:18
+msgid "Register now"
+msgstr "Iscriviti ora"
+
+#: templates/portal/dashboard.html:20
+msgid "Registration is closed."
+msgstr "L'iscrizione è chiusa."
+
+#: templates/portal/dashboard.html:25
+#, python-format
+msgid ""
+"\n"
+"                Registered for NMD %(year)s on %(date)s.\n"
+"            "
+msgstr "\n                Iscritto al NMD %(year)s il %(date)s.\n            "
+
+#: templates/portal/dashboard.html:32
+#, python-format
+msgid ""
+"\n"
+"                    Your log was submitted on %(when)s UTC. No further "
+"changes are possible.\n"
+"                "
+msgstr "\n                    Il tuo log è stato inviato il %(when)s UTC. Ulteriori modifiche non sono possibili.\n                "
+
+#: templates/portal/dashboard.html:38
+msgid "Registration data"
+msgstr "Dati d'iscrizione"
+
+#: templates/portal/dashboard.html:44
+msgid "No"
+msgstr "No"
+
+#: templates/portal/dashboard.html:67
+msgid "Download log (ADIF)"
+msgstr "Scarica log (ADIF)"
+
+#: templates/portal/dashboard.html:70
+msgid "View your scoring"
+msgstr "Visualizza il tuo punteggio"
+
+#: templates/portal/dashboard.html:75
+msgid "This replaces your existing QSO list and station description. Continue?"
+msgstr "Questo sostituisce il tuo elenco QSO esistente e la descrizione della stazione. Continuare?"
+
+#: templates/portal/dashboard.html:79
+msgid ""
+"An .nmd file carries both the QSO log and the station description; uploading "
+"replaces both."
+msgstr "Un file .nmd contiene sia il log QSO che la descrizione della stazione; il caricamento sostituisce entrambi."
+
+#: templates/portal/dashboard.html:94
+msgid "Finalise"
+msgstr "Finalizza"
+
+#: templates/portal/dashboard.html:96
+msgid ""
+"When your log and station data are complete, submit them — submission is "
+"final."
+msgstr "Quando il tuo log e i dati stazione sono completi, inviali — l'invio è definitivo."
+
+#: templates/portal/dashboard.html:99 templates/portal/submit_confirm.html:3
+msgid "Submit log"
+msgstr "Invia log"
+
+#: templates/portal/email/log_submitted_subject.txt:1
+msgid "Log received"
+msgstr "Log ricevuto"
+
+#: templates/portal/email/password_reset.txt:1
+#, python-format
+msgid "Hello %(user)s,"
+msgstr "Ciao %(user)s,"
+
+#: templates/portal/email/password_reset.txt:3
+msgid ""
+"You're receiving this email because someone requested a password reset for "
+"your account at the NMD Contest Suite."
+msgstr "Stai ricevendo questa mail perché qualcuno ha richiesto il reset della password del tuo account su NMD Contest Suite."
+
+#: templates/portal/email/password_reset.txt:5
+msgid "Click the link below to choose a new password:"
+msgstr "Clicca sul link qui sotto per scegliere una nuova password:"
+
+#: templates/portal/email/password_reset.txt:9
+msgid "If you didn't request this, you can ignore this email."
+msgstr "Se non hai richiesto tu questa azione, puoi ignorare questa mail."
+
+#: templates/portal/email/password_reset_subject.txt:1
+msgid "Reset your NMD password"
+msgstr "Reimposta la tua password NMD"
+
+#: templates/portal/log_entry.html:14
+msgid "Your log has been submitted. The log below is shown read-only."
+msgstr "Il tuo log è stato inviato. Il log qui sotto è mostrato in sola lettura."
+
+#: templates/portal/log_entry.html:18
+msgid ""
+"Anything you type is saved as-is. Invalid fields are highlighted in red so "
+"you can fix them later."
+msgstr "Tutto ciò che digiti viene salvato così com'è. I campi non validi sono evidenziati in rosso così potrai correggerli più tardi."
+
+#: templates/portal/log_entry.html:25 templates/portal/scoring.html:7
+#: templates/portal/station.html:101 templates/portal/station.html:105
+#: templates/portal/submit_confirm.html:52
+msgid "Back to portal"
+msgstr "Torna al portale"
+
+#: templates/portal/login.html:18
+msgid "Password"
+msgstr "Password"
+
+#: templates/portal/login.html:22
+msgid "Sign in"
+msgstr "Accedi"
+
+#: templates/portal/login.html:23
+msgid "Forgot your password?"
+msgstr "Password dimenticata?"
+
+#: templates/portal/password_reset.html:3
+#: templates/portal/password_reset.html:5
+msgid "Password reset"
+msgstr "Reimposta password"
+
+#: templates/portal/password_reset.html:6
+msgid ""
+"Enter the email address associated with your account; we'll send a reset "
+"link."
+msgstr "Inserisci l'indirizzo e-mail associato al tuo account; ti invieremo un link di reset."
+
+#: templates/portal/password_reset.html:10
+msgid "Send reset link"
+msgstr "Invia link di reset"
+
+#: templates/portal/password_reset_complete.html:4
+msgid "Password updated"
+msgstr "Password aggiornata"
+
+#: templates/portal/password_reset_complete.html:5
+msgid "Back to login"
+msgstr "Torna al login"
+
+#: templates/portal/password_reset_confirm.html:4
+msgid "Choose a new password"
+msgstr "Scegli una nuova password"
+
+#: templates/portal/password_reset_confirm.html:9
+msgid "Save new password"
+msgstr "Salva nuova password"
+
+#: templates/portal/password_reset_confirm.html:12
+msgid "This password reset link is invalid or has already been used."
+msgstr "Questo link di reset non è valido o è già stato utilizzato."
+
+#: templates/portal/password_reset_confirm.html:13
+msgid "Request a new link"
+msgstr "Richiedi un nuovo link"
+
+#: templates/portal/password_reset_done.html:4
+msgid "Email sent"
+msgstr "Email inviata"
+
+#: templates/portal/password_reset_done.html:5
+msgid ""
+"If an account exists for the address you gave us, a reset link is on its way."
+msgstr "Se esiste un account per l'indirizzo fornito, un link di reset è in arrivo."
+
+#: templates/portal/scoring.html:3
+msgid "Your scoring"
+msgstr "Il tuo punteggio"
+
+#: templates/portal/scoring.html:11
+#, python-format
+msgid ""
+"\n"
+"            Your scoring — %(callsign)s (NMD %(year)s)\n"
+"        "
+msgstr "\n            Il tuo punteggio — %(callsign)s (NMD %(year)s)\n        "
+
+#: templates/portal/scoring.html:18
+msgid ""
+"Results have not been published yet. This page will show your per-QSO "
+"scoring once the administrator publishes the final ranking."
+msgstr "I risultati non sono ancora pubblicati. Questa pagina mostrerà il punteggio per ogni QSO non appena l'amministratore pubblicherà la classifica finale."
+
+#: templates/portal/scoring.html:22
+msgid "Total points"
+msgstr "Punti totali"
+
+#: templates/portal/scoring.html:29 templates/public/_ranking_table.html:16
+#: templates/scoring/review.html:30
+msgid "Total"
+msgstr "Totale"
+
+#: templates/portal/scoring.html:46
+msgid "Combined total"
+msgstr "Totale combinato"
+
+#: templates/portal/scoring.html:54
+msgid "QSO log with scoring"
+msgstr "Log QSO con punteggio"
+
+#: templates/portal/scoring.html:56
+msgid ""
+"Each row shows how the scoring engine classified the QSO. Hover over the "
+"status badge for the full label."
+msgstr "Ogni riga mostra come il motore di punteggio ha classificato il QSO. Passa il puntatore sopra il badge di stato per il nome completo."
+
+#: templates/portal/scoring.html:60 templates/scoring/review.html:52
+msgid "No QSOs logged."
+msgstr "Nessun QSO registrato."
+
+#: templates/portal/scoring.html:66 templates/scoring/review.html:58
+msgid "Peer"
+msgstr "Pari"
+
+#: templates/portal/scoring.html:68 templates/scoring/review.html:60
+msgid "Half"
+msgstr "Mezza ora"
+
+#: templates/portal/scoring.html:70 templates/scoring/review.html:62
+msgid "Text"
+msgstr "Testo"
+
+#: templates/portal/scoring.html:72 templates/scoring/review.html:64
+msgid "Pts"
+msgstr "Pt"
+
+#: templates/portal/scoring.html:94 templates/scoring/review.html:91
+#, python-format
+msgid "paired: %(call)s @ %(time)s"
+msgstr "appaiato: %(call)s @ %(time)s"
+
+#: templates/portal/scoring.html:101 templates/scoring/review.html:101
+msgid "not scored"
+msgstr "non valutato"
+
+#: templates/portal/scoring.html:104 templates/scoring/review.html:104
+msgid "Sufficient NMD match"
+msgstr "Appaiamento NMD sufficiente"
+
+#: templates/portal/station.html:14
+msgid "Your log has been submitted. No further changes are possible."
+msgstr "Il tuo log è stato inviato. Ulteriori modifiche non sono possibili."
+
+#: templates/portal/submit_confirm.html:6
+#, python-format
+msgid "Submit log — %(callsign)s"
+msgstr "Invia log — %(callsign)s"
+
+#: templates/portal/submit_confirm.html:9
+msgid "This action is final."
+msgstr "Questa azione è definitiva."
+
+#: templates/portal/submit_confirm.html:10
+msgid "After submission you cannot change your QSO log or station data."
+msgstr "Dopo l'invio non puoi più modificare il tuo log QSO né i dati stazione."
+
+#: templates/portal/submit_confirm.html:13
+msgid "Summary"
+msgstr "Riepilogo"
+
+#: templates/portal/submit_confirm.html:16
+msgid "QSOs in log"
+msgstr "QSO nel log"
+
+#: templates/portal/submit_confirm.html:23
+msgid "Submission is blocked."
+msgstr "Invio bloccato."
+
+#: templates/portal/submit_confirm.html:24
+msgid "Fix the following first:"
+msgstr "Correggi prima quanto segue:"
+
+#: templates/portal/submit_confirm.html:35
+msgid "Please review before submitting."
+msgstr "Verifica prima di inviare."
+
+#: templates/portal/submit_confirm.html:42
+msgid ""
+"These don't block submission — you can still proceed, but issues remain in "
+"the submitted record."
+msgstr "Questi non bloccano l'invio — puoi procedere, ma i problemi resteranno nel record inviato."
+
+#: templates/portal/submit_confirm.html:50
+msgid "Confirm and submit"
+msgstr "Conferma e invia"
+
+#: templates/public/_ranking_table.html:5
+msgid "Rank"
+msgstr "Posizione"
+
+#: templates/public/_ranking_table.html:8
+msgid "Altitude (m)"
+msgstr "Altitudine (m)"
+
+#: templates/public/_ranking_table.html:9
+msgid "QSO"
+msgstr "QSO"
+
+#: templates/public/_ranking_table.html:10 templates/public/ranking.html:53
+msgid "Points"
+msgstr "Punti"
+
+#: templates/public/_ranking_table.html:13
+msgid "NMD"
+msgstr "NMD"
+
+#: templates/public/_ranking_table.html:14
+msgid "HB"
+msgstr "HB"
+
+#: templates/public/_ranking_table.html:15
+msgid "EU"
+msgstr "EU"
+
+#: templates/public/_ranking_table.html:33 templates/public/ranking.html:74
+msgid "No participants."
+msgstr "Nessun partecipante."
+
+#: templates/public/ranking.html:4
+#, python-format
+msgid "NMD %(year)s — Ranking"
+msgstr "NMD %(year)s — Classifica"
+
+#: templates/public/ranking.html:25
+#, python-format
+msgid "National Mountain Day %(year)s — Ranking"
+msgstr "National Mountain Day %(year)s — Classifica"
+
+#: templates/public/ranking.html:27
+#, python-format
+msgid "Contest held %(date)s."
+msgstr "Contest tenuto il %(date)s."
+
+#: templates/public/ranking.html:29
+#, python-format
+msgid "Results published %(when)s UTC."
+msgstr "Risultati pubblicati il %(when)s UTC."
+
+#: templates/public/ranking.html:37
+msgid "CW ranking"
+msgstr "CW-Rangliste"
+
+#: templates/public/ranking.html:37
+msgid "Classement CW"
+msgstr "Classement CW"
+
+#: templates/public/ranking.html:37
+msgid "Classifica CW"
+msgstr "Classifica CW"
+
+#: templates/public/ranking.html:42
+msgid "SSB ranking"
+msgstr "SSB-Rangliste"
+
+#: templates/public/ranking.html:42
+msgid "Classement SSB"
+msgstr "Classement SSB"
+
+#: templates/public/ranking.html:42
+msgid "Classifica SSB"
+msgstr "Classifica SSB"
+
+#: templates/public/ranking.html:47
+msgid "Données stations"
+msgstr "Données stations"
+
+#: templates/public/ranking.html:47
+msgid "Dati stazioni"
+msgstr "Dati stazioni"
+
+#: templates/public/ranking.html:58
+msgid "Total weight (g)"
+msgstr "Peso totale (g)"
+
+#: templates/registration/closed.html:6
+msgid "Registration is closed"
+msgstr "L'iscrizione è chiusa"
+
+#: templates/registration/closed.html:11
+#, python-format
+msgid ""
+"\n"
+"                Registration for NMD %(year)s is no longer accepting new "
+"sign-ups.\n"
+"            "
+msgstr "\n                L'iscrizione al NMD %(year)s non accetta più nuovi partecipanti.\n            "
+
+#: templates/registration/closed.html:15
+msgid ""
+"Already registered participants can still update their data via the "
+"participant portal."
+msgstr "I partecipanti già iscritti possono ancora aggiornare i loro dati tramite il portale partecipanti."
+
+#: templates/registration/email/confirmation_subject.txt:1
+#, python-format
+msgid "NMD %(year)s — Registration confirmation"
+msgstr "NMD %(year)s — Conferma di iscrizione"
+
+#: templates/registration/index.html:3
+msgid "Register for the NMD"
+msgstr "Iscriviti al NMD"
+
+#: templates/registration/index.html:8
+#, python-format
+msgid "Register for NMD %(year)s"
+msgstr "Iscrizione al NMD %(year)s"
+
+#: templates/registration/index.html:11
+#, python-format
+msgid ""
+"\n"
+"            The contest takes place on %(date)s, 06:00–09:59 UTC.\n"
+"        "
+msgstr "\n            Il contest si svolge il %(date)s, dalle 06:00 alle 09:59 UTC.\n        "
+
+#: templates/registration/index.html:49
+msgid "Submit registration"
+msgstr "Invia iscrizione"
+
+#: templates/registration/success.html:3
+msgid "Registration submitted"
+msgstr "Iscrizione inviata"
+
+#: templates/registration/success.html:6
+msgid "Thank you!"
+msgstr "Grazie!"
+
+#: templates/registration/success.html:8
+#, python-format
+msgid ""
+"\n"
+"            <strong>%(callsign)s</strong> is registered for the upcoming "
+"NMD.\n"
+"        "
+msgstr "\n            <strong>%(callsign)s</strong> è iscritto al prossimo NMD.\n        "
+
+#: templates/registration/success.html:14
+msgid "We've sent a confirmation email containing your portal credentials."
+msgstr "Abbiamo inviato una mail di conferma con le credenziali per il portale."
+
+#: templates/registration/success.html:16
+msgid ""
+"We've sent a confirmation email. Use your existing password to sign in to "
+"the portal — or request a reset if you've forgotten it."
+msgstr "Abbiamo inviato una mail di conferma. Usa la tua password attuale per accedere al portale — o richiedi un reset se l'hai dimenticata."
+
+#: templates/registration/success.html:19
+msgid "Go to the participant portal"
+msgstr "Vai al portale partecipanti"
+
+#: templates/scoring/review.html:19
+msgid "No contest selected."
+msgstr "Nessun contest selezionato."
+
+#: templates/scoring/review.html:22
+msgid ""
+"No participants in this contest yet — import a legacy DB or seed test data "
+"first."
+msgstr "Ancora nessun partecipante in questo contest — importa prima un vecchio DB o dati di test."
+
+#: templates/scoring/review.html:30
+msgid "Call"
+msgstr "Nominativo"
+
+#: templates/scoring/review.html:47
+msgid "Pick a participant on the left to see their QSO log with status."
+msgstr "Seleziona un partecipante a sinistra per vedere il suo log QSO con stato."

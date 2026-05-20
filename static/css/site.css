@@ -45,6 +45,13 @@ body {
     padding: 0.2rem 0.4rem;
     border-radius: 3px;
 }
+/* Dropdown options render on the OS default (white) background — the
+   .topnav's white text would be invisible there. Force readable
+   dark-on-white for the dropdown items. */
+.lang-switcher select option {
+    background: #ffffff;
+    color: #222222;
+}
 .inline-form { display: inline; margin: 0; }
 .link-button {
     background: none;
@@ -427,12 +434,21 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .scoring-breakdown-total td { background: #f7f7f7; }
 
 .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
-.badge-full_match, .badge-admin_accepted { background: #d4edda; color: #155724; }
-.badge-text_mismatch { background: #fff3cd; color: #856404; }
-.badge-suspected_call_mismatch { background: #ffe5b4; color: #7a4a00; }
-.badge-unmatched { background: #f8d7da; color: #721c24; }
-.badge-dupe_deducted { background: #e9ecef; color: #495057; text-decoration: line-through; }
+/* Full match: green = 4 points. */
+.badge-full_match { background: #d4edda; color: #155724; }
+/* Admin-accepted + sufficient match: yellow = still 4 points, but the
+   match was imperfect (text errors within tolerance, or admin override). */
+.badge-admin_accepted,
+.badge-sufficient_match { background: #fff3cd; color: #856404; }
+/* Valid non-NMD: blue = 1 point. */
 .badge-hb9_qso, .badge-dx_qso { background: #d1ecf1; color: #0c5460; }
+/* Duplicate: grey + strikethrough = 0 points (deducted). */
+.badge-dupe_deducted { background: #e9ecef; color: #495057; text-decoration: line-through; }
+/* Everything else that scores 0 points: red. */
+.badge-text_mismatch,
+.badge-suspected_call_mismatch,
+.badge-unmatched,
+.badge-invalid_call { background: #f8d7da; color: #721c24; }
 .badge-none { background: #f0f0f0; color: #777; font-style: italic; }
 
 .scoring-row-dupe_deducted { opacity: 0.55; }
