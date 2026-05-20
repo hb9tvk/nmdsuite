@@ -100,7 +100,7 @@
                                                     <span class="badge badge-none">{% trans "not scored" %}</span>
                                                 {% else %}
                                                     {% if score.status == 'full_match' and score.text_distance > 0 %}
-                                                        <span class="badge badge-full_match">{% trans "Sufficient NMD match" %}</span>
+                                                        <span class="badge badge-sufficient_match">{% trans "Sufficient NMD match" %}</span>
                                                     {% else %}
                                                         <span class="badge badge-{{ score.status }}">{{ score.get_status_display }}</span>
                                                     {% endif %}
