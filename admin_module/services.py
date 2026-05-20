@@ -88,13 +88,17 @@ def open_log_submission(contest: Contest, *, actor) -> None:
 
 @transaction.atomic
 def close_log_submission(contest: Contest, *, actor) -> int:
-    """Close logs and auto-submit anyone who hadn't submitted yet.
-    Returns the number of auto-submitted participants.
+    """Close logs, auto-submit anyone who hadn't submitted yet, and run
+    the scoring pipeline.
 
-    Sets ``auto_submitted=True`` alongside ``submitted_at`` so the
-    matching reverse (``revert_close_log_submission``) can un-submit
-    exactly those rows without disturbing legitimate operator
-    submissions."""
+    Returns the number of auto-submitted participants. Sets
+    ``auto_submitted=True`` alongside ``submitted_at`` so the matching
+    reverse can un-submit exactly those rows without disturbing
+    legitimate operator submissions.
+
+    Scoring runs at the end so the LOGS_CLOSED state always lands with
+    fresh ScoringRecord rows — no separate admin step required.
+    """
     _require_state(contest, (Contest.State.LOGS_OPEN,))
     now = timezone.now()
     pending_qs = Participant.objects.filter(
@@ -108,7 +112,33 @@ def close_log_submission(contest: Contest, *, actor) -> int:
         target=str(contest.year), contest=contest,
         payload={"auto_submitted": auto_submitted},
     )
+    rescore_contest(contest, actor=actor, source="close_logs")
     return auto_submitted
+
+
+@transaction.atomic
+def rescore_contest(contest: Contest, *, actor, source: str = "manual") -> dict[str, int]:
+    """Re-run the scoring pipeline for ``contest`` and audit the run.
+
+    ``source`` tags the audit row so it's clear why the run happened:
+    ``"close_logs"`` (auto, fired by the state transition),
+    ``"fixstation"`` (auto, after invalid-callsign edits), or
+    ``"manual"`` (admin pressed the Re-run scoring button).
+
+    Returns the ``{status: count}`` summary from the scoring engine.
+    """
+    # Local import to avoid pulling scoring into admin_module at module
+    # import time — the scoring engine has deeper deps and would slow
+    # down management commands that don't need it.
+    from scoring.pairing import score_contest
+
+    summary = score_contest(contest)
+    audit(
+        action="scoring.run", actor=actor,
+        target=str(contest.year), contest=contest,
+        payload={"source": source, "summary": dict(summary)},
+    )
+    return summary
 
 
 @transaction.atomic

@@ -11,6 +11,7 @@ urlpatterns = [
     path("contest/open-logs/", views.open_log_submission, name="open_log_submission"),
     path("contest/close-logs/", views.close_log_submission, name="close_log_submission"),
     path("contest/publish/", views.publish_results, name="publish_results"),
+    path("contest/rescore/", views.rescore, name="rescore"),
     path("contest/revert/", views.revert_state, name="revert_state"),
     path("contest/setup-new/", views.setup_new_contest, name="setup_new_contest"),
     # On-behalf participant management (M4.3a). Participant pk in the URL

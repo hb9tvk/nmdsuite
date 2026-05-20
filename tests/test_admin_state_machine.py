@@ -321,6 +321,80 @@ def test_view_publish_results_post(client, seeded_contest):
     assert seeded_contest.state == Contest.State.PUBLISHED
 
 
+# --- auto-rescore on close_log_submission ----------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_close_log_submission_auto_runs_scoring(seeded_contest):
+    """The close-logs transition must run the scoring pipeline as part
+    of the same atomic action — the LOGS_CLOSED state always lands with
+    fresh ScoringRecord rows, so the admin doesn't have a separate
+    'now run scoring' step to remember."""
+    from core.models import QsoEntry, ScoringRecord
+
+    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.save()
+    p = _make_participant(seeded_contest, username="HB9A", callsign="HB9A/P")
+    QsoEntry.objects.create(
+        participant=p, utc_raw="0700", utc_time=seeded_contest.start_utc,
+        mode="CW", remote_call="DL1ABC", rsts="599", rstr="599",
+    )
+
+    services.close_log_submission(seeded_contest, actor=_make_staff_user())
+
+    # ScoringRecord was created.
+    assert ScoringRecord.objects.filter(qso__participant=p).exists()
+    # Both audit rows present, distinguishable by action.
+    assert AuditLog.objects.filter(action="contest.close_logs").exists()
+    scoring = AuditLog.objects.get(action="scoring.run")
+    assert scoring.payload["source"] == "close_logs"
+
+
+# --- manual rescore button ------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_rescore_button_runs_scoring_with_manual_source(client, seeded_contest):
+    from core.models import QsoEntry, ScoringRecord
+
+    seeded_contest.state = Contest.State.LOGS_CLOSED
+    seeded_contest.save()
+    p = _make_participant(seeded_contest, username="HB9A", callsign="HB9A/P", submitted=True)
+    QsoEntry.objects.create(
+        participant=p, utc_raw="0700", utc_time=seeded_contest.start_utc,
+        mode="CW", remote_call="DL1ABC", rsts="599", rstr="599",
+    )
+    client.force_login(_make_staff_user())
+
+    response = client.post("/admin/contest/rescore/")
+    assert response.status_code == 302
+    assert ScoringRecord.objects.filter(qso__participant=p).exists()
+    scoring = AuditLog.objects.get(action="scoring.run")
+    assert scoring.payload["source"] == "manual"
+
+
+@pytest.mark.django_db
+def test_rescore_button_rejected_before_logs_close(client, seeded_contest):
+    """Re-run scoring is meaningless while operators are still logging —
+    block the button in LOGS_OPEN / earlier states."""
+    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.save()
+    client.force_login(_make_staff_user())
+
+    response = client.post("/admin/contest/rescore/")
+    assert response.status_code == 302  # redirect with error flash
+    assert not AuditLog.objects.filter(action="scoring.run").exists()
+
+
+@pytest.mark.django_db
+def test_rescore_get_returns_405(client, seeded_contest):
+    """POST-only, like the other lifecycle endpoints."""
+    seeded_contest.state = Contest.State.LOGS_CLOSED
+    seeded_contest.save()
+    client.force_login(_make_staff_user())
+    assert client.get("/admin/contest/rescore/").status_code == 405
+
+
 @pytest.mark.django_db
 def test_view_transitions_get_returns_405(client, seeded_contest):
     """All transitions are POST-only — guards against accidental GET-triggers (e.g. crawlers)."""
