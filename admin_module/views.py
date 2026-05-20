@@ -128,6 +128,35 @@ def publish_results(request):
 
 @_staff_required
 @require_http_methods(["POST"])
+def rescore(request):
+    """Manual Re-run scoring button. Available once logs have closed —
+    handy after on-behalf edits or for any reason the admin wants a
+    fresh pass without going through Fixstation Review."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    if contest.state not in (
+        Contest.State.LOGS_CLOSED,
+        Contest.State.SCORED,
+        Contest.State.PUBLISHED,
+    ):
+        messages.error(
+            request,
+            _("Re-run scoring is only available after log submission has closed."),
+        )
+        return redirect("admin_module:index")
+    summary = services.rescore_contest(contest, actor=request.user, source="manual")
+    total = sum(summary.values())
+    messages.success(
+        request,
+        _("Scoring re-run. %(n)d QSO records updated.") % {"n": total},
+    )
+    return redirect("admin_module:index")
+
+
+@_staff_required
+@require_http_methods(["POST"])
 def revert_state(request):
     """Single 'go back one step' endpoint. Dispatches to the right
     reverse service based on the contest's current state. No-op (with
@@ -744,16 +773,16 @@ def fixstation_review(request):
             contest=contest, marked_invalid=marked, actor=request.user,
         )
         if added or removed:
-            # Re-score so the per-QSO points reflect the new flags.
-            from scoring.pairing import score_contest
-
-            score_contest(contest)
             audit(
                 action="fixstation.update",
                 actor=request.user,
                 contest=contest,
                 payload={"added": added, "removed": removed},
             )
+            # Re-score so the per-QSO points reflect the new flags. The
+            # centralised wrapper handles the matching scoring.run
+            # audit row, tagged with source="fixstation".
+            services.rescore_contest(contest, actor=request.user, source="fixstation")
             messages.success(
                 request,
                 _("Updated invalid-callsign list: %(added)d added, %(removed)d removed. "

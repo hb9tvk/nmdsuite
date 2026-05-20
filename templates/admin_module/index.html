@@ -52,6 +52,15 @@
                         <button type="submit">{% trans "Publish results" %}</button>
                     </form>
                 {% endif %}
+                {% if contest.state == 'logs_closed' or contest.state == 'scored' or contest.state == 'published' %}
+                    <form method="post" action="{% url 'admin_module:rescore' %}">
+                        {% csrf_token %}
+                        <button type="submit">{% trans "Re-run scoring" %}</button>
+                        <small class="hint">
+                            {% trans "Re-runs the full scoring pipeline. Use after on-behalf edits or any time you want a fresh pass." %}
+                        </small>
+                    </form>
+                {% endif %}
                 {% if contest.state == 'published' %}
                     <p class="hint">{% trans "Contest published. Use the 'Setup new contest' form below when ready to start a new edition." %}</p>
                 {% endif %}
