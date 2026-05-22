@@ -16,6 +16,7 @@ services:
       # serves /nmdsuite/* and passes the unprefixed path to the
       # container, so Django needs SCRIPT_NAME to know its mount.
       DJANGO_SCRIPT_NAME: /nmdsuite
+      DJANGO_ALLOWED_HOSTS: nmd.uska.ch
       DJANGO_CSRF_TRUSTED_ORIGINS: https://nmd.uska.ch
       NMD_BASE_URL: https://nmd.uska.ch/nmdsuite
     volumes:
