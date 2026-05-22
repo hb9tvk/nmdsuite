@@ -1,19 +1,23 @@
 services:
   nmdsuite:
-    build: .
-    image: nmdsuite:latest
+    image: ghcr.io/hb9tvk/nmdsuite:latest
     container_name: nmdsuite
+    pull_policy: always
     ports:
-      - "8000:8000"
+      - 127.0.0.1:5005:5005
+    networks:
+      - nginxproxy_default
+      - postfix_default
     env_file:
       - .env
     environment:
-      # Override .env so the in-container DB lives on the persisted volume,
-      # regardless of what NMD_DB_PATH is set to on the host.
       NMD_DB_PATH: /data/nmdsuite.sqlite3
     volumes:
-      - nmd_data:/data
+      - ./data:/data
     restart: unless-stopped
 
-volumes:
-  nmd_data:
+networks:
+  nginxproxy_default:
+    external: true
+  postfix_default:
+    external: true

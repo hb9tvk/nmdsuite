@@ -24,7 +24,7 @@ RUN mkdir -p /data /app/staticfiles \
  && python manage.py collectstatic --noinput \
  && python manage.py compilemessages || true
 
-EXPOSE 8000
+EXPOSE 5005
 VOLUME ["/data"]
 
-CMD ["gunicorn", "nmdsuite.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]
+CMD ["gunicorn", "nmdsuite.wsgi:application", "--bind", "0.0.0.0:5005", "--workers", "3", "--timeout", "120"]
