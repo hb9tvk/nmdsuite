@@ -119,6 +119,33 @@ LOGIN_URL = "portal:login"
 LOGIN_REDIRECT_URL = "portal:dashboard"
 LOGOUT_REDIRECT_URL = "portal:login"
 
+
+# --- Reverse-proxy mounting --------------------------------------------------------------------
+#
+# In production NMDSuite is mounted under a path prefix (e.g.
+# ``/nmdsuite``) behind a reverse proxy. Setting ``DJANGO_SCRIPT_NAME``
+# tells Django to include that prefix in every reversed URL, every
+# static asset URL, and every redirect. In dev the env var is unset
+# and Django runs at the root as before.
+
+FORCE_SCRIPT_NAME = os.environ.get("DJANGO_SCRIPT_NAME") or None
+
+# Origins the CSRF middleware will accept for cross-origin POSTs. The
+# proxy terminates TLS, so the browser POSTs to https://<host>/...
+# while the container only sees http://. Comma-separated list of full
+# origins (scheme + host) in the env var.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
+]
+
+# Trust the proxy's X-Forwarded-Proto header so request.is_secure() and
+# build_absolute_uri() know we're behind HTTPS. Combined with
+# USE_X_FORWARDED_HOST below for the host header.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
 # django-axes: lock account after 5 failed attempts within 30 minutes; lock lasts 1 hour.
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
@@ -143,7 +170,8 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 
 # --- Static / media -----------------------------------------------------------------------------
 
-STATIC_URL = "/static/"
+_URL_PREFIX = (FORCE_SCRIPT_NAME or "").rstrip("/")
+STATIC_URL = f"{_URL_PREFIX}/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 # Whitenoise warns at startup if STATIC_ROOT is missing — make sure the
@@ -162,7 +190,7 @@ STORAGES = {
     },
 }
 
-MEDIA_URL = "/media/"
+MEDIA_URL = f"{_URL_PREFIX}/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

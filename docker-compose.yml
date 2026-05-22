@@ -12,6 +12,12 @@ services:
       - .env
     environment:
       NMD_DB_PATH: /data/nmdsuite.sqlite3
+      # Reverse-proxy mount point. Strip-and-forward style: the proxy
+      # serves /nmdsuite/* and passes the unprefixed path to the
+      # container, so Django needs SCRIPT_NAME to know its mount.
+      DJANGO_SCRIPT_NAME: /nmdsuite
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://nmd.uska.ch
+      NMD_BASE_URL: https://nmd.uska.ch/nmdsuite
     volumes:
       - ./data:/data
     restart: unless-stopped
