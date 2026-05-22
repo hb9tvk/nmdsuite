@@ -21,4 +21,4 @@ RUN mkdir -p /data /app/staticfiles \
 
 EXPOSE 5005
 VOLUME ["/data"]
-CMD ["gunicorn", "nmdsuite.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]
+CMD ["gunicorn", "nmdsuite.wsgi:application", "--bind", "0.0.0.0:5005", "--workers", "3", "--timeout", "120"]
