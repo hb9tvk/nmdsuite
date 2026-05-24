@@ -16,8 +16,10 @@ COPY . .
 RUN pip install -e .
 
 RUN mkdir -p /data /app/staticfiles \
-    && python manage.py collectstatic --noinput \
-    && python manage.py compilemessages || true
+    && python manage.py makemessages -l de -l fr -l it --ignore reference \
+    && python tools/build_translations.py \
+    && python manage.py compilemessages -l de -l fr -l it \
+    && python manage.py collectstatic --noinput
 
 EXPOSE 5005
 VOLUME ["/data"]
