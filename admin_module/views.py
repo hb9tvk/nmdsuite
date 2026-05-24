@@ -101,15 +101,6 @@ def close_registration(request):
 
 @_staff_required
 @require_http_methods(["POST"])
-def open_log_submission(request):
-    return _run_transition(
-        request, services.open_log_submission,
-        success_msg=_("Log submission opened."),
-    )
-
-
-@_staff_required
-@require_http_methods(["POST"])
 def close_log_submission(request):
     return _run_transition(
         request, services.close_log_submission,
@@ -167,7 +158,6 @@ def revert_state(request):
         return redirect("admin_module:index")
     reverters = {
         Contest.State.REGISTRATION_CLOSED: (services.revert_close_registration, _("Registration reopened.")),
-        Contest.State.LOGS_OPEN: (services.revert_open_log_submission, _("Reverted to registration closed.")),
         Contest.State.LOGS_CLOSED: (
             services.revert_close_log_submission,
             lambda n: _("Log submission reopened; %(n)d auto-submitted logs unlocked.") % {"n": n},

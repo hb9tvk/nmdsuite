@@ -189,10 +189,10 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Coordonnée nord/latitude saisie d'origine",
         "Coordinata nord/latitudine inserita originale",
     ),
-    "Friendly location name (SOTA ref, summit name, …) — the named counterpart of the coordinates": (
-        "Standortname (SOTA-Referenz, Gipfelname, …) — die namentliche Entsprechung der Koordinaten",
-        "Nom convivial de l'emplacement (référence SOTA, nom du sommet, …) — le pendant nommé des coordonnées",
-        "Nome del luogo (riferimento SOTA, nome della vetta, …) — il corrispettivo nominale delle coordinate",
+    "Friendly location name (village, locality, summit name, …) — the named counterpart of the coordinates": (
+        "Standortname (Ortschaft, Flurname, Gipfelname, …) — die namentliche Entsprechung der Koordinaten",
+        "Nom convivial de l'emplacement (localité, lieu-dit, nom du sommet, …) — le pendant nommé des coordonnées",
+        "Nome del luogo (località, toponimo, nome della vetta, …) — il corrispettivo nominale delle coordinate",
     ),
     "2-letter Swiss canton code": (
         "2-Buchstaben-Code des Kantons",
@@ -410,10 +410,10 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Richiesto solo per stazioni multi-operatore.",
     ),
     "Location name": ("Standortname", "Nom du lieu", "Nome del luogo"),
-    "Friendly name for your station's location (SOTA reference, summit name, …).": (
-        "Beschreibender Name für den Stationsstandort (SOTA-Referenz, Gipfelname, …).",
-        "Nom convivial de l'emplacement de ta station (référence SOTA, nom du sommet, …).",
-        "Nome del luogo della tua stazione (riferimento SOTA, nome della vetta, …).",
+    "Friendly name for your station's location (village, locality, summit name, …).": (
+        "Beschreibender Name für den Stationsstandort (Ortschaft, Flurname, Gipfelname, …).",
+        "Nom convivial de l'emplacement de ta station (localité, lieu-dit, nom du sommet, …).",
+        "Nome del luogo della tua stazione (località, toponimo, nome della vetta, …).",
     ),
     "Easting / longitude": ("Ostkoordinate / Längengrad", "Coordonnée est / longitude", "Coordinata est / longitudine"),
     "WGS84 e.g. 8.2275 — CH1903 e.g. 660000 — CH1903+ e.g. 2660000": (
@@ -792,7 +792,10 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     "Portal": ("Portal", "Portail", "Portale"),
     "Scoring": ("Wertung", "Scoring", "Punteggio"),
     "Logout": ("Abmelden", "Déconnexion", "Disconnetti"),
-    "Login": ("Anmelden", "Connexion", "Accesso"),
+    "Login": ("Login", "Connexion", "Accesso"),
+    # Topnav link — distinct from the "Registration" section heading in
+    # the admin participant detail page (which stays as "Anmeldung" etc.).
+    "Sign up": ("Registrieren", "S'inscrire", "Registrati"),
     "NMD %(year)s — %(date)s": ("NMD %(year)s — %(date)s", "NMD %(year)s — %(date)s", "NMD %(year)s — %(date)s"),
 
     # Location fieldset

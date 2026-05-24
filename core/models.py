@@ -72,7 +72,7 @@ class Participant(models.Model):
     coord_input_n = models.CharField(max_length=32, blank=True, help_text=_("Original northing/latitude as entered"))
     location_text = models.CharField(
         max_length=120, blank=True,
-        help_text=_("Friendly location name (SOTA ref, summit name, …) — the named counterpart of the coordinates"),
+        help_text=_("Friendly location name (village, locality, summit name, …) — the named counterpart of the coordinates"),
     )
     # Canonical CH1903+ (LV95) and WGS84 always populated for map / lookups.
     ch1903p_e = models.FloatField(null=True, blank=True)

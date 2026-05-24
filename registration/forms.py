@@ -42,7 +42,7 @@ class RegistrationForm(forms.Form):
     location_text = forms.CharField(
         label=_("Location name"),
         max_length=120,
-        help_text=_("Friendly name for your station's location (SOTA reference, summit name, …)."),
+        help_text=_("Friendly name for your station's location (village, locality, summit name, …)."),
     )
     coord_input_e = forms.CharField(
         label=_("Easting / longitude"),

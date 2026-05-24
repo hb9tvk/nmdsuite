@@ -12,11 +12,8 @@ State graph (forward) ::
           │  close_registration()           ↑ revert_close_registration()
           ▼
     REGISTRATION_CLOSED
-          │  open_log_submission()          ↑ revert_open_log_submission()
-          ▼
-    LOGS_OPEN
           │  close_log_submission()         ↑ revert_close_log_submission()
-          │  ← auto-submits pending logs    ← un-auto-submits exactly those
+          │  ← auto-submits + runs scoring  ← un-auto-submits exactly those
           ▼
     LOGS_CLOSED
           │  publish_results()              ↑ revert_publish_results()
@@ -26,6 +23,12 @@ State graph (forward) ::
           │  setup_new_contest(year=YYYY)   (no reverse — too destructive)
           ▼
     ARCHIVED  + new Contest in REGISTRATION_OPEN
+
+Note: ``LOGS_OPEN`` remains as an enum value for backward-compat with
+historical data but is no longer part of the forward flow. The
+operator-facing log/station editing is gated by
+``participant.submitted_at``, not by the contest state — there's
+nothing to "open", and the previous extra handshake was a no-op.
 
 Notes:
 
@@ -78,15 +81,6 @@ def close_registration(contest: Contest, *, actor) -> None:
 
 
 @transaction.atomic
-def open_log_submission(contest: Contest, *, actor) -> None:
-    _require_state(contest, (Contest.State.REGISTRATION_CLOSED,))
-    contest.state = Contest.State.LOGS_OPEN
-    contest.save(update_fields=["state"])
-    audit(action="contest.open_logs", actor=actor,
-          target=str(contest.year), contest=contest)
-
-
-@transaction.atomic
 def close_log_submission(contest: Contest, *, actor) -> int:
     """Close logs, auto-submit anyone who hadn't submitted yet, and run
     the scoring pipeline.
@@ -99,7 +93,7 @@ def close_log_submission(contest: Contest, *, actor) -> int:
     Scoring runs at the end so the LOGS_CLOSED state always lands with
     fresh ScoringRecord rows — no separate admin step required.
     """
-    _require_state(contest, (Contest.State.LOGS_OPEN,))
+    _require_state(contest, (Contest.State.REGISTRATION_CLOSED,))
     now = timezone.now()
     pending_qs = Participant.objects.filter(
         contest=contest, cancelled_at__isnull=True, submitted_at__isnull=True,
@@ -165,26 +159,17 @@ def revert_close_registration(contest: Contest, *, actor) -> None:
 
 
 @transaction.atomic
-def revert_open_log_submission(contest: Contest, *, actor) -> None:
-    """LOGS_OPEN → REGISTRATION_CLOSED."""
-    _require_state(contest, (Contest.State.LOGS_OPEN,))
-    contest.state = Contest.State.REGISTRATION_CLOSED
-    contest.save(update_fields=["state"])
-    audit(action="contest.revert_open_logs", actor=actor,
-          target=str(contest.year), contest=contest)
-
-
-@transaction.atomic
 def revert_close_log_submission(contest: Contest, *, actor) -> int:
-    """LOGS_CLOSED → LOGS_OPEN. Un-submits ONLY the participants who were
-    auto-submitted by the matching forward transition; legitimate
-    operator submissions are left alone. Returns the un-submitted count."""
+    """LOGS_CLOSED → REGISTRATION_CLOSED. Un-submits ONLY the participants
+    who were auto-submitted by the matching forward transition;
+    legitimate operator submissions are left alone. Returns the
+    un-submitted count."""
     _require_state(contest, (Contest.State.LOGS_CLOSED,))
     auto_submitted_qs = Participant.objects.filter(
         contest=contest, auto_submitted=True,
     )
     un_submitted = auto_submitted_qs.update(submitted_at=None, auto_submitted=False)
-    contest.state = Contest.State.LOGS_OPEN
+    contest.state = Contest.State.REGISTRATION_CLOSED
     contest.save(update_fields=["state"])
     audit(
         action="contest.revert_close_logs", actor=actor,

@@ -46,30 +46,10 @@ def test_close_registration_happy_path(seeded_contest):
 
 @pytest.mark.django_db
 def test_close_registration_rejects_wrong_state(seeded_contest):
-    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.state = Contest.State.LOGS_CLOSED
     seeded_contest.save()
     with pytest.raises(TransitionError):
         services.close_registration(seeded_contest, actor=_make_staff_user())
-
-
-# --- open_log_submission ---------------------------------------------------------------------
-
-
-@pytest.mark.django_db
-def test_open_log_submission_happy_path(seeded_contest):
-    seeded_contest.state = Contest.State.REGISTRATION_CLOSED
-    seeded_contest.save()
-    services.open_log_submission(seeded_contest, actor=_make_staff_user())
-    seeded_contest.refresh_from_db()
-    assert seeded_contest.state == Contest.State.LOGS_OPEN
-    assert AuditLog.objects.filter(action="contest.open_logs").exists()
-
-
-@pytest.mark.django_db
-def test_open_log_submission_rejects_wrong_state(seeded_contest):
-    # Still REGISTRATION_OPEN — can't skip ahead.
-    with pytest.raises(TransitionError):
-        services.open_log_submission(seeded_contest, actor=_make_staff_user())
 
 
 # --- close_log_submission --------------------------------------------------------------------
@@ -77,7 +57,7 @@ def test_open_log_submission_rejects_wrong_state(seeded_contest):
 
 @pytest.mark.django_db
 def test_close_log_submission_auto_submits_pending(seeded_contest):
-    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.state = Contest.State.REGISTRATION_CLOSED
     seeded_contest.save()
     submitted = _make_participant(seeded_contest, username="A1", callsign="A1/P", submitted=True)
     pending1 = _make_participant(seeded_contest, username="A2", callsign="A2/P")
@@ -193,20 +173,11 @@ def test_revert_close_registration(seeded_contest):
 
 
 @pytest.mark.django_db
-def test_revert_open_log_submission(seeded_contest):
-    seeded_contest.state = Contest.State.LOGS_OPEN
-    seeded_contest.save()
-    services.revert_open_log_submission(seeded_contest, actor=_make_staff_user())
-    seeded_contest.refresh_from_db()
-    assert seeded_contest.state == Contest.State.REGISTRATION_CLOSED
-
-
-@pytest.mark.django_db
 def test_revert_close_log_submission_undoes_only_auto_submits(seeded_contest):
     """Closing + reverting logs leaves operator-submitted rows alone but
     un-locks the rows that the close action auto-submitted."""
     staff = _make_staff_user()
-    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.state = Contest.State.REGISTRATION_CLOSED
     seeded_contest.save()
     operator_submitted = _make_participant(seeded_contest, username="OPS", callsign="OPS/P", submitted=True)
     pending = _make_participant(seeded_contest, username="PND", callsign="PND/P")
@@ -223,7 +194,7 @@ def test_revert_close_log_submission_undoes_only_auto_submits(seeded_contest):
     pending.refresh_from_db()
 
     assert n == 1
-    assert seeded_contest.state == Contest.State.LOGS_OPEN
+    assert seeded_contest.state == Contest.State.REGISTRATION_CLOSED
     # Operator's own submission untouched.
     assert operator_submitted.submitted_at == original_submitted_at
     assert operator_submitted.auto_submitted is False
@@ -300,7 +271,7 @@ def test_view_close_registration_post(client, seeded_contest):
 
 @pytest.mark.django_db
 def test_view_close_log_submission_post_auto_submits(client, seeded_contest):
-    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.state = Contest.State.REGISTRATION_CLOSED
     seeded_contest.save()
     pending = _make_participant(seeded_contest, username="P1", callsign="P1/P")
     client.force_login(_make_staff_user())
@@ -332,7 +303,7 @@ def test_close_log_submission_auto_runs_scoring(seeded_contest):
     'now run scoring' step to remember."""
     from core.models import QsoEntry, ScoringRecord
 
-    seeded_contest.state = Contest.State.LOGS_OPEN
+    seeded_contest.state = Contest.State.REGISTRATION_CLOSED
     seeded_contest.save()
     p = _make_participant(seeded_contest, username="HB9A", callsign="HB9A/P")
     QsoEntry.objects.create(
@@ -376,8 +347,8 @@ def test_rescore_button_runs_scoring_with_manual_source(client, seeded_contest):
 @pytest.mark.django_db
 def test_rescore_button_rejected_before_logs_close(client, seeded_contest):
     """Re-run scoring is meaningless while operators are still logging —
-    block the button in LOGS_OPEN / earlier states."""
-    seeded_contest.state = Contest.State.LOGS_OPEN
+    block the button in REGISTRATION_OPEN / REGISTRATION_CLOSED states."""
+    seeded_contest.state = Contest.State.REGISTRATION_CLOSED
     seeded_contest.save()
     client.force_login(_make_staff_user())
 
@@ -401,7 +372,6 @@ def test_view_transitions_get_returns_405(client, seeded_contest):
     client.force_login(_make_staff_user())
     for path in (
         "/admin/contest/close-registration/",
-        "/admin/contest/open-logs/",
         "/admin/contest/close-logs/",
         "/admin/contest/publish/",
         "/admin/contest/setup-new/",
