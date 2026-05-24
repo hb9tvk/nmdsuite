@@ -2,10 +2,9 @@
 
 The legacy version was a hand-edited PDF the NMD commission published
 once registration closed; participants printed it and used it during
-the contest to keep track of which stations they had worked. The
-columns mirror the legacy layout:
+the contest to keep track of which stations they had worked. Columns:
 
-    CW | SSB | QRA | QSO 1 | QSO 2 | Op | Coordinates | Site | Canton | QAH
+    CW | SSB | QRA | QSO 1 | QSO 2 | Op | Site | Canton | QAH
 
 CW / SSB are tick marks from ``Participant.operating_modes``. QSO 1/2
 are empty boxes for the operator to fill in by hand. ``Op`` is the
@@ -31,12 +30,6 @@ from reportlab.platypus import (
 )
 
 from .models import Contest, Participant
-
-
-def _coord_text(p: Participant) -> str:
-    if p.ch1903_e is None or p.ch1903_n is None:
-        return ""
-    return f"{p.ch1903_e}/{p.ch1903_n}"
 
 
 def _site_text(p: Participant) -> str:
@@ -85,7 +78,7 @@ def build_participant_list_pdf(contest: Contest) -> bytes:
     story.append(Spacer(1, 6 * mm))
 
     header = [
-        "CW", "SSB", "QRA", "QSO1", "QSO2", "Op", "Coordinates", "Site", "Kt.", "QAH",
+        "CW", "SSB", "QRA", "QSO1", "QSO2", "Op", "Site", "Kt.", "QAH",
     ]
     rows: list[list[str]] = [header]
 
@@ -103,8 +96,7 @@ def build_participant_list_pdf(contest: Contest) -> bytes:
             "",  # operator-fillable
             "",
             p.first_name,
-            _coord_text(p),
-            # Wrapped via Paragraph so long SOTA refs/location names break onto
+            # Wrapped via Paragraph so long location names break onto
             # a second line within the cell instead of bleeding into Kt.
             Paragraph(site, site_style) if site else "",
             p.canton,
@@ -116,9 +108,8 @@ def build_participant_list_pdf(contest: Contest) -> bytes:
         colWidths=[
             8 * mm, 9 * mm, 22 * mm,        # CW SSB QRA
             10 * mm, 10 * mm,                # QSO1 QSO2
-            24 * mm,                          # Op
-            27 * mm,                          # Coordinates
-            50 * mm,                          # Site
+            35 * mm,                          # Op
+            68 * mm,                          # Site
             8 * mm, 10 * mm,                  # Kt. QAH
         ],
         repeatRows=1,
@@ -128,7 +119,7 @@ def build_participant_list_pdf(contest: Contest) -> bytes:
         ("FONT", (0, 1), (-1, -1), "Helvetica", 9),
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e8e8e8")),
         ("ALIGN", (0, 0), (4, -1), "CENTER"),      # CW, SSB, QRA, QSO1, QSO2 columns
-        ("ALIGN", (8, 0), (9, -1), "RIGHT"),       # canton, altitude
+        ("ALIGN", (7, 0), (8, -1), "RIGHT"),       # canton, altitude
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
         ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#888888")),

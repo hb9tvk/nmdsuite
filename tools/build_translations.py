@@ -156,6 +156,16 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Aucun changement à la liste des indicatifs invalides.",
         "Nessuna modifica alla lista dei nominativi non validi.",
     ),
+    "Re-run scoring is only available after log submission has closed.": (
+        "Neuwertung ist erst nach Schliessen der Log-Einreichung möglich.",
+        "Le recalcul du scoring n'est possible qu'après la clôture de la soumission des journaux.",
+        "Il ricalcolo del punteggio è disponibile solo dopo la chiusura dell'invio dei log.",
+    ),
+    "Scoring re-run. %(n)d QSO records updated.": (
+        "Wertung neu berechnet. %(n)d QSO-Datensätze aktualisiert.",
+        "Scoring recalculé. %(n)d enregistrements QSO mis à jour.",
+        "Punteggio ricalcolato. %(n)d record QSO aggiornati.",
+    ),
 
     # core/models.py — contest states & QSO labels
     "Registration open": ("Anmeldung offen", "Inscription ouverte", "Iscrizione aperta"),
@@ -790,7 +800,6 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
 
     # Base template / login / etc.
     "Portal": ("Portal", "Portail", "Portale"),
-    "Scoring": ("Wertung", "Scoring", "Punteggio"),
     "Logout": ("Abmelden", "Déconnexion", "Disconnetti"),
     "Login": ("Login", "Connexion", "Accesso"),
     # Topnav link — distinct from the "Registration" section heading in
@@ -988,11 +997,6 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     "Total": ("Total", "Total", "Totale"),
     "Combined total": ("Gesamtsumme", "Total combiné", "Totale combinato"),
     "QSO log with scoring": ("QSO-Log mit Wertung", "Journal QSO avec scoring", "Log QSO con punteggio"),
-    "Each row shows how the scoring engine classified the QSO. Hover over the status badge for the full label.": (
-        "Jede Zeile zeigt, wie die Wertungs-Engine den QSO klassifiziert hat. Bewege den Mauszeiger über das Status-Symbol für die vollständige Bezeichnung.",
-        "Chaque ligne montre comment le moteur de scoring a classé le QSO. Survole le badge de statut pour voir l'étiquette complète.",
-        "Ogni riga mostra come il motore di punteggio ha classificato il QSO. Passa il puntatore sopra il badge di stato per il nome completo.",
-    ),
     "No QSOs logged.": ("Keine QSOs eingetragen.", "Aucun QSO enregistré.", "Nessun QSO registrato."),
     "Peer": ("Gegenstation", "Pair", "Pari"),
     "Half": ("Halbzeit", "Demi-période", "Mezza ora"),

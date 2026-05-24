@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: nmdsuite 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-19 15:44+0000\n"
+"POT-Creation-Date: 2026-05-24 10:44+0000\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -19,12 +19,12 @@ msgstr "Objet"
 msgid "Message"
 msgstr "Message"
 
-#: admin_module/views.py:82 admin_module/views.py:137 admin_module/views.py:223
-#: admin_module/views.py:268 admin_module/views.py:294
-#: admin_module/views.py:411 admin_module/views.py:451
-#: admin_module/views.py:521 admin_module/views.py:571
-#: admin_module/views.py:591 admin_module/views.py:675
-#: admin_module/views.py:734
+#: admin_module/views.py:82 admin_module/views.py:128 admin_module/views.py:157
+#: admin_module/views.py:242 admin_module/views.py:287
+#: admin_module/views.py:313 admin_module/views.py:430
+#: admin_module/views.py:470 admin_module/views.py:540
+#: admin_module/views.py:590 admin_module/views.py:610
+#: admin_module/views.py:694 admin_module/views.py:753
 msgid "No active contest."
 msgstr "Aucun contest actif."
 
@@ -33,132 +33,133 @@ msgid "Registration closed."
 msgstr "Inscription fermée."
 
 #: admin_module/views.py:107
-msgid "Log submission opened."
-msgstr "Soumission des journaux ouverte."
-
-#: admin_module/views.py:116
 #, python-format
 msgid "Log submission closed; %(n)d pending logs were auto-submitted."
 msgstr "Soumission fermée ; %(n)d journaux en attente ont été soumis automatiquement."
 
-#: admin_module/views.py:125
+#: admin_module/views.py:116
 msgid "Results published."
 msgstr "Résultats publiés."
 
-#: admin_module/views.py:140
+#: admin_module/views.py:137
+msgid "Re-run scoring is only available after log submission has closed."
+msgstr ""
+
+#: admin_module/views.py:144
+#, python-format
+msgid "Scoring re-run. %(n)d QSO records updated."
+msgstr ""
+
+#: admin_module/views.py:160
 msgid "Registration reopened."
 msgstr "Inscription rouverte."
 
-#: admin_module/views.py:141
-msgid "Reverted to registration closed."
-msgstr "Retour à l'inscription fermée."
-
-#: admin_module/views.py:144
+#: admin_module/views.py:163
 #, python-format
 msgid "Log submission reopened; %(n)d auto-submitted logs unlocked."
 msgstr "Soumission rouverte ; %(n)d journaux auto-soumis déverrouillés."
 
-#: admin_module/views.py:146
+#: admin_module/views.py:165
 msgid "Results unpublished."
 msgstr "Publication des résultats annulée."
 
-#: admin_module/views.py:150
+#: admin_module/views.py:169
 msgid "Nothing to revert from this state."
 msgstr "Rien à annuler depuis cet état."
 
-#: admin_module/views.py:171
+#: admin_module/views.py:190
 msgid "Invalid year."
 msgstr "Année non valide."
 
-#: admin_module/views.py:180
+#: admin_module/views.py:199
 #, python-format
 msgid ""
 "Archived previous contests and deactivated participant accounts. NMD %(y)d "
 "seeded."
 msgstr "Contests précédents archivés et comptes participants désactivés. NMD %(y)d créé."
 
-#: admin_module/views.py:309 registration/views.py:46
+#: admin_module/views.py:328 registration/views.py:46
 msgid "This callsign is already registered for the current contest."
 msgstr "Cet indicatif est déjà inscrit pour le contest en cours."
 
-#: admin_module/views.py:314
+#: admin_module/views.py:333
 #, python-format
 msgid "Registered %(call)s on behalf."
 msgstr "%(call)s inscrit pour le compte de l'opérateur."
 
-#: admin_module/views.py:424
+#: admin_module/views.py:443
 #, python-format
 msgid "Station data updated for %(call)s."
 msgstr "Données station mises à jour pour %(call)s."
 
-#: admin_module/views.py:527 portal/views.py:257
+#: admin_module/views.py:546 portal/views.py:257
 msgid "Please choose a file to upload."
 msgstr "Veuillez choisir un fichier à téléverser."
 
-#: admin_module/views.py:532 portal/views.py:262
+#: admin_module/views.py:551 portal/views.py:262
 msgid "Only .csv and .nmd files are supported."
 msgstr "Seuls les fichiers .csv et .nmd sont acceptés."
 
-#: admin_module/views.py:547 portal/views.py:275
+#: admin_module/views.py:566 portal/views.py:275
 #, python-format
 msgid "Imported %(count)d QSO entries from %(name)s."
 msgstr "%(count)d QSO importés depuis %(name)s."
 
-#: admin_module/views.py:549 portal/views.py:277
+#: admin_module/views.py:568 portal/views.py:277
 msgid "Station description updated."
 msgstr "Description de station mise à jour."
 
-#: admin_module/views.py:551 portal/views.py:279
+#: admin_module/views.py:570 portal/views.py:279
 msgid ""
 "Location updated from the file; altitude and canton refreshed from Swisstopo."
 msgstr "Position reprise du fichier ; altitude et canton actualisés depuis Swisstopo."
 
-#: admin_module/views.py:556
+#: admin_module/views.py:575
 msgid ""
 "The coordinates in the file are outside Switzerland or could not be parsed — "
 "the registered location was kept."
 msgstr "Les coordonnées du fichier sont hors de Suisse ou illisibles — la position enregistrée a été conservée."
 
-#: admin_module/views.py:576
+#: admin_module/views.py:595
 msgid "Already submitted; nothing to do."
 msgstr "Déjà soumis ; rien à faire."
 
-#: admin_module/views.py:580
+#: admin_module/views.py:599
 #, python-format
 msgid "Submitted log on behalf of %(call)s."
 msgstr "Journal soumis pour le compte de %(call)s."
 
-#: admin_module/views.py:596
+#: admin_module/views.py:615
 msgid "Not currently submitted; nothing to release."
 msgstr "Pas soumis actuellement ; rien à débloquer."
 
-#: admin_module/views.py:600
+#: admin_module/views.py:619
 #, python-format
 msgid "Released submission for %(call)s."
 msgstr "Soumission débloquée pour %(call)s."
 
-#: admin_module/views.py:644
+#: admin_module/views.py:663
 msgid "Please choose a backup file to upload."
 msgstr "Veuillez choisir un fichier de sauvegarde à téléverser."
 
-#: admin_module/views.py:694
+#: admin_module/views.py:713
 #, python-format
 msgid "Sent %(sent)d of %(total)d messages; %(failed)d failed."
 msgstr "%(sent)d sur %(total)d messages envoyés ; %(failed)d en échec."
 
-#: admin_module/views.py:701
+#: admin_module/views.py:720
 #, python-format
 msgid "Sent %(sent)d messages."
 msgstr "%(sent)d messages envoyés."
 
-#: admin_module/views.py:759
+#: admin_module/views.py:778
 #, python-format
 msgid ""
 "Updated invalid-callsign list: %(added)d added, %(removed)d removed. Scoring "
 "has been re-run."
 msgstr "Liste des indicatifs invalides mise à jour : %(added)d ajoutés, %(removed)d retirés. Le scoring a été recalculé."
 
-#: admin_module/views.py:763
+#: admin_module/views.py:782
 msgid "No changes to the invalid-callsign list."
 msgstr "Aucun changement à la liste des indicatifs invalides."
 
@@ -223,10 +224,14 @@ msgid "Original northing/latitude as entered"
 msgstr "Coordonnée nord/latitude saisie d'origine"
 
 #: core/models.py:75
+#, fuzzy
+#| msgid ""
+#| "Friendly location name (SOTA ref, summit name, …) — the named counterpart "
+#| "of the coordinates"
 msgid ""
-"Friendly location name (SOTA ref, summit name, …) — the named counterpart of "
-"the coordinates"
-msgstr "Nom convivial de l'emplacement (référence SOTA, nom du sommet, …) — le pendant nommé des coordonnées"
+"Friendly location name (village, locality, summit name, …) — the named "
+"counterpart of the coordinates"
+msgstr "Nom convivial de l'emplacement (localité, lieu-dit, nom du sommet, …) — le pendant nommé des coordonnées"
 
 #: core/models.py:84
 msgid "2-letter Swiss canton code"
@@ -607,9 +612,14 @@ msgid "Location name"
 msgstr "Nom du lieu"
 
 #: registration/forms.py:45
+#, fuzzy
+#| msgid ""
+#| "Friendly name for your station's location (SOTA reference, summit name, "
+#| "…)."
 msgid ""
-"Friendly name for your station's location (SOTA reference, summit name, …)."
-msgstr "Nom convivial de l'emplacement de ta station (référence SOTA, nom du sommet, …)."
+"Friendly name for your station's location (village, locality, summit name, "
+"…)."
+msgstr "Nom convivial de l'emplacement de ta station (localité, lieu-dit, nom du sommet, …)."
 
 #: registration/forms.py:48
 msgid "Easting / longitude"
@@ -676,13 +686,13 @@ msgstr "Sélectionne au moins un mode (CW ou SSB)."
 
 #: templates/admin_module/audit_log.html:3
 #: templates/admin_module/audit_log.html:6
-#: templates/admin_module/index.html:121
+#: templates/admin_module/index.html:124
 msgid "Audit log"
 msgstr "Journal d'audit"
 
 #: templates/admin_module/audit_log.html:10
 #: templates/admin_module/audit_log.html:41
-#: templates/admin_module/index.html:134
+#: templates/admin_module/index.html:137
 msgid "Action"
 msgstr "Action"
 
@@ -717,17 +727,17 @@ msgid "%(total)s entries"
 msgstr "%(total)s entrées"
 
 #: templates/admin_module/audit_log.html:39
-#: templates/admin_module/index.html:132
+#: templates/admin_module/index.html:135
 msgid "When (UTC)"
 msgstr "Quand (UTC)"
 
 #: templates/admin_module/audit_log.html:40
-#: templates/admin_module/index.html:133
+#: templates/admin_module/index.html:136
 msgid "Actor"
 msgstr "Acteur"
 
 #: templates/admin_module/audit_log.html:42
-#: templates/admin_module/index.html:135
+#: templates/admin_module/index.html:138
 msgid "Target"
 msgstr "Cible"
 
@@ -758,7 +768,7 @@ msgid "Back to administration"
 msgstr "Retour à l'administration"
 
 #: templates/admin_module/backup.html:3 templates/admin_module/backup.html:10
-#: templates/admin_module/index.html:118
+#: templates/admin_module/index.html:121
 msgid "Backup / restore"
 msgstr "Sauvegarde / restauration"
 
@@ -843,7 +853,7 @@ msgid "Cancel"
 msgstr "Annuler"
 
 #: templates/admin_module/bulk_email.html:3
-#: templates/admin_module/index.html:117
+#: templates/admin_module/index.html:120
 msgid "Bulk email"
 msgstr "E-mail en masse"
 
@@ -976,70 +986,78 @@ msgstr "Fermer l'inscription ? Aucun nouveau participant ne pourra s'inscrire ap
 msgid "Close registration"
 msgstr "Fermer l'inscription"
 
-#: templates/admin_module/index.html:38
-msgid "Open log submission"
-msgstr "Ouvrir la soumission des journaux"
-
-#: templates/admin_module/index.html:43
+#: templates/admin_module/index.html:37
 msgid ""
 "Close log submission? Pending logs will be auto-submitted in their current "
 "state."
 msgstr "Fermer la soumission ? Les journaux en attente seront soumis automatiquement dans leur état actuel."
 
-#: templates/admin_module/index.html:45
+#: templates/admin_module/index.html:39
 msgid "Close log submission (auto-submit pending)"
 msgstr "Fermer la soumission (auto-soumettre en attente)"
 
-#: templates/admin_module/index.html:50
+#: templates/admin_module/index.html:44
 msgid ""
 "Publish results? Participants will be able to see their scoring breakdown."
 msgstr "Publier les résultats ? Les participants pourront voir le détail de leur scoring."
 
-#: templates/admin_module/index.html:52
+#: templates/admin_module/index.html:46
 msgid "Publish results"
 msgstr "Publier les résultats"
 
-#: templates/admin_module/index.html:56
+#: templates/admin_module/index.html:52
+#, fuzzy
+#| msgid "Your scoring"
+msgid "Re-run scoring"
+msgstr ""
+
+#: templates/admin_module/index.html:54
+msgid ""
+"Re-runs the full scoring pipeline. Use after on-behalf edits or any time you "
+"want a fresh pass."
+msgstr ""
+
+#: templates/admin_module/index.html:59
 msgid ""
 "Contest published. Use the 'Setup new contest' form below when ready to "
 "start a new edition."
 msgstr "Contest publié. Utilise le formulaire « Nouveau contest » ci-dessous quand tu es prêt à démarrer une nouvelle édition."
 
-#: templates/admin_module/index.html:60
+#: templates/admin_module/index.html:63
 msgid ""
 "Revert to the previous state? If reverting 'log submission closed', the auto-"
 "submitted logs will be unlocked so operators can edit again."
 msgstr "Revenir à l'état précédent ? Si tu annules « soumission fermée », les journaux auto-soumis seront déverrouillés."
 
-#: templates/admin_module/index.html:63
+#: templates/admin_module/index.html:66
 msgid "Revert to previous state"
 msgstr "Revenir à l'état précédent"
 
-#: templates/admin_module/index.html:70
+#: templates/admin_module/index.html:73
 msgid "Setup new contest"
 msgstr "Nouveau contest"
 
-#: templates/admin_module/index.html:72
+#: templates/admin_module/index.html:75
 msgid ""
 "Archives the current contest and deactivates all non-staff accounts. "
 "Participants will need to re-register."
 msgstr "Archive le contest actuel et désactive tous les comptes non-staff. Les participants devront se réinscrire."
 
-#: templates/admin_module/index.html:75
+#: templates/admin_module/index.html:78
 msgid ""
 "This archives the current contest AND deactivates every participant account. "
 "Are you sure?"
 msgstr "Cela archive le contest actuel ET désactive chaque compte participant. Es-tu sûr ?"
 
-#: templates/admin_module/index.html:78 templates/scoring/review.html:10
+#: templates/admin_module/index.html:81 templates/scoring/review.html:10
 msgid "Year:"
 msgstr "Année :"
 
-#: templates/admin_module/index.html:81
+#: templates/admin_module/index.html:84
 msgid "Archive + create"
 msgstr "Archiver + créer"
 
-#: templates/admin_module/index.html:86 templates/admin_module/index.html:115
+#: templates/admin_module/index.html:89 templates/admin_module/index.html:118
 #: templates/admin_module/participant_detail.html:11
 #: templates/admin_module/participant_log_entry.html:13
 #: templates/admin_module/participant_register.html:11
@@ -1050,85 +1068,85 @@ msgstr "Archiver + créer"
 msgid "Participants"
 msgstr "Participants"
 
-#: templates/admin_module/index.html:90
+#: templates/admin_module/index.html:93
 msgid "Registered (incl. cancelled)"
 msgstr "Inscrits (y compris annulés)"
 
-#: templates/admin_module/index.html:94
+#: templates/admin_module/index.html:97
 msgid "Active"
 msgstr "Actifs"
 
-#: templates/admin_module/index.html:98
+#: templates/admin_module/index.html:101
 msgid "Logs submitted"
 msgstr "Journaux soumis"
 
-#: templates/admin_module/index.html:102
+#: templates/admin_module/index.html:105
 msgid "Pending submission"
 msgstr "Soumission en attente"
 
-#: templates/admin_module/index.html:106
+#: templates/admin_module/index.html:109
 #: templates/admin_module/participants_index.html:27
 msgid "Cancelled"
 msgstr "Annulés"
 
-#: templates/admin_module/index.html:113
+#: templates/admin_module/index.html:116
 msgid "Tools"
 msgstr "Outils"
 
-#: templates/admin_module/index.html:115
+#: templates/admin_module/index.html:118
 msgid "on-behalf registration and editing"
 msgstr "Inscription et édition pour le compte d'un opérateur"
 
-#: templates/admin_module/index.html:116 templates/portal/dashboard.html:64
+#: templates/admin_module/index.html:119 templates/portal/dashboard.html:64
 msgid "Participant list (PDF)"
 msgstr "Liste des participants (PDF)"
 
-#: templates/admin_module/index.html:116
+#: templates/admin_module/index.html:119
 msgid "downloadable roster (available after registration closes)"
 msgstr "Liste téléchargeable (disponible après la fermeture de l'inscription)"
 
-#: templates/admin_module/index.html:117
+#: templates/admin_module/index.html:120
 msgid "send a message to all active participants"
 msgstr "Envoyer un message à tous les participants actifs"
 
-#: templates/admin_module/index.html:118
+#: templates/admin_module/index.html:121
 msgid "download a SQLite snapshot or restore from one"
 msgstr "Télécharger un instantané SQLite ou restaurer depuis l'un d'eux"
 
-#: templates/admin_module/index.html:119 templates/scoring/review.html:3
+#: templates/admin_module/index.html:122 templates/scoring/review.html:3
 #: templates/scoring/review.html:6
 msgid "Scoring review"
 msgstr "Vérification du scoring"
 
-#: templates/admin_module/index.html:119
+#: templates/admin_module/index.html:122
 msgid "per-QSO status, points, suspected calls"
 msgstr "Par QSO : statut, points, indicatifs suspects"
 
-#: templates/admin_module/index.html:120
+#: templates/admin_module/index.html:123
 msgid "Fixstation review"
 msgstr "Vérification des fixstations"
 
-#: templates/admin_module/index.html:120
+#: templates/admin_module/index.html:123
 msgid "verify suspicious non-NMD callsigns against external databases"
 msgstr "Vérifier les indicatifs hors NMD suspects via des bases externes"
 
-#: templates/admin_module/index.html:121
+#: templates/admin_module/index.html:124
 msgid "every admin/system action with filters"
 msgstr "Chaque action admin/système avec filtres"
 
-#: templates/admin_module/index.html:122
+#: templates/admin_module/index.html:125
 msgid "Django admin"
 msgstr "Admin Django"
 
-#: templates/admin_module/index.html:122
+#: templates/admin_module/index.html:125
 msgid "low-level data inspection (registrations, QSOs, emails, etc.)"
 msgstr "Inspection bas niveau des données (inscriptions, QSO, e-mails, etc.)"
 
-#: templates/admin_module/index.html:128
+#: templates/admin_module/index.html:131
 msgid "Recent activity"
 msgstr "Activité récente"
 
-#: templates/admin_module/index.html:149
+#: templates/admin_module/index.html:152
 msgid "Full audit log →"
 msgstr "Journal d'audit complet →"
 
@@ -1136,7 +1154,7 @@ msgstr "Journal d'audit complet →"
 msgid "On-behalf editing surface. Changes are audited with you as the actor."
 msgstr "Surface d'édition pour le compte d'un opérateur. Les changements sont audités avec toi comme acteur."
 
-#: templates/admin_module/participant_detail.html:18 templates/base.html:15
+#: templates/admin_module/participant_detail.html:18
 msgid "Registration"
 msgstr "Inscription"
 
@@ -1444,6 +1462,12 @@ msgstr "Modifier"
 #: templates/admin_module/participants_index.html:66
 msgid "No participants match."
 msgstr "Aucun participant correspondant."
+
+#: templates/base.html:15
+#, fuzzy
+#| msgid "Sign in"
+msgid "Sign up"
+msgstr "S'inscrire"
 
 #: templates/base.html:16 templates/portal/dashboard.html:3
 msgid "Portal"
@@ -2058,3 +2082,12 @@ msgstr "Indicatif"
 #: templates/scoring/review.html:47
 msgid "Pick a participant on the left to see their QSO log with status."
 msgstr "Choisis un participant à gauche pour voir son journal QSO avec statut."
+
+#~ msgid "Log submission opened."
+#~ msgstr "Log-Einreichung geöffnet."
+
+#~ msgid "Reverted to registration closed."
+#~ msgstr "Zurückgesetzt auf Anmeldung geschlossen."
+
+#~ msgid "Open log submission"
+#~ msgstr "Log-Einreichung öffnen"

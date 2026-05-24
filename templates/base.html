@@ -12,10 +12,11 @@
     <header class="topnav">
         <a class="brand" href="{% url 'portal:dashboard' %}">NMD</a>
         <nav>
-            <a href="{% url 'registration:index' %}">{% trans "Sign up" %}</a>
-            <a href="{% url 'portal:dashboard' %}">{% trans "Portal" %}</a>
+            {% if not user.is_staff %}
+                <a href="{% url 'registration:index' %}">{% trans "Sign up" %}</a>
+                <a href="{% url 'portal:dashboard' %}">{% trans "Portal" %}</a>
+            {% endif %}
             {% if user.is_staff %}
-                <a href="{% url 'scoring:index' %}">{% trans "Scoring" %}</a>
                 <a href="{% url 'admin_module:index' %}">{% trans "Administration" %}</a>
             {% endif %}
         </nav>
