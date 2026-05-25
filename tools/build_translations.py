@@ -399,15 +399,24 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     "Zürich": ("Zürich", "Zurich", "Zurigo"),
 
     # registration/forms.py
-    "Your contest callsign, with /P if you use it on air.": (
-        "Dein Contest-Rufzeichen, mit /P falls du es so verwendest.",
-        "Ton indicatif contest, avec /P si tu l'utilises ainsi à l'antenne.",
-        "Il tuo nominativo contest, con /P se lo usi così in aria.",
+    "Your contest callsign. We strip a trailing /P automatically — the portable suffix is implicit on NMD.": (
+        "Dein Contest-Rufzeichen. Ein anhängendes /P entfernen wir automatisch — beim NMD ist es implizit.",
+        "Ton indicatif contest. Un /P final est retiré automatiquement — au NMD il est implicite.",
+        "Il tuo nominativo contest. Una /P finale viene rimossa automaticamente — al NMD è implicita.",
     ),
     "First name": ("Vorname", "Prénom", "Nome"),
     "Email": ("E-Mail", "E-mail", "E-mail"),
-    "Multi-operator station": ("Multi-Operator-Station", "Station multi-opérateurs", "Stazione multi-operatore"),
-    "No (single operator)": ("Nein (einzelner Operator)", "Non (opérateur unique)", "No (operatore singolo)"),
+    "Station type": ("Stationstyp", "Type de station", "Tipo di stazione"),
+    "Single-operator station": (
+        "Einmannstation",
+        "Station opérateur individuel",
+        "Stazione con un solo operatore",
+    ),
+    "Multi-operator station": (
+        "Mehrmannstation",
+        "Station multiopérateur",
+        "Stazione con più operatori",
+    ),
     "Yes": ("Ja", "Oui", "Sì"),
     "Station chief callsign": (
         "Rufzeichen des Stationsleiters",
@@ -425,17 +434,17 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Nom convivial de l'emplacement de ta station (localité, lieu-dit, nom du sommet, …).",
         "Nome del luogo della tua stazione (località, toponimo, nome della vetta, …).",
     ),
-    "Easting / longitude": ("Ostkoordinate / Längengrad", "Coordonnée est / longitude", "Coordinata est / longitudine"),
-    "WGS84 e.g. 8.2275 — CH1903 e.g. 660000 — CH1903+ e.g. 2660000": (
-        "WGS84 z. B. 8.2275 — CH1903 z. B. 660000 — CH1903+ z. B. 2660000",
-        "WGS84 p. ex. 8.2275 — CH1903 p. ex. 660000 — CH1903+ p. ex. 2660000",
-        "WGS84 es. 8.2275 — CH1903 es. 660000 — CH1903+ es. 2660000",
+    "Easting": ("Ostkoordinate", "Coordonnée est", "Coordinata est"),
+    "CH1903 e.g. 660000 — also accepts CH1903+ (2660000) or WGS84 (8.2275)": (
+        "CH1903 z. B. 660000 — auch CH1903+ (2660000) oder WGS84 (8.2275)",
+        "CH1903 p. ex. 660000 — accepte aussi CH1903+ (2660000) ou WGS84 (8.2275)",
+        "CH1903 es. 660000 — accetta anche CH1903+ (2660000) o WGS84 (8.2275)",
     ),
-    "Northing / latitude": ("Nordkoordinate / Breitengrad", "Coordonnée nord / latitude", "Coordinata nord / latitudine"),
-    "WGS84 e.g. 46.8182 — CH1903 e.g. 190000 — CH1903+ e.g. 1190000": (
-        "WGS84 z. B. 46.8182 — CH1903 z. B. 190000 — CH1903+ z. B. 1190000",
-        "WGS84 p. ex. 46.8182 — CH1903 p. ex. 190000 — CH1903+ p. ex. 1190000",
-        "WGS84 es. 46.8182 — CH1903 es. 190000 — CH1903+ es. 1190000",
+    "Northing": ("Nordkoordinate", "Coordonnée nord", "Coordinata nord"),
+    "CH1903 e.g. 190000 — also accepts CH1903+ (1190000) or WGS84 (46.8182)": (
+        "CH1903 z. B. 190000 — auch CH1903+ (1190000) oder WGS84 (46.8182)",
+        "CH1903 p. ex. 190000 — accepte aussi CH1903+ (1190000) ou WGS84 (46.8182)",
+        "CH1903 es. 190000 — accetta anche CH1903+ (1190000) o WGS84 (46.8182)",
     ),
     "Altitude (m a.s.l.)": ("Höhe (m ü. M.)", "Altitude (m s.m.)", "Altitudine (m s.l.m.)"),
     "Filled automatically from Swisstopo when you pick a location on the map.": (
@@ -864,10 +873,10 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     ),
 
     # Cancel / dashboard / etc.
-    "Unsubscribe": ("Abmelden", "Se désinscrire", "Annulla iscrizione"),
+    "Unsubscribe": ("Anmeldung annullieren", "Annuler l'inscription", "Annulla iscrizione"),
     "\n            You're about to unsubscribe from NMD %(year)s as %(callsign)s.\n        ": (
-        "\n            Du bist im Begriff, dich als %(callsign)s vom NMD %(year)s abzumelden.\n        ",
-        "\n            Tu es sur le point de te désinscrire du NMD %(year)s en tant que %(callsign)s.\n        ",
+        "\n            Du bist im Begriff, deine Anmeldung als %(callsign)s für den NMD %(year)s zu annullieren.\n        ",
+        "\n            Tu es sur le point d'annuler ton inscription au NMD %(year)s en tant que %(callsign)s.\n        ",
         "\n            Stai per annullare la tua iscrizione al NMD %(year)s come %(callsign)s.\n        ",
     ),
     "Your QSO log and station data — if any — will be removed. You can register again any time before the contest.": (
@@ -875,7 +884,11 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Ton journal QSO et tes données station — s'ils existent — seront supprimés. Tu peux te réinscrire à tout moment avant le contest.",
         "Il tuo log QSO e i dati stazione — se presenti — saranno rimossi. Puoi iscriverti nuovamente in qualsiasi momento prima del contest.",
     ),
-    "Yes, unsubscribe": ("Ja, abmelden", "Oui, se désinscrire", "Sì, annulla iscrizione"),
+    "Yes, unsubscribe": (
+        "Ja, Anmeldung annullieren",
+        "Oui, annuler l'inscription",
+        "Sì, annulla iscrizione",
+    ),
     "Keep my registration": ("Anmeldung behalten", "Conserver mon inscription", "Mantieni l'iscrizione"),
     "Portal — %(callsign)s": ("Portal — %(callsign)s", "Portail — %(callsign)s", "Portale — %(callsign)s"),
     "There is no active contest at the moment.": (
@@ -1214,6 +1227,30 @@ def translate_po(po_text: str, lang: str) -> str:
         if line.startswith('msgid '):
             current_msgid, j = read_quoted(i, "msgid")
             current_plural = None
+            # If we have a translation for this msgid, strip any preceding
+            # `#, fuzzy` flag and `#|` previous-msgid hint that makemessages
+            # left behind — build_translations.py IS the review step those
+            # markers are waiting for, and leaving them in makes Django
+            # fall back to the English msgid at runtime.
+            if current_msgid in TRANSLATIONS or current_msgid in PLURALS:
+                block_start = len(out)
+                while block_start > 0 and out[block_start - 1].startswith("#"):
+                    block_start -= 1
+                kept: list[str] = []
+                for cm in out[block_start:]:
+                    if cm.startswith("#|"):
+                        continue
+                    if cm.startswith("#, ") and "fuzzy" in cm:
+                        rest = [
+                            f.strip()
+                            for f in cm[3:].split(",")
+                            if f.strip() and f.strip() != "fuzzy"
+                        ]
+                        if rest:
+                            kept.append("#, " + ", ".join(rest))
+                        continue
+                    kept.append(cm)
+                out[block_start:] = kept
             for k in range(i, j):
                 out.append(lines[k])
             i = j

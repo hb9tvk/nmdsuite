@@ -50,4 +50,7 @@
     </form>
 {% endblock %}
 
-{% block extra_scripts %}{% include "partials/_location_scripts.html" %}{% endblock %}
+{% block extra_scripts %}
+    {% include "partials/_location_scripts.html" %}
+    {% include "partials/_station_chief_toggle.html" %}
+{% endblock %}

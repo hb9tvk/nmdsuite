@@ -86,7 +86,7 @@ def test_post_valid_creates_user_participant_and_email(client, seeded_contest):
     assert user.has_usable_password()
 
     participant = Participant.objects.get(user=user, contest=seeded_contest)
-    assert participant.callsign == "HB9TVK/P"
+    assert participant.callsign == "HB9TVK"
     assert participant.canton == "BE"
     assert participant.operating_modes == 1  # CW only
 
@@ -103,7 +103,7 @@ def test_post_valid_creates_user_participant_and_email(client, seeded_contest):
     assert "HB9TVK" in body
     assert "Passwort" in body  # German section always present
 
-    assert AuditLog.objects.filter(action="registration.create", target="HB9TVK/P").exists()
+    assert AuditLog.objects.filter(action="registration.create", target="HB9TVK").exists()
 
 
 @pytest.mark.django_db

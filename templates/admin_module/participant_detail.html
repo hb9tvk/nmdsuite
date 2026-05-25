@@ -28,14 +28,14 @@
             {% endif %}
             {% if participant.ch1903_e and participant.ch1903_n %}
                 <dt>{% trans "Coordinates (CH1903)" %}</dt>
-                <dd>{{ participant.ch1903_e }}, {{ participant.ch1903_n }}</dd>
+                <dd>{{ participant.ch1903_e }}/{{ participant.ch1903_n }}</dd>
             {% endif %}
-            <dt>{% trans "Multi-op" %}</dt>
+            <dt>{% trans "Station type" %}</dt>
             <dd>
                 {% if participant.multi_op %}
-                    {% trans "yes" %} ({% trans "chief:" %} {{ participant.station_chief|default:"—" }})
+                    {% trans "Multi-operator station" %} ({% trans "chief:" %} {{ participant.station_chief|default:"—" }})
                 {% else %}
-                    {% trans "no" %}
+                    {% trans "Single-operator station" %}
                 {% endif %}
             </dd>
             <dt>{% trans "Modes" %}</dt>

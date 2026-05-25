@@ -40,13 +40,19 @@
             <dt>{% trans "Callsign" %}</dt><dd>{{ participant.callsign }}</dd>
             <dt>{% trans "First name" %}</dt><dd>{{ participant.first_name }}</dd>
             <dt>{% trans "Email" %}</dt><dd>{{ participant.email }}</dd>
-            <dt>{% trans "Multi-operator station" %}</dt>
-            <dd>{% if participant.multi_op %}{% trans "Yes" %} ({{ participant.station_chief }}){% else %}{% trans "No" %}{% endif %}</dd>
+            <dt>{% trans "Station type" %}</dt>
+            <dd>
+                {% if participant.multi_op %}
+                    {% trans "Multi-operator station" %} ({{ participant.station_chief }})
+                {% else %}
+                    {% trans "Single-operator station" %}
+                {% endif %}
+            </dd>
             <dt>{% trans "Location name" %}</dt><dd>{{ participant.location_text }}</dd>
             <dt>{% trans "Canton" %}</dt><dd>{{ participant.canton }}</dd>
             <dt>{% trans "Altitude" %}</dt><dd>{{ participant.altitude_m }} m</dd>
             <dt>{% trans "Coordinates (CH1903)" %}</dt>
-            <dd>{{ participant.ch1903_e }}, {{ participant.ch1903_n }}</dd>
+            <dd>{{ participant.ch1903_e }}/{{ participant.ch1903_n }}</dd>
             <dt>{% trans "Operating modes" %}</dt>
             <dd>{% if participant.operating_modes == 3 %}{% trans "CW + SSB" %}{% elif participant.operating_modes == 1 %}CW{% elif participant.operating_modes == 2 %}SSB{% endif %}</dd>
             {% if participant.remarks %}

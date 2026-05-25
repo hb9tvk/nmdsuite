@@ -309,12 +309,16 @@
     }
 
     function writeFields(lat, lon) {
-        // The form is labelled "easting / longitude" and "northing / latitude" —
-        // the *first* field gets the longitude, the *second* the latitude.
+        // Write CH1903 (LV03) integers — what the paper Swisstopo maps use.
+        // The form still accepts WGS84 or LV95 on manual input; detection
+        // happens in detectAndConvert().
         writingFromMap = true;
         try {
-            if (eInput) eInput.value = lon.toFixed(6);
-            if (nInput) nInput.value = lat.toFixed(6);
+            const lv = wgs84ToLV95(lat, lon);
+            const lv03e = Math.round(lv.e - 2_000_000);
+            const lv03n = Math.round(lv.n - 1_000_000);
+            if (eInput) eInput.value = String(lv03e);
+            if (nInput) nInput.value = String(lv03n);
         } finally {
             writingFromMap = false;
         }

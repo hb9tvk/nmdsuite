@@ -63,8 +63,11 @@ def initial_from_participant(participant: Participant) -> dict[str, Any]:
         "multi_op": participant.multi_op,
         "station_chief": participant.station_chief,
         "location_text": participant.location_text,
-        "coord_input_e": participant.coord_input_e,
-        "coord_input_n": participant.coord_input_n,
+        # Always prefill with CH1903 (LV03) — that's the canonical display
+        # format. The form still accepts WGS84 / LV95 on input, but we
+        # don't echo back whatever the operator originally typed.
+        "coord_input_e": str(participant.ch1903_e) if participant.ch1903_e is not None else "",
+        "coord_input_n": str(participant.ch1903_n) if participant.ch1903_n is not None else "",
         "altitude_m": participant.altitude_m,
         "canton": participant.canton,
         "mode_cw": bool(participant.operating_modes & 1),

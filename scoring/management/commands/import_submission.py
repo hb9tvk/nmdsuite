@@ -26,8 +26,8 @@ Decisions encoded here:
   carry no security value here. Imported users get an unusable
   password — operator would need to reset before login if the test
   fixture ever needs auth.
-- **/P convention.** ``/P`` is preserved if present, appended if
-  absent. The bare callsign (no suffix) becomes ``User.username``.
+- **/P stripped.** Any trailing portable suffix is removed on import,
+  matching how new registrations are stored.
 - **submitted=True → submitted_at = now**. Stations marked submitted
   in the legacy DB land in the ranking page; non-submitted stay null
   (filtered out by the ranking service, just like in production).
@@ -64,6 +64,8 @@ from portal.station_service import COMPONENT_SLOTS
 from registration.callsigns import login_username, normalize_callsign
 from registration.coords import CoordinateError, parse_coordinate_pair
 
+
+
 User = get_user_model()
 
 # Stub canton / altitude / coords used when the legacy row is missing
@@ -88,11 +90,6 @@ class Command(BaseCommand):
     def add_arguments(self, parser) -> None:
         parser.add_argument("--year", type=int, required=True, help="Target contest year.")
         parser.add_argument("db_path", type=str, help="Path to the submission.sqlite3 file.")
-        parser.add_argument(
-            "--no-portable-suffix",
-            action="store_true",
-            help="Do not append /P to Participant.callsign when missing.",
-        )
 
     def handle(self, *args, **opts) -> None:
         year = opts["year"]
@@ -107,8 +104,6 @@ class Command(BaseCommand):
         db_path = Path(opts["db_path"])
         if not db_path.is_file():
             raise CommandError(f"Not a file: {db_path}")
-
-        append_p = not opts["no_portable_suffix"]
 
         conn = sqlite3.connect(str(db_path))
         try:
@@ -132,7 +127,6 @@ class Command(BaseCommand):
                     user_row=users_by_call.get(raw),
                     station_row=stations_by_call.get(raw),
                     log_rows=logs_by_call.get(raw, []),
-                    append_p=append_p,
                     db_name=db_path.name,
                 )
             except (ValueError, sqlite3.Error) as exc:
@@ -160,7 +154,7 @@ class Command(BaseCommand):
             rows = conn.execute("SELECT * FROM user").fetchall()
         except sqlite3.Error:
             return {}
-        return {normalize_callsign(r["callsign"]): r for r in rows if r["callsign"]}
+        return {login_username(normalize_callsign(r["callsign"])): r for r in rows if r["callsign"]}
 
     @staticmethod
     def _load_stations(conn: sqlite3.Connection) -> dict[str, sqlite3.Row]:
@@ -168,7 +162,7 @@ class Command(BaseCommand):
             rows = conn.execute("SELECT * FROM station_description").fetchall()
         except sqlite3.Error:
             return {}
-        return {normalize_callsign(r["callsign"]): r for r in rows if r["callsign"]}
+        return {login_username(normalize_callsign(r["callsign"])): r for r in rows if r["callsign"]}
 
     @staticmethod
     def _load_logs_grouped(conn: sqlite3.Connection) -> dict[str, list[sqlite3.Row]]:
@@ -178,7 +172,7 @@ class Command(BaseCommand):
             return {}
         out: dict[str, list[sqlite3.Row]] = {}
         for r in rows:
-            key = normalize_callsign(r["callsign"])
+            key = login_username(normalize_callsign(r["callsign"]))
             if key:
                 out.setdefault(key, []).append(r)
         return out
@@ -191,7 +185,6 @@ class Command(BaseCommand):
         user_row: sqlite3.Row | None,
         station_row: sqlite3.Row | None,
         log_rows: list[sqlite3.Row],
-        append_p: bool,
         db_name: str,
     ) -> int:
         normalized = normalize_callsign(raw_call)
@@ -199,10 +192,7 @@ class Command(BaseCommand):
             raise ValueError("empty callsign")
 
         username = login_username(normalized)
-        if append_p and "/" not in normalized:
-            participant_call = f"{normalized}/P"
-        else:
-            participant_call = normalized
+        participant_call = username
 
         email = _first_nonempty(
             user_row["email"] if user_row else None,

@@ -25,8 +25,9 @@ This file is read automatically by Claude Code when working in this repo. Keep i
 
 - Audit-worthy actions go through `core.audit.audit(...)`. Don't write `AuditLog.objects.create`
   directly from views.
-- Money-equivalent identifiers: callsigns are stored uppercase, no `/P` in the `User.username`,
-  but `/P` is preserved in `Participant.callsign` if the operator uses it on air.
+- Callsigns are stored uppercase with no trailing portable suffix (`/P`, `/M`, `/MM`).
+  `Participant.callsign` and `User.username` end up identical — `/P` is implicit on NMD
+  and only spoken on air. `clean_callsign` runs the input through `login_username`.
 - Coordinates: store CH1903+ (LV95) E/N and WGS84 lat/lon in canonical columns; keep the
   user's original input in the `*_input_*` columns for display.
 - All datetimes are UTC. The contest start/end times in `Contest` are timezone-aware UTC.

@@ -1,0 +1,15 @@
+<script>
+    (function () {
+        const radios = document.querySelectorAll('input[name="multi_op"]');
+        const chief = document.getElementById('id_station_chief');
+        if (!radios.length || !chief) return;
+        function sync() {
+            const sel = document.querySelector('input[name="multi_op"]:checked');
+            const isMulti = sel && sel.value === 'True';
+            chief.disabled = !isMulti;
+            if (!isMulti) chief.value = '';
+        }
+        radios.forEach(r => r.addEventListener('change', sync));
+        sync();
+    })();
+</script>

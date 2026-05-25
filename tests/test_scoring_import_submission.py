@@ -116,46 +116,31 @@ def test_creates_user_and_participant_for_each_callsign(seeded_contest, tmp_path
         logs=[],
     )
     assert User.objects.filter(username="HB9TVK").count() == 1
-    assert Participant.objects.filter(contest=seeded_contest, callsign="HB9TVK/P").count() == 1
+    assert Participant.objects.filter(contest=seeded_contest, callsign="HB9TVK").count() == 1
 
 
 @pytest.mark.django_db
-def test_username_is_callsign_without_portable_suffix(seeded_contest, tmp_path):
+def test_portable_suffix_stripped_on_import(seeded_contest, tmp_path):
+    """Legacy entries that carry /P are normalised to the bare callsign;
+    both User.username and Participant.callsign end up identical."""
     _run(
         tmp_path,
         users=[{"callsign": "HB9TVK/P", "email": "t@x.org"}],
         stations=[{"callsign": "HB9TVK/P", "submitted": True}],
     )
-    # /P stripped for username, preserved on Participant.callsign.
     assert User.objects.filter(username="HB9TVK").exists()
     assert not User.objects.filter(username="HB9TVK/P").exists()
-    p = Participant.objects.get(callsign="HB9TVK/P")
+    p = Participant.objects.get(callsign="HB9TVK")
     assert p.user.username == "HB9TVK"
 
 
 @pytest.mark.django_db
-def test_callsign_gains_p_suffix_by_default(seeded_contest, tmp_path):
+def test_bare_callsign_stays_bare(seeded_contest, tmp_path):
+    """A legacy entry without /P also stays bare — we never auto-append."""
     _run(
         tmp_path,
         users=[{"callsign": "HB9X"}],
         stations=[{"callsign": "HB9X", "submitted": True}],
-    )
-    p = Participant.objects.get(user__username="HB9X")
-    assert p.callsign == "HB9X/P"
-
-
-@pytest.mark.django_db
-def test_no_portable_suffix_flag_disables_p_appending(seeded_contest, tmp_path):
-    db = tmp_path / "submission.sqlite3"
-    _make_submission_db(
-        db,
-        users=[{"callsign": "HB9X"}],
-        stations=[{"callsign": "HB9X", "submitted": True}],
-    )
-    out = StringIO()
-    call_command(
-        "import_submission", str(db),
-        "--year", "2026", "--no-portable-suffix", stdout=out,
     )
     p = Participant.objects.get(user__username="HB9X")
     assert p.callsign == "HB9X"
@@ -171,8 +156,8 @@ def test_submitted_flag_drives_submitted_at(seeded_contest, tmp_path):
             {"callsign": "HB9B", "submitted": False},
         ],
     )
-    a = Participant.objects.get(callsign="HB9A/P")
-    b = Participant.objects.get(callsign="HB9B/P")
+    a = Participant.objects.get(callsign="HB9A")
+    b = Participant.objects.get(callsign="HB9B")
     assert a.submitted_at is not None
     assert b.submitted_at is None
 
@@ -184,7 +169,7 @@ def test_opname_lands_in_first_name(seeded_contest, tmp_path):
         users=[{"callsign": "HB9TVK"}],
         stations=[{"callsign": "HB9TVK", "opname": "Peter", "submitted": True}],
     )
-    assert Participant.objects.get(callsign="HB9TVK/P").first_name == "Peter"
+    assert Participant.objects.get(callsign="HB9TVK").first_name == "Peter"
 
 
 # --- station description + components --------------------------------------------------------
@@ -204,7 +189,7 @@ def test_station_description_persists_full_payload(seeded_contest, tmp_path):
             "gesamtegewicht": 3200, "submitted": True,
         }],
     )
-    p = Participant.objects.get(callsign="HB9A/P")
+    p = Participant.objects.get(callsign="HB9A")
     # The legacy station_description's fields are merged onto Participant
     # (migration 0007).
     assert p.location_text == "Albispass"
@@ -231,7 +216,7 @@ def test_no_station_row_means_empty_equipment_fields(seeded_contest, tmp_path):
         users=[{"callsign": "HB9A"}],
         stations=[],
     )
-    p = Participant.objects.get(callsign="HB9A/P")
+    p = Participant.objects.get(callsign="HB9A")
     assert p.op_name == ""
     assert p.watt == ""
     assert p.total_weight_g == 0
@@ -253,7 +238,7 @@ def test_lv03_coordinates_parse(seeded_contest, tmp_path):
             "submitted": True,
         }],
     )
-    p = Participant.objects.get(callsign="HB9A/P")
+    p = Participant.objects.get(callsign="HB9A")
     # LV95 should be ~2.68M east, 1.24M north — i.e. LV03 + LV95 offsets.
     assert 2_680_000 < p.ch1903p_e < 2_700_000
     assert 1_230_000 < p.ch1903p_n < 1_250_000
@@ -274,7 +259,7 @@ def test_invalid_coordinates_fall_back_to_stub(seeded_contest, tmp_path):
             "submitted": True,
         }],
     )
-    p = Participant.objects.get(callsign="HB9X/P")
+    p = Participant.objects.get(callsign="HB9X")
     # Raw text preserved; canonical fields fell back to stubs.
     assert p.coord_input_e == "1"
     assert p.coord_input_n == "1"
@@ -297,7 +282,7 @@ def test_log_rows_become_qso_entries(seeded_contest, tmp_path):
              "rsts": "59", "txts": "test2", "rstr": "59", "txtr": "test2"},
         ],
     )
-    p = Participant.objects.get(callsign="HB9A/P")
+    p = Participant.objects.get(callsign="HB9A")
     rows = list(QsoEntry.objects.filter(participant=p).order_by("utc_raw"))
     assert len(rows) == 2
     assert {r.mode for r in rows} == {"CW", "SSB"}  # inferred from RST length
@@ -332,10 +317,10 @@ def test_operating_modes_inferred_from_log(seeded_contest, tmp_path):
              "rsts": "59", "rstr": "59"},
         ],
     )
-    cw = Participant.objects.get(callsign="HB9CW/P")
-    ssb = Participant.objects.get(callsign="HB9SSB/P")
-    both = Participant.objects.get(callsign="HB9BOTH/P")
-    none = Participant.objects.get(callsign="HB9NONE/P")
+    cw = Participant.objects.get(callsign="HB9CW")
+    ssb = Participant.objects.get(callsign="HB9SSB")
+    both = Participant.objects.get(callsign="HB9BOTH")
+    none = Participant.objects.get(callsign="HB9NONE")
     assert cw.operating_modes == Participant.Mode.CW
     assert ssb.operating_modes == Participant.Mode.SSB
     assert both.operating_modes == Participant.Mode.BOTH
@@ -367,8 +352,8 @@ def test_rerunning_import_is_idempotent(seeded_contest, tmp_path):
     call_command("import_submission", str(db), "--year", "2026", stdout=StringIO())
 
     assert User.objects.filter(username="HB9A").count() == 1
-    assert Participant.objects.filter(callsign="HB9A/P").count() == 1
-    p = Participant.objects.get(callsign="HB9A/P")
+    assert Participant.objects.filter(callsign="HB9A").count() == 1
+    p = Participant.objects.get(callsign="HB9A")
     assert QsoEntry.objects.filter(participant=p).count() == 1
     assert StationComponent.objects.filter(participant=p).count() == 1
 

@@ -1,10 +1,11 @@
 """Callsign helpers.
 
 The same callsign can show up in registration as ``HB9TVK``, ``HB9TVK/P`` or
-even ``HB9TVK/QRP``. For login (``User.username``) we always strip the
-trailing single-letter postfix so that the operator can sign in with their
-"normal" callsign. The ``Participant.callsign`` field, in contrast, keeps
-whatever the operator typed — that's what they intend to use on air.
+``HB9TVK/QRP``. We always strip the trailing single-letter portable postfix
+(``/P``, ``/M``, ``/MM``) for storage: ``Participant.callsign`` and
+``User.username`` end up identical. NMD is a portable contest so the /P is
+implicit; operators still announce it on air, but it isn't part of the
+stored identity.
 """
 from __future__ import annotations
 

@@ -124,11 +124,12 @@ def test_station_get_prefills_registration_data(client, participant):
     client.force_login(user)
     response = client.get("/submission/station/")
     body = response.content.decode("utf-8")
-    # Location-name + raw coord inputs come straight from the
-    # participant; canton is a <select> with the option marked selected.
+    # Location-name + coord inputs come from the participant. Coordinates
+    # are always prefilled in CH1903 (LV03), regardless of what the operator
+    # originally typed. Canton is a <select> with the option marked selected.
     assert 'value="Niederhorn"' in body
-    assert 'value="8.2"' in body
-    assert 'value="46.8"' in body
+    assert 'value="600000"' in body
+    assert 'value="200000"' in body
     assert 'value="1500"' in body
     assert 'value="BE" selected' in body
     # Identity fields shown read-only (no `name="callsign"` etc. input).

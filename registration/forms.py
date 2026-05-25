@@ -4,7 +4,7 @@ from __future__ import annotations
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from .callsigns import is_valid_callsign, normalize_callsign
+from .callsigns import is_valid_callsign, login_username, normalize_callsign
 from .constants import SWISS_CANTONS
 from .coords import CoordinateError, parse_coordinate_pair
 
@@ -20,14 +20,15 @@ class RegistrationForm(forms.Form):
     callsign = forms.CharField(
         label=_("Callsign"),
         max_length=20,
-        help_text=_("Your contest callsign, with /P if you use it on air."),
+        help_text=_("Your contest callsign. We strip a trailing /P automatically — the portable suffix is implicit on NMD."),
+        widget=forms.TextInput(attrs={"style": "text-transform: uppercase", "oninput": "this.value=this.value.toUpperCase()"}),
     )
     first_name = forms.CharField(label=_("First name"), max_length=80)
     email = forms.EmailField(label=_("Email"))
 
     multi_op = forms.TypedChoiceField(
-        label=_("Multi-operator station"),
-        choices=((False, _("No (single operator)")), (True, _("Yes"))),
+        label=_("Station type"),
+        choices=((False, _("Single-operator station")), (True, _("Multi-operator station"))),
         coerce=lambda v: v in (True, "True", "true", "1"),
         widget=forms.RadioSelect,
         initial=False,
@@ -37,6 +38,7 @@ class RegistrationForm(forms.Form):
         max_length=20,
         required=False,
         help_text=_("Required only for multi-operator stations."),
+        widget=forms.TextInput(attrs={"style": "text-transform: uppercase", "oninput": "this.value=this.value.toUpperCase()"}),
     )
 
     location_text = forms.CharField(
@@ -45,15 +47,15 @@ class RegistrationForm(forms.Form):
         help_text=_("Friendly name for your station's location (village, locality, summit name, …)."),
     )
     coord_input_e = forms.CharField(
-        label=_("Easting / longitude"),
+        label=_("Easting"),
         max_length=32,
-        help_text=_("WGS84 e.g. 8.2275 — CH1903 e.g. 660000 — CH1903+ e.g. 2660000"),
+        help_text=_("CH1903 e.g. 660000 — also accepts CH1903+ (2660000) or WGS84 (8.2275)"),
         widget=forms.TextInput(attrs={"autocomplete": "off"}),
     )
     coord_input_n = forms.CharField(
-        label=_("Northing / latitude"),
+        label=_("Northing"),
         max_length=32,
-        help_text=_("WGS84 e.g. 46.8182 — CH1903 e.g. 190000 — CH1903+ e.g. 1190000"),
+        help_text=_("CH1903 e.g. 190000 — also accepts CH1903+ (1190000) or WGS84 (46.8182)"),
         widget=forms.TextInput(attrs={"autocomplete": "off"}),
     )
     altitude_m = forms.IntegerField(
@@ -94,7 +96,7 @@ class RegistrationForm(forms.Form):
         raw = normalize_callsign(self.cleaned_data["callsign"])
         if not is_valid_callsign(raw):
             raise forms.ValidationError(_("Not a recognizable callsign."))
-        return raw
+        return login_username(raw)
 
     def clean_station_chief(self) -> str:
         raw = self.cleaned_data.get("station_chief", "")
@@ -103,7 +105,7 @@ class RegistrationForm(forms.Form):
         normalized = normalize_callsign(raw)
         if not is_valid_callsign(normalized):
             raise forms.ValidationError(_("Not a recognizable callsign."))
-        return normalized
+        return login_username(normalized)
 
     def clean_altitude_m(self) -> int:
         v = self.cleaned_data["altitude_m"]

@@ -207,12 +207,12 @@ def test_register_post_creates_participant_attributed_to_staff(client, seeded_co
     response = client.post("/admin/participants/register/", VALID_FORM)
 
     assert response.status_code == 302
-    participant = Participant.objects.get(callsign="HB9TVK/P")
+    participant = Participant.objects.get(callsign="HB9TVK")
     assert participant.contest == seeded_contest
     # Redirect lands on the detail page for this participant.
     assert response["Location"].endswith(f"/admin/participants/{participant.pk}/")
 
-    entry = AuditLog.objects.get(action="registration.create", target="HB9TVK/P")
+    entry = AuditLog.objects.get(action="registration.create", target="HB9TVK")
     assert entry.actor == staff
     assert entry.payload.get("on_behalf") is True
 
@@ -227,7 +227,7 @@ def test_register_bypasses_state_check(client, seeded_contest):
     client.force_login(_make_staff_user())
     response = client.post("/admin/participants/register/", VALID_FORM)
     assert response.status_code == 302
-    assert Participant.objects.filter(callsign="HB9TVK/P").exists()
+    assert Participant.objects.filter(callsign="HB9TVK").exists()
 
 
 # --- detail ----------------------------------------------------------------------------------
@@ -245,13 +245,14 @@ def test_detail_renders_participant_info(client, seeded_contest):
 
 @pytest.mark.django_db
 def test_detail_handles_slash_in_callsign(client, seeded_contest):
-    """Pk-keyed URLs sidestep the slash-in-callsign URL routing issue
-    (callsigns are stored with ``/P`` preserved if the operator uses it)."""
-    p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
+    """Pk-keyed URLs sidestep slash-in-callsign URL routing issues.
+    Even though /P is stripped at registration today, country prefixes
+    like ``OE/HB9TVK`` still keep a slash and must route safely."""
+    p = _make_participant(seeded_contest, username="OE/HB9TVK", callsign="OE/HB9TVK")
     client.force_login(_make_staff_user())
     response = client.get(f"/admin/participants/{p.pk}/")
     assert response.status_code == 200
-    assert "HB9XYZ/P" in response.content.decode()
+    assert "OE/HB9TVK" in response.content.decode()
 
 
 @pytest.mark.django_db
