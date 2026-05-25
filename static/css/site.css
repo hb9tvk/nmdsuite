@@ -329,8 +329,11 @@ footer { color: var(--muted); padding-bottom: 2rem; }
     border-radius: 3px;
     background: #fff;
 }
-/* Station description form */
-.station-form fieldset { border: 0; padding: 0; margin: 0; }
+/* Station description form. The outer <fieldset> only exists so we can
+   apply `disabled` to the whole form when the log has been submitted —
+   it has no visual role. Inner fieldsets (Station type, Operating modes,
+   Other, Location) inherit the reg-form bordered look. */
+.station-form > fieldset { border: 0; padding: 0; margin: 0; }
 .station-section {
     background: #fff;
     border: 1px solid var(--border);
