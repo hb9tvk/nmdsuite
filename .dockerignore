@@ -1,0 +1,41 @@
+# Keeps the build context light when DOCKER_HOST=ssh:// streams it over
+# the wire, and keeps the production image free of dev cruft.
+
+.git/
+.github/
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+*.sqlite3
+*.sqlite3-journal
+data/
+
+.env
+.env.*
+!.env.example
+
+staticfiles/
+media/
+
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+reference/
+testdata/
+
+# Local-deploy artefacts the image itself doesn't need.
+deploy-local.sh
+docker-compose.local.yml

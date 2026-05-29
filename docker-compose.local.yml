@@ -1,0 +1,31 @@
+## Local-test compose file. Pair with deploy-local.sh.
+##
+## Differences from the production compose:
+##  - Builds the image from the local working tree instead of pulling GHCR.
+##  - No reverse-proxy / subpath wiring (root URL on a plain port).
+##  - DEBUG=True, permissive ALLOWED_HOSTS, throwaway SECRET_KEY.
+##  - Bind-mounts ${NMD_LOCAL_DATA_DIR} so the SQLite + uploads survive
+##    rebuilds; the path is read from the env where docker compose runs.
+##  - No external networks (the dev docker host usually doesn't run the
+##    nginxproxy / postfix stacks that prod relies on).
+
+services:
+  nmdsuite:
+    build: .
+    image: nmdsuite:local
+    container_name: nmdsuite-local
+    ports:
+      - "5005:5005"
+    environment:
+      NMD_DB_PATH: /data/nmdsuite.sqlite3
+      DJANGO_DEBUG: "True"
+      DJANGO_SECRET_KEY: "local-dev-only-not-a-real-secret"
+      DJANGO_ALLOWED_HOSTS: "*"
+      NMD_BASE_URL: ${NMD_BASE_URL:-http://localhost:5005}
+      # Email tries SMTP at localhost:25 inside the container by default —
+      # it will fail silently in dev. Set SMTP_HOST to a real or test
+      # server (e.g. mailpit running on the docker host) if you need to
+      # exercise the registration / submit / bulk-email flows end-to-end.
+    volumes:
+      - ${NMD_LOCAL_DATA_DIR}:/data
+    restart: unless-stopped
