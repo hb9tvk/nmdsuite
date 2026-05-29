@@ -1053,6 +1053,17 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Page des résultats telle que la voient les participants",
         "Pagina dei risultati come la vedono i partecipanti",
     ),
+    "Ranking preview": ("Vorschau Rangliste", "Aperçu du classement", "Anteprima della classifica"),
+    "what the public page would show right now (admin-only)": (
+        "Was die öffentliche Seite jetzt zeigen würde (nur für Admins)",
+        "Ce que la page publique afficherait maintenant (admin uniquement)",
+        "Cosa mostrerebbe la pagina pubblica adesso (solo admin)",
+    ),
+    "Admin preview — results not yet published. Reflects the most recent scoring run.": (
+        "Admin-Vorschau — Resultate noch nicht veröffentlicht. Zeigt den Stand der letzten Wertung.",
+        "Aperçu admin — résultats non encore publiés. Reflète le dernier calcul de scoring.",
+        "Anteprima admin — risultati non ancora pubblicati. Riflette l'ultima esecuzione di scoring.",
+    ),
     "Rank": ("Rang", "Rang", "Posizione"),
     "Altitude (m)": ("Höhe (m)", "Altitude (m)", "Altitudine (m)"),
     "QSO": ("QSO", "QSO", "QSO"),

@@ -22,6 +22,12 @@
 {% endblock %}
 
 {% block content %}
+    {% if is_preview %}
+        <div class="banner banner-info">
+            {% trans "Admin preview — results not yet published. Reflects the most recent scoring run." %}
+        </div>
+    {% endif %}
+
     <h1>{% blocktrans with year=contest.year %}National Mountain Day {{ year }} — Ranking{% endblocktrans %}</h1>
     <p>
         {% blocktrans with date=contest.contest_date %}Contest held {{ date }}.{% endblocktrans %}

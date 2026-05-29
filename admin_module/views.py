@@ -28,6 +28,12 @@ from core.picker import map_picker_context
 from portal import qso_service, station_service, submit_service
 from portal.forms import QsoEntryForm, StationDataForm
 from portal.qso_upload import UploadParseError, parse_upload
+from public.ranking_service import (
+    ANTENNA_LABEL,
+    PSU_LABEL,
+    TRX_LABEL,
+    build_ranking_page,
+)
 from registration.callsigns import normalize_callsign
 from registration.forms import RegistrationForm
 from registration.services import register_participant
@@ -731,6 +737,38 @@ def bulk_email(request):
             "contest": contest,
             "recipients": recipients,
             "recipient_count": recipient_count,
+        },
+    )
+
+
+# --- Ranking preview --------------------------------------------------------------------------
+
+
+@_staff_required
+def ranking_preview(request):
+    """Render the public ranking page against the active contest without
+    the published-state gate. Lets staff see what the published ranking
+    would look like while scoring/fixstation review is still in flight.
+    Reuses the public template; the ``is_preview`` flag drives a banner."""
+    from dataclasses import asdict
+
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    page = build_ranking_page(contest)
+    return render(
+        request,
+        "public/ranking.html",
+        {
+            "contest": contest,
+            "page": page,
+            "markers": [asdict(m) for m in page.markers],
+            "trx_label": TRX_LABEL,
+            "psu_label": PSU_LABEL,
+            "antenna_label": ANTENNA_LABEL,
+            "is_preview": True,
         },
     )
 
