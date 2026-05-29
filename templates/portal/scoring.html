@@ -19,32 +19,42 @@
         </div>
     {% else %}
         <section class="admin-overview">
-            <h2>{% trans "Total points" %}</h2>
+            <h2>{% trans "Summary" %}</h2>
             <table class="scoring-breakdown">
                 <thead>
                     <tr>
                         <th>{% trans "Mode" %}</th>
-                        <th>H1 (06–08 UTC)</th>
-                        <th>H2 (08–10 UTC)</th>
-                        <th>{% trans "Total" %}</th>
+                        <th>{% trans "NMD QSOs" %}</th>
+                        <th>{% trans "HB9 QSOs" %}</th>
+                        <th>{% trans "DX QSOs" %}</th>
+                        <th>{% trans "Total QSOs" %}</th>
+                        <th>{% trans "Points" %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>CW</td>
-                        <td>{{ breakdown.cw.h1 }}</td>
-                        <td>{{ breakdown.cw.h2 }}</td>
-                        <td><strong>{{ breakdown.cw.total }}</strong></td>
+                        <td>{{ breakdown.cw.nmd }}</td>
+                        <td>{{ breakdown.cw.hb9 }}</td>
+                        <td>{{ breakdown.cw.dx }}</td>
+                        <td>{{ breakdown.cw.qsos }}</td>
+                        <td><strong>{{ breakdown.cw.points }}</strong></td>
                     </tr>
                     <tr>
                         <td>SSB</td>
-                        <td>{{ breakdown.ssb.h1 }}</td>
-                        <td>{{ breakdown.ssb.h2 }}</td>
-                        <td><strong>{{ breakdown.ssb.total }}</strong></td>
+                        <td>{{ breakdown.ssb.nmd }}</td>
+                        <td>{{ breakdown.ssb.hb9 }}</td>
+                        <td>{{ breakdown.ssb.dx }}</td>
+                        <td>{{ breakdown.ssb.qsos }}</td>
+                        <td><strong>{{ breakdown.ssb.points }}</strong></td>
                     </tr>
                     <tr class="scoring-breakdown-total">
-                        <td colspan="3">{% trans "Combined total" %}</td>
-                        <td><strong>{{ breakdown.total }}</strong></td>
+                        <td>{% trans "Combined total" %}</td>
+                        <td>{{ breakdown.nmd }}</td>
+                        <td>{{ breakdown.hb9 }}</td>
+                        <td>{{ breakdown.dx }}</td>
+                        <td>{{ breakdown.qsos }}</td>
+                        <td><strong>{{ breakdown.points }}</strong></td>
                     </tr>
                 </tbody>
             </table>

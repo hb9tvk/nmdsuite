@@ -90,12 +90,13 @@ def test_score_contest_zeroes_points_for_zero_statuses(seeded_contest):
 
 
 @pytest.mark.django_db
-def test_participant_breakdown_splits_cw_ssb_h1_h2(seeded_contest):
+def test_participant_breakdown_counts_by_mode_and_category(seeded_contest):
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
     _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
     h1 = seeded_contest.start_utc
     h2 = seeded_contest.half_split_utc + timedelta(minutes=10)
-    # 2 HB9 in CW H1, 1 HB9 in CW H2, 1 DX in SSB H2.
+    # 3 HB9 non-NMD QSOs in CW, 1 DX QSO in SSB. None of them match a
+    # registered participant, so they classify as HB9_QSO / DX_QSO.
     _qso(a, t=h1, mode="CW", remote_call="HB9NON1")
     _qso(a, t=h1 + timedelta(minutes=5), mode="CW", remote_call="HB9NON2")
     _qso(a, t=h2, mode="CW", remote_call="HB9NON3")
@@ -103,16 +104,18 @@ def test_participant_breakdown_splits_cw_ssb_h1_h2(seeded_contest):
 
     score_contest(seeded_contest)
     b = participant_breakdown(a)
-    assert b.cw == ModeBreakdown(h1=2, h2=1)
-    assert b.ssb == ModeBreakdown(h1=0, h2=1)
-    assert b.cw.total == 3
-    assert b.ssb.total == 1
-    assert b.total == 4
+    assert b.cw == ModeBreakdown(nmd=0, hb9=3, dx=0, points=3)
+    assert b.ssb == ModeBreakdown(nmd=0, hb9=0, dx=1, points=1)
+    assert b.cw.qsos == 3
+    assert b.ssb.qsos == 1
+    assert b.qsos == 4
+    assert b.points == 4
 
 
 @pytest.mark.django_db
 def test_participant_breakdown_excludes_dupes(seeded_contest):
-    """DUPE_DEDUCTED rows have points=0 so they fall out of the sum naturally."""
+    """DUPE_DEDUCTED rows have points=0 and aren't categorised, so they
+    fall out of both the counts and the sum naturally."""
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
     b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
     t = seeded_contest.start_utc
@@ -122,16 +125,19 @@ def test_participant_breakdown_excludes_dupes(seeded_contest):
     _qso(b, t=t + timedelta(minutes=10), remote_call="HB9TVK/P", txts=TXT_B, txtr=TXT_A)
 
     score_contest(seeded_contest)
-    # A had one valid full match (4 pts) + one dupe (0). Should be 4 in CW H1.
+    # A had one valid FULL_MATCH (4 pts, NMD count=1) + one dupe (0).
     breakdown = participant_breakdown(a)
-    assert breakdown.cw.h1 == 4
-    assert breakdown.total == 4
+    assert breakdown.cw.nmd == 1
+    assert breakdown.cw.points == 4
+    assert breakdown.points == 4
+    assert breakdown.qsos == 1
 
 
 @pytest.mark.django_db
 def test_participant_breakdown_empty_log_returns_zeros(seeded_contest):
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
     b = participant_breakdown(a)
-    assert b.cw.total == 0
-    assert b.ssb.total == 0
-    assert b.total == 0
+    assert b.cw.qsos == 0
+    assert b.ssb.qsos == 0
+    assert b.qsos == 0
+    assert b.points == 0

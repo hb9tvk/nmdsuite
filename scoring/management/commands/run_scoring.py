@@ -52,12 +52,12 @@ class Command(BaseCommand):
         # Verbose mode: per-participant breakdown.
         if opts.get("verbosity", 1) >= 2:
             self.stdout.write("")
-            self.stdout.write("Per-participant points (CW H1/H2 | SSB H1/H2 | total):")
+            self.stdout.write("Per-participant (CW NMD/HB9/DX pts | SSB NMD/HB9/DX pts | total pts):")
             for p in contest.participants.filter(cancelled_at__isnull=True).order_by("callsign"):
                 b = participant_breakdown(p)
                 self.stdout.write(
                     f"  {p.callsign:<12} "
-                    f"CW {b.cw.h1:>3}/{b.cw.h2:<3}  "
-                    f"SSB {b.ssb.h1:>3}/{b.ssb.h2:<3}  "
-                    f"total {b.total}"
+                    f"CW {b.cw.nmd:>2}/{b.cw.hb9:>2}/{b.cw.dx:<2} {b.cw.points:>3}pt  "
+                    f"SSB {b.ssb.nmd:>2}/{b.ssb.hb9:>2}/{b.ssb.dx:<2} {b.ssb.points:>3}pt  "
+                    f"total {b.points}"
                 )

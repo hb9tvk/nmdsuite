@@ -47,9 +47,9 @@ def _row_for_participant(p: Participant) -> dict:
     return {
         "pk": p.pk,
         "callsign": p.callsign,
-        "cw_total": b.cw.total,
-        "ssb_total": b.ssb.total,
-        "total": b.total,
+        "cw_total": b.cw.points,
+        "ssb_total": b.ssb.points,
+        "total": b.points,
     }
 
 

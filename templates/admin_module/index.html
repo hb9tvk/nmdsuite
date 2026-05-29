@@ -117,6 +117,9 @@
         <ul class="admin-tools-list">
             <li><a href="{% url 'admin_module:participants_index' %}">{% trans "Participants" %}</a> — {% trans "on-behalf registration and editing" %}</li>
             <li><a href="{% url 'portal:participant_list' %}">{% trans "Participant list (PDF)" %}</a> — {% trans "downloadable roster (available after registration closes)" %}</li>
+            {% if contest and contest.state == 'published' %}
+                <li><a href="{% url 'public:ranking' year=contest.year %}">{% trans "Public ranking" %}</a> — {% trans "live results page as participants see it" %}</li>
+            {% endif %}
             <li><a href="{% url 'admin_module:bulk_email' %}">{% trans "Bulk email" %}</a> — {% trans "send a message to all active participants" %}</li>
             <li><a href="{% url 'admin_module:backup_index' %}">{% trans "Backup / restore" %}</a> — {% trans "download a SQLite snapshot or restore from one" %}</li>
             <li><a href="{% url 'scoring:index' %}">{% trans "Scoring review" %}</a> — {% trans "per-QSO status, points, suspected calls" %}</li>

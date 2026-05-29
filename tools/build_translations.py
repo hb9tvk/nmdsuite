@@ -1009,6 +1009,10 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     "Total points": ("Punkte total", "Points totaux", "Punti totali"),
     "Total": ("Total", "Total", "Totale"),
     "Combined total": ("Gesamtsumme", "Total combiné", "Totale combinato"),
+    "NMD QSOs": ("NMD-QSOs", "QSO NMD", "QSO NMD"),
+    "HB9 QSOs": ("HB9-QSOs", "QSO HB9", "QSO HB9"),
+    "DX QSOs": ("DX-QSOs", "QSO DX", "QSO DX"),
+    "Total QSOs": ("QSOs total", "QSO totaux", "QSO totali"),
     "QSO log with scoring": ("QSO-Log mit Wertung", "Journal QSO avec scoring", "Log QSO con punteggio"),
     "No QSOs logged.": ("Keine QSOs eingetragen.", "Aucun QSO enregistré.", "Nessun QSO registrato."),
     "Peer": ("Gegenstation", "Pair", "Pari"),
@@ -1043,6 +1047,12 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     "Confirm and submit": ("Bestätigen und einreichen", "Confirmer et soumettre", "Conferma e invia"),
 
     # Public ranking
+    "Public ranking": ("Öffentliche Rangliste", "Classement public", "Classifica pubblica"),
+    "live results page as participants see it": (
+        "Ergebnisseite, wie sie die Teilnehmer sehen",
+        "Page des résultats telle que la voient les participants",
+        "Pagina dei risultati come la vedono i partecipanti",
+    ),
     "Rank": ("Rang", "Rang", "Posizione"),
     "Altitude (m)": ("Höhe (m)", "Altitude (m)", "Altitudine (m)"),
     "QSO": ("QSO", "QSO", "QSO"),

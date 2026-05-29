@@ -95,6 +95,6 @@ def test_run_scoring_verbose_prints_per_participant_breakdown(seeded_contest):
     out = StringIO()
     call_command("run_scoring", "-v", "2", stdout=out)
     output = out.getvalue()
-    assert "Per-participant points" in output
+    assert "Per-participant" in output
     assert "HB9TVK/P" in output
     assert "total 1" in output  # one HB9_QSO worth 1 pt
