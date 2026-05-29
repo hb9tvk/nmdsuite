@@ -181,12 +181,14 @@ def classify_qso(
     if not in_window:
         return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
 
-    # Did the operator type the peer's callsign exactly as the peer registered it?
-    # Missing /P (or any other typo) costs them the points — we still surface the
-    # matched QSO and the correct callsign so the manual review can show it.
+    # The canonical on-air callsign for an NMD station is the bare callsign
+    # plus /P (NMD is a portable contest). Registered callsigns are stored
+    # bare; operators are expected to type them with the /P suffix on air
+    # and in the log. Missing /P (or any other typo) costs them the points.
+    expected_on_air = f"{login_username(peer_callsign)}/P" if peer_callsign else None
     call_mismatch = (
-        peer_callsign is not None
-        and normalize_callsign(qso.remote_call) != normalize_callsign(peer_callsign)
+        expected_on_air is not None
+        and normalize_callsign(qso.remote_call) != normalize_callsign(expected_on_air)
     )
 
     # Stage 1 — strict: peer recorded us as their remote.
@@ -203,7 +205,7 @@ def classify_qso(
                 status=ScoringStatus.SUSPECTED_CALL_MISMATCH,
                 matched_qso=mate,
                 text_distance=distance,
-                suspected_correct_call=peer_callsign or "",
+                suspected_correct_call=expected_on_air or "",
             )
         if has_texts and distance <= max_errors:
             return Classification(status=ScoringStatus.FULL_MATCH, matched_qso=mate, text_distance=distance)
@@ -223,7 +225,7 @@ def classify_qso(
                 status=ScoringStatus.SUSPECTED_CALL_MISMATCH,
                 matched_qso=best,
                 text_distance=distance,
-                suspected_correct_call=peer_callsign or "",
+                suspected_correct_call=expected_on_air or "",
             )
         return Classification(
             status=ScoringStatus.FULL_MATCH,

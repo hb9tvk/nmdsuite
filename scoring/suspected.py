@@ -42,6 +42,7 @@ Decisions encoded here:
 from __future__ import annotations
 
 from core.models import Participant, QsoEntry, ScoringRecord, ScoringStatus
+from registration.callsigns import login_username
 
 from .pairing import MATCH_WINDOW, match_key
 from .text_match import DEFAULT_MAX_ERRORS, text_distance
@@ -119,6 +120,10 @@ def detect_suspected(
             continue
         suspected_key, _suspected_qso = hit
         r.status = ScoringStatus.SUSPECTED_CALL_MISMATCH
-        r.suspected_correct_call = participants_by_key[suspected_key].callsign
+        # Display the canonical on-air form (bare + /P), matching the
+        # convention used by the pairing engine's mismatch detection.
+        r.suspected_correct_call = (
+            f"{login_username(participants_by_key[suspected_key].callsign)}/P"
+        )
         flipped += 1
     return flipped

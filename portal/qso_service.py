@@ -119,15 +119,16 @@ def detect_potential_dupe_ids(participant: Participant) -> set[int]:
 
 
 def detect_callsign_typo_map(participant: Participant) -> dict[int, str]:
-    """Map QSO id → the registered callsign of an NMD station the operator
-    most likely meant.
+    """Map QSO id → the canonical on-air callsign of the registered NMD
+    station the operator most likely meant.
 
-    Fires when the typed ``remote_call`` normalises to a registered NMD
-    station's callsign (i.e. shares the same base after stripping /P, /M,
-    …) but doesn't match it *exactly*. Common case: the operator dropped
-    the ``/P`` portable suffix. Same condition the M3 scoring engine uses
-    to downgrade FULL_MATCH → SUSPECTED_CALL_MISMATCH, so flagging it
-    here lets the operator fix it before submission.
+    NMD stations are stored bare (``HB3YMQ``) but operate /P on air.
+    Fires when the typed ``remote_call`` shares the same base as a
+    registered station but doesn't end in ``/P`` — i.e. the operator
+    forgot the portable suffix. Same condition the M3 scoring engine
+    uses to downgrade FULL_MATCH → SUSPECTED_CALL_MISMATCH, so flagging
+    it here lets the operator fix it before submission. The suggested
+    correction is always ``{base}/P``.
     """
     contest = participant.contest
     registered = {
@@ -144,11 +145,11 @@ def detect_callsign_typo_map(participant: Participant) -> dict[int, str]:
         key = login_username(qso.remote_call)
         if not key:
             continue
-        registered_full = registered.get(key)
-        if registered_full is None:
+        if key not in registered:
             continue
-        if normalize_callsign(qso.remote_call) != normalize_callsign(registered_full):
-            typo_map[qso.id] = registered_full
+        expected = f"{key}/P"
+        if normalize_callsign(qso.remote_call) != normalize_callsign(expected):
+            typo_map[qso.id] = expected
     return typo_map
 
 
