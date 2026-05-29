@@ -58,8 +58,8 @@ def build_participant_list_pdf(contest: Contest) -> bytes:
     foot = ParagraphStyle(
         "NMDFoot", parent=styles["Normal"], fontSize=8, leading=10, textColor=colors.grey,
     )
-    site_style = ParagraphStyle(
-        "NMDSite", parent=styles["Normal"], fontSize=9, leading=10,
+    wrap_style = ParagraphStyle(
+        "NMDWrap", parent=styles["Normal"], fontSize=9, leading=10,
     )
 
     story = []
@@ -95,10 +95,11 @@ def build_participant_list_pdf(contest: Contest) -> bytes:
             p.callsign,
             "",  # operator-fillable
             "",
-            p.first_name,
-            # Wrapped via Paragraph so long location names break onto
-            # a second line within the cell instead of bleeding into Kt.
-            Paragraph(site, site_style) if site else "",
+            # Op and Site are wrapped via Paragraph so long values break
+            # onto a second line within the cell instead of bleeding into
+            # the next column.
+            Paragraph(p.first_name, wrap_style) if p.first_name else "",
+            Paragraph(site, wrap_style) if site else "",
             p.canton,
             str(p.altitude_m),
         ])
