@@ -60,7 +60,6 @@ class RankingRow:
 
 @dataclass(frozen=True)
 class StationDataRow:
-    rank: int
     callsign: str
     points_total: int
     trx: str
@@ -234,10 +233,9 @@ def _station_data(
         ),
     )
     rows: list[StationDataRow] = []
-    for i, p in enumerate(annotated, start=1):
+    for p in annotated:
         comps = _components_by_idx(p)
         rows.append(StationDataRow(
-            rank=i,
             callsign=p.callsign,
             points_total=total_points(p),
             trx=comps.get(_TRX_IDX, ""),

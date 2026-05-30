@@ -54,7 +54,6 @@
         <table class="ranking">
             <thead>
                 <tr>
-                    <th class="num">#</th>
                     <th>{% trans "Callsign" %}</th>
                     <th class="num">{% trans "Points" %}</th>
                     <th>{{ trx_label }}</th>
@@ -67,7 +66,6 @@
             <tbody>
                 {% for s in page.stations %}
                     <tr>
-                        <td class="num">{{ s.rank }}</td>
                         <td>{{ s.callsign }}</td>
                         <td class="num">{{ s.points_total }}</td>
                         <td>{{ s.trx }}</td>
@@ -77,7 +75,7 @@
                         <td class="num">{{ s.total_weight_g }}</td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="8">{% trans "No participants." %}</td></tr>
+                    <tr><td colspan="7">{% trans "No participants." %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
