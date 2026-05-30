@@ -16,6 +16,11 @@ services:
     container_name: nmdsuite-local
     ports:
       - "5005:5005"
+    env_file:
+      # Local SMTP credentials, EMAIL_REDIRECT_TO, anything else dev-specific.
+      # Path is relative to docker-compose.local.yml on the box where you
+      # invoke `docker compose -f docker-compose.local.yml ...` (linux-dev).
+      - .env
     environment:
       NMD_DB_PATH: /data/nmdsuite.sqlite3
       DJANGO_DEBUG: "True"
