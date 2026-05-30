@@ -4,8 +4,8 @@ What used to be split across two forms (registration data + station
 description) lives on a single ``Participant`` row now (migration
 0007). One save path covers everything the operator can edit:
 identity-locked registration fields (multi_op, coords, location,
-modes, remarks) plus equipment-side fields (op_name, watt, the 11
-component slots).
+modes, remarks) plus equipment-side fields (watt, the 11 component
+slots).
 
 The 11 ``StationComponent`` slots have fixed semantic positions
 inherited from the legacy nmdlogsubmission app, so
@@ -57,7 +57,6 @@ def initial_from_participant(participant: Participant) -> dict[str, Any]:
     """
     data: dict[str, Any] = {
         # Equipment side.
-        "op_name": participant.op_name,
         "watt": participant.watt,
         # Editable registration fields.
         "multi_op": participant.multi_op,
@@ -123,7 +122,6 @@ def save_station(
         participant.remarks = (data.get("remarks") or "").strip()
 
     # --- equipment-side fields.
-    participant.op_name = (data.get("op_name") or "").strip()
     participant.watt = (data.get("watt") or "").strip()
 
     # --- component rows: replace wholesale; skip blank slots.
@@ -188,14 +186,17 @@ def apply_upload_station_info(
 ) -> UploadOutcome:
     """Persist station data extracted from an .nmd upload's ``#;FIELD=;value`` lines.
 
-    - ``OPNAME`` / ``WATT`` / ``STA##BEZ`` / ``STA##GRAMM`` → the
-      participant's equipment fields and component slots.
+    - ``WATT`` / ``STA##BEZ`` / ``STA##GRAMM`` → the participant's
+      equipment fields and component slots.
     - ``ORT`` → ``Participant.location_text``.
     - ``KOORD_X`` / ``KOORD_Y`` (when both are present and parse to a
       location in/near Switzerland) → the participant's coordinate
       columns; altitude and canton are then re-derived from Swisstopo.
       The file's own ``QAH`` and ``KANTON`` are intentionally ignored —
       Swisstopo is the authority once coordinates are accepted.
+    - ``OPNAME`` and ``EMAIL`` from the file are deliberately ignored:
+      the operator's name and email come from registration, and the
+      logging software's idea of them can conflict.
 
     ``actor`` flows through to the audit rows so admin on-behalf uploads
     are attributed correctly.
@@ -211,8 +212,6 @@ def apply_upload_station_info(
         participant.save(update_fields=["location_text"])
 
     data: dict[str, Any] = {}
-    if "OPNAME" in fields:
-        data["op_name"] = fields["OPNAME"]
     if "WATT" in fields:
         data["watt"] = fields["WATT"]
 

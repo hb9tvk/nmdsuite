@@ -181,10 +181,10 @@ def test_station_post_is_blocked_after_submit(client, participant):
     user, p = participant
     _force_submitted(p)
     client.force_login(user)
-    response = client.post("/submission/station/", {"op_name": "Should Not Save"})
+    response = client.post("/submission/station/", {"watt": "should not save"})
     assert response.status_code == 302
     p.refresh_from_db()
-    assert p.op_name != "Should Not Save"
+    assert p.watt != "should not save"
 
 
 @pytest.mark.django_db

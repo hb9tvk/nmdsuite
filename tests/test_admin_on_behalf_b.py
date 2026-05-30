@@ -80,7 +80,7 @@ def _make_submittable(p: Participant) -> Participant:
 @pytest.mark.django_db
 def test_save_station_default_actor_is_participant_user(seeded_contest):
     p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
-    station_service.save_station(participant=p, data={"op_name": "Op", "watt": "5"})
+    station_service.save_station(participant=p, data={"watt": "5"})
     entry = AuditLog.objects.get(action="station.update", target=p.callsign)
     assert entry.actor == p.user
     assert "on_behalf" not in entry.payload
@@ -90,7 +90,7 @@ def test_save_station_default_actor_is_participant_user(seeded_contest):
 def test_save_station_with_staff_actor_records_on_behalf(seeded_contest):
     p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
     staff = _make_staff_user()
-    station_service.save_station(participant=p, data={"op_name": "Op"}, actor=staff)
+    station_service.save_station(participant=p, data={"watt": "5"}, actor=staff)
     entry = AuditLog.objects.get(action="station.update", target=p.callsign)
     assert entry.actor == staff
     assert entry.payload.get("on_behalf") is True
@@ -215,7 +215,6 @@ def test_station_post_saves_and_audits(client, seeded_contest):
     client.force_login(staff)
     form = {
         **_VALID_STATION_FORM,
-        "op_name": "Peter",
         "watt": "5",
         "sta01bez": "TX",
         "sta01gramm": "800",
@@ -224,7 +223,7 @@ def test_station_post_saves_and_audits(client, seeded_contest):
     assert response.status_code == 302
 
     p.refresh_from_db()
-    assert p.op_name == "Peter"
+    assert p.watt == "5"
     assert p.total_weight_g == 800
 
     entry = AuditLog.objects.get(action="station.update", target=p.callsign)
@@ -240,11 +239,11 @@ def test_station_post_bypasses_submitted_lock(client, seeded_contest):
     client.force_login(_make_staff_user())
     response = client.post(
         f"/admin/participants/{p.pk}/station/",
-        {**_VALID_STATION_FORM, "op_name": "Edited After Submit"},
+        {**_VALID_STATION_FORM, "watt": "edited-after-submit"},
     )
     assert response.status_code == 302
     p.refresh_from_db()
-    assert p.op_name == "Edited After Submit"
+    assert p.watt == "edited-after-submit"
 
 
 # --- log entry view --------------------------------------------------------------------------

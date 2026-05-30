@@ -191,9 +191,11 @@ def test_station_description_persists_full_payload(seeded_contest, tmp_path):
     )
     p = Participant.objects.get(callsign="HB9A")
     # The legacy station_description's fields are merged onto Participant
-    # (migration 0007).
+    # (migration 0007). The legacy ``opname`` seeds ``first_name`` when
+    # the registration row didn't carry one (migration 0011 dropped the
+    # separate ``op_name`` field).
     assert p.location_text == "Albispass"
-    assert p.op_name == "Anna"
+    assert p.first_name == "Anna"
     assert p.watt == "5W"
     assert p.total_weight_g == 3200
 
@@ -217,7 +219,6 @@ def test_no_station_row_means_empty_equipment_fields(seeded_contest, tmp_path):
         stations=[],
     )
     p = Participant.objects.get(callsign="HB9A")
-    assert p.op_name == ""
     assert p.watt == ""
     assert p.total_weight_g == 0
     assert not p.components.exists()

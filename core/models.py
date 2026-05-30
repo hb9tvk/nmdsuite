@@ -89,7 +89,6 @@ class Participant(models.Model):
     # Station equipment data, persisted alongside the registration row.
     # (Historically lived on a separate StationDescription model — merged
     # into Participant so operators see one "station data" form, not two.)
-    op_name = models.CharField(max_length=80, blank=True)
     watt = models.CharField(max_length=20, blank=True)
     total_weight_g = models.PositiveIntegerField(
         default=0,

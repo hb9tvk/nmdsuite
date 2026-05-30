@@ -35,7 +35,6 @@ def participant(seeded_contest):
 def test_save_station_persists_equipment_and_components(participant):
     user, p = participant
     data = {
-        "op_name": "Peter",
         "watt": "5",
         "sta01bez": "Sender + RX (FT-817)",
         "sta01gramm": 1200,
@@ -46,7 +45,7 @@ def test_save_station_persists_equipment_and_components(participant):
     }
     station_service.save_station(participant=p, data=data)
     p.refresh_from_db()
-    assert p.op_name == "Peter"
+    assert p.watt == "5"
     assert p.total_weight_g == 2000
     components = list(p.components.order_by("idx"))
     assert [c.idx for c in components] == [1, 2]
@@ -79,14 +78,14 @@ def test_initial_from_participant_round_trips(participant):
     station_service.save_station(
         participant=p,
         data={
-            "op_name": "Peter", "watt": "5",
+            "watt": "5",
             "sta01bez": "TX/RX", "sta01gramm": 1200,
             "sta05bez": "Antenna", "sta05gramm": 350,
         },
     )
     p.refresh_from_db()
     init = station_service.initial_from_participant(p)
-    assert init["op_name"] == "Peter"
+    assert init["watt"] == "5"
     assert init["sta01bez"] == "TX/RX"
     assert init["sta01gramm"] == 1200
     assert init["sta05bez"] == "Antenna"
@@ -144,14 +143,14 @@ def test_station_get_prefills_from_saved_data(client, participant):
     client.force_login(user)
     station_service.save_station(
         participant=p,
-        data={"op_name": "Peter", "sta01bez": "TX/RX", "sta01gramm": 1200},
+        data={"watt": "5", "sta01bez": "TX/RX", "sta01gramm": 1200},
     )
     # Location lives on Participant, not the station description.
     p.location_text = "Pilatus"
     p.save(update_fields=["location_text"])
     response = client.get("/submission/station/")
     body = response.content.decode("utf-8")
-    assert 'value="Peter"' in body
+    assert 'value="5"' in body
     assert 'value="Pilatus"' in body  # rendered as the disabled location input
     assert 'value="TX/RX"' in body
     assert 'value="1200"' in body
@@ -171,14 +170,14 @@ def test_station_post_saves_form_and_audits(client, participant):
             "altitude_m": "1500", "canton": "BE",
             "mode_cw": "on", "mode_ssb": "on", "remarks": "",
             # Equipment side.
-            "op_name": "Peter", "watt": "5",
+            "watt": "5",
             "sta01bez": "TX/RX", "sta01gramm": "1200",
             "sta02bez": "Battery", "sta02gramm": "800",
         },
     )
     assert response.status_code == 302  # redirect after save
     p.refresh_from_db()
-    assert p.op_name == "Peter"
+    assert p.watt == "5"
     assert p.total_weight_g == 2000
     assert StationComponent.objects.filter(participant=p).count() == 2
 
@@ -220,8 +219,12 @@ def test_station_redirects_unregistered_user(client, seeded_contest):
 def test_upload_populates_station_description_from_nmd_comments(client, participant):
     user, p = participant
     client.force_login(user)
+    # The .nmd file's OPNAME and EMAIL lines are intentionally ignored —
+    # operator name + email come from registration. Everything else
+    # populates the equipment side.
     blob = (
-        b"#;OPNAME=;Peter\n"
+        b"#;OPNAME=;Not Used\n"
+        b"#;EMAIL=;ignored@example.org\n"
         b"#;ORT=;Pilatus\n"
         b"#;WATT=;5\n"
         b"#;STA01BEZ=;Sender + RX (FT-817)\n"
@@ -237,10 +240,12 @@ def test_upload_populates_station_description_from_nmd_comments(client, particip
     # Upload view redirects to dashboard after applying the file.
     assert response.status_code == 302
     p.refresh_from_db()
-    assert p.op_name == "Peter"
     assert p.watt == "5"
     assert p.total_weight_g == 2000
     assert p.location_text == "Pilatus"
+    # Operator name + email from the file did NOT overwrite registration.
+    assert p.first_name != "Not Used"
+    assert p.email != "ignored@example.org"
     components = list(p.components.order_by("idx"))
     assert components[0].description == "Sender + RX (FT-817)"
     assert components[1].weight_g == 800
@@ -252,10 +257,10 @@ def test_upload_ignores_qah_from_nmd_comments(participant):
     it comes from Swisstopo, not from the file's own QAH value)."""
     user, p = participant
     original_altitude = p.altitude_m
-    station_service.apply_upload_station_info(p, {"OPNAME": "Peter", "QAH": "9999"})
+    station_service.apply_upload_station_info(p, {"WATT": "5", "QAH": "9999"})
     p.refresh_from_db()
     assert p.altitude_m == original_altitude
-    assert p.op_name == "Peter"
+    assert p.watt == "5"
 
 
 @pytest.mark.django_db

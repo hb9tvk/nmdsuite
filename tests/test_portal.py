@@ -105,7 +105,6 @@ def test_station_post_updates_editable_fields(client, registered_user):
             "mode_cw": "on",
             "mode_ssb": "",
             "remarks": "moved location",
-            "op_name": "Peter Kohler",
             "watt": "5",
         },
         follow=False,
@@ -119,7 +118,7 @@ def test_station_post_updates_editable_fields(client, registered_user):
     assert participant.operating_modes == 1  # CW only
     assert participant.remarks == "moved location"
     assert participant.wgs84_lat == pytest.approx(46.9480, abs=1e-4)
-    assert participant.op_name == "Peter Kohler"
+    assert participant.watt == "5"
     # Identity fields untouched.
     assert participant.callsign == "HB9TVK/P"
     assert participant.first_name == "Peter"

@@ -266,11 +266,6 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     "Text sent": ("Text gesendet", "Texte envoyé", "Testo inviato"),
     "RST received": ("RST empfangen", "RST reçu", "RST ricevuto"),
     "Text received": ("Text empfangen", "Texte reçu", "Testo ricevuto"),
-    "Operator (first and last name)": (
-        "Operator (Vor- und Nachname)",
-        "Opérateur (prénom et nom)",
-        "Operatore (nome e cognome)",
-    ),
     "Output power": ("Sendeleistung", "Puissance d'émission", "Potenza d'uscita"),
     "Weight (g)": ("Gewicht (g)", "Poids (g)", "Peso (g)"),
 

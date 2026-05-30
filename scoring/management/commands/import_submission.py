@@ -343,13 +343,12 @@ def _upsert_station(participant: Participant, row: sqlite3.Row) -> None:
     """Write the legacy station fields onto the Participant directly
     (Participant + StationDescription were merged in migration 0007)
     and rebuild the 11 component slots."""
-    participant.op_name = (row["opname"] or "").strip()
     participant.watt = (row["watt"] or "").strip()
     try:
         participant.total_weight_g = max(0, int(row["gesamtegewicht"] or 0))
     except (TypeError, ValueError):
         participant.total_weight_g = 0
-    participant.save(update_fields=["op_name", "watt", "total_weight_g"])
+    participant.save(update_fields=["watt", "total_weight_g"])
 
     # Wipe and re-create components so re-running the importer doesn't
     # leave stale rows behind.

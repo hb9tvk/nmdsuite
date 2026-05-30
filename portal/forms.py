@@ -86,11 +86,6 @@ class StationDataForm(RegistrationForm):
             self.fields.pop(name, None)
 
         # Equipment fields after the registration ones in iteration order.
-        self.fields["op_name"] = forms.CharField(
-            label=_("Operator (first and last name)"),
-            max_length=80,
-            required=False,
-        )
         self.fields["watt"] = forms.CharField(
             label=_("Output power"), max_length=20, required=False,
         )
