@@ -44,11 +44,34 @@
         </div>
     {% endif %}
 
-    <form method="post" class="actions">
+    <form method="post">
         {% csrf_token %}
         {% if validation.can_submit %}
-            <button type="submit">{% trans "Confirm and submit" %}</button>
+            <div class="submit-rules-confirm">
+                <label>
+                    <input type="checkbox" name="rules_confirmed" id="rules-confirmed-checkbox">
+                    <span>{% trans "I confirm that I have strictly complied with the contest regulations as well as the licence and radio-traffic rules, and that I accept the jury's decision." %}</span>
+                </label>
+            </div>
         {% endif %}
-        <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
+        <p class="actions">
+            {% if validation.can_submit %}
+                <button type="submit" id="submit-log-btn" disabled>{% trans "Confirm and submit" %}</button>
+            {% endif %}
+            <a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a>
+        </p>
     </form>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script>
+        (function () {
+            const cb = document.getElementById('rules-confirmed-checkbox');
+            const btn = document.getElementById('submit-log-btn');
+            if (!cb || !btn) return;
+            function sync() { btn.disabled = !cb.checked; }
+            cb.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
 {% endblock %}

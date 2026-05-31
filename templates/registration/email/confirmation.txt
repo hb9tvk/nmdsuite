@@ -50,4 +50,4 @@ oppure reimpostala qui se l'hai dimenticata: {{ reset_url }}{% endif %}
 
 Domande: nmd@uska.ch
 
-— USKA NMD
+— NMD Kommission USKA/HTC

@@ -128,7 +128,7 @@ def test_submit_log_default_sends_email(seeded_contest, settings):
     settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
     p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
     _make_submittable(p)
-    submit_service.submit_log(participant=p)
+    submit_service.submit_log(participant=p, rules_confirmed=True)
     p.refresh_from_db()
     assert p.submitted_at is not None
     assert len(mail.outbox) == 1

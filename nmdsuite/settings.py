@@ -88,6 +88,11 @@ DATABASES = {
         "NAME": str(_DB_PATH),
         "OPTIONS": {
             "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA foreign_keys=ON;",
+            # SQLite's default 5 s is too tight for our gunicorn-with-3-workers
+            # layout: even brief contention between writes ("database is
+            # locked") trips the page. 30 s is generous enough that the only
+            # way to actually hit it is a real deadlock worth alerting on.
+            "timeout": 30,
         },
     }
 }

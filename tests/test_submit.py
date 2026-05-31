@@ -101,7 +101,7 @@ def test_submit_post_locks_participant_and_sends_email(client, participant, sett
     user, p = participant
     _make_submittable(p)
     client.force_login(user)
-    response = client.post("/submission/submit/")
+    response = client.post("/submission/submit/", {"rules_confirmed": "on"})
     assert response.status_code == 302
     assert response["Location"].endswith("/submission/")
 
@@ -295,11 +295,25 @@ def test_submit_allows_invalid_qso_rows_as_warning(client, participant):
     )
 
     client.force_login(user)
-    response = client.post("/submission/submit/")
+    response = client.post("/submission/submit/", {"rules_confirmed": "on"})
     assert response.status_code == 302
     assert response["Location"].endswith("/submission/")
     p.refresh_from_db()
     assert p.submitted_at is not None
+
+
+@pytest.mark.django_db
+def test_submit_blocked_when_rules_confirmation_missing(client, participant):
+    """Even with a valid, complete submission, the operator must tick the
+    contest-rules confirmation checkbox. POST without it is refused
+    server-side; the participant stays unsubmitted."""
+    user, p = participant
+    _make_submittable(p)
+    client.force_login(user)
+    response = client.post("/submission/submit/")  # no rules_confirmed
+    assert response.status_code == 302
+    p.refresh_from_db()
+    assert p.submitted_at is None
 
 
 @pytest.mark.django_db

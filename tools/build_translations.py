@@ -1040,6 +1040,16 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Questi non bloccano l'invio — puoi procedere, ma i problemi resteranno nel record inviato.",
     ),
     "Confirm and submit": ("Bestätigen und einreichen", "Confirmer et soumettre", "Conferma e invia"),
+    "I confirm that I have strictly complied with the contest regulations as well as the licence and radio-traffic rules, and that I accept the jury's decision.": (
+        "Ich bestätige, dass das Wettbewerbsreglement sowie die Konzessions- und Radioverkehrsvorschriften genau eingehalten wurden, und dass ich mich dem Entscheid der Jury unterziehe.",
+        "Je confirme avoir bien respecté le règlement du concours, ainsi que les prescriptions sur les concessions et les règles de trafic, et je m'en remets à la décision du jury.",
+        "Confermo di aver seguito alla lettera i regolamenti, del Contest e della Concessione, e le Prescrizioni del traffico radio; inoltre dichiaro di attenermi alle decisioni della giuria.",
+    ),
+    "Please confirm the contest-rules statement before submitting.": (
+        "Bitte bestätige die Wettbewerbserklärung, bevor du das Log einreichst.",
+        "Veuillez confirmer la déclaration relative au règlement avant de soumettre.",
+        "Conferma la dichiarazione del regolamento prima di inviare.",
+    ),
 
     # Public ranking
     "Public ranking": ("Öffentliche Rangliste", "Classement public", "Classifica pubblica"),

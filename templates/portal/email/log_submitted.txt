@@ -49,4 +49,4 @@ Puoi scaricare in qualsiasi momento il tuo log in formato ADIF dal portale.
 Portale partecipanti: {{ portal_url }}
 Download log (ADIF):  {{ adif_url }}
 
-— USKA NMD
+— NMD Kommission USKA/HTC

@@ -115,8 +115,12 @@ class SubmissionRejected(Exception):
         self.errors = errors
 
 
-@transaction.atomic
-def submit_log(*, participant: Participant, actor: Any = None) -> Participant:
+def submit_log(
+    *,
+    participant: Participant,
+    actor: Any = None,
+    rules_confirmed: bool = False,
+) -> Participant:
     """Mark the participant's log as submitted. No-op if already submitted.
 
     Enforces blocking validation server-side as a defensive backstop —
@@ -127,34 +131,54 @@ def submit_log(*, participant: Participant, actor: Any = None) -> Participant:
     Admin on-behalf submits pass in the staff user; the audit row records
     them with ``on_behalf=True`` and the confirmation email is skipped (the
     operator did not trigger this action; admin can follow up manually).
+
+    ``rules_confirmed`` must be True for self-submits — the operator has
+    to tick the contest-rules confirmation checkbox on the confirm page.
+    Admin on-behalf submits bypass this check (the operator hasn't
+    necessarily seen the page; staff are the final authority).
+
+    The DB writes (flip ``submitted_at``, audit row) run inside one
+    ``transaction.atomic`` block. The confirmation email is sent
+    *after* the transaction commits — SMTP latency would otherwise
+    keep SQLite's write lock held across a network round-trip and
+    starve concurrent workers.
     """
     if participant.submitted_at is not None:
         return participant
 
-    # Admin on-behalf bypasses validation — staff are the final authority.
     is_on_behalf = actor is not None and actor != participant.user
-    if not is_on_behalf:
-        validation = validate_for_submission(participant)
-        if not validation.can_submit:
-            raise SubmissionRejected(validation.blocking_errors)
 
-    participant.submitted_at = timezone.now()
-    participant.save(update_fields=["submitted_at"])
+    with transaction.atomic():
+        # Admin on-behalf bypasses validation — staff are the final authority.
+        if not is_on_behalf:
+            validation = validate_for_submission(participant)
+            if not validation.can_submit:
+                raise SubmissionRejected(validation.blocking_errors)
+            if not rules_confirmed:
+                raise SubmissionRejected([
+                    str(_("Please confirm the contest-rules statement before submitting.")),
+                ])
 
-    audit_payload: dict[str, Any] = {
-        "qso_count": participant.qsos.count(),
-        "total_weight_g": participant.total_weight_g,
-    }
-    if is_on_behalf:
-        audit_payload["on_behalf"] = True
-    audit(
-        action="log.submit",
-        actor=actor or participant.user,
-        target=participant.callsign,
-        contest=participant.contest,
-        payload=audit_payload,
-    )
+        participant.submitted_at = timezone.now()
+        participant.save(update_fields=["submitted_at"])
 
+        audit_payload: dict[str, Any] = {
+            "qso_count": participant.qsos.count(),
+            "total_weight_g": participant.total_weight_g,
+        }
+        if is_on_behalf:
+            audit_payload["on_behalf"] = True
+        audit(
+            action="log.submit",
+            actor=actor or participant.user,
+            target=participant.callsign,
+            contest=participant.contest,
+            payload=audit_payload,
+        )
+
+    # Email is best-effort and lives outside the transaction. EmailLog
+    # already records SENT / FAILED on its own row, so an SMTP problem
+    # here doesn't roll back the submit.
     if not is_on_behalf:
         send_log_submitted_confirmation(participant=participant)
     return participant

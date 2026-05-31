@@ -349,8 +349,12 @@ def submit(request):
         return redirect("portal:dashboard")
 
     if request.method == "POST":
+        rules_confirmed = bool(request.POST.get("rules_confirmed"))
         try:
-            submit_service.submit_log(participant=participant)
+            submit_service.submit_log(
+                participant=participant,
+                rules_confirmed=rules_confirmed,
+            )
         except submit_service.SubmissionRejected as exc:
             for err in exc.errors:
                 messages.error(request, err)
