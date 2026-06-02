@@ -769,6 +769,30 @@ def participant_list_preview(request):
     return response
 
 
+# --- Ranking PDF (magazine export) -------------------------------------------------------------
+
+
+@_staff_required
+def ranking_pdf(request):
+    """Stream the active contest's ranking + station-data table as a PDF.
+    Layout mirrors the public ranking page minus the map — intended for
+    the club magazine. Available regardless of contest state (admin
+    judgement when to publish externally)."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    from public.ranking_pdf import build_ranking_pdf
+
+    blob = build_ranking_pdf(contest)
+    filename = f"nmd-{contest.year}-ranking.pdf"
+    response = HttpResponse(blob, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- Ranking preview --------------------------------------------------------------------------
 
 

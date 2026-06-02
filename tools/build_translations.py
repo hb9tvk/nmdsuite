@@ -1069,6 +1069,12 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Ce que la page publique afficherait maintenant (admin uniquement)",
         "Cosa mostrerebbe la pagina pubblica adesso (solo admin)",
     ),
+    "Ranking (PDF)": ("Rangliste (PDF)", "Classement (PDF)", "Classifica (PDF)"),
+    "downloadable ranking for the club magazine": (
+        "Herunterladbare Rangliste für die Vereinszeitschrift",
+        "Classement téléchargeable pour la revue du club",
+        "Classifica scaricabile per la rivista del club",
+    ),
     "Admin preview — results not yet published. Reflects the most recent scoring run.": (
         "Admin-Vorschau — Resultate noch nicht veröffentlicht. Zeigt den Stand der letzten Wertung.",
         "Aperçu admin — résultats non encore publiés. Reflète le dernier calcul de scoring.",
