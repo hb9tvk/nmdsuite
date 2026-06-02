@@ -203,7 +203,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # --- Email --------------------------------------------------------------------------------------
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# Custom SMTP backend that optionally rewrites every recipient to a
+# single override address read from EMAIL_REDIRECT_TO. Lets us point
+# test deployments at a sink mailbox so dev/staging data — including
+# anything seeded from production — can't accidentally mail real
+# participants. When EMAIL_REDIRECT_TO is empty/unset, the backend
+# behaves identically to the standard SMTP backend.
+EMAIL_BACKEND = "nmdsuite.email_backends.RedirectingSMTPEmailBackend"
 EMAIL_HOST = os.environ.get("SMTP_HOST", "localhost")
 EMAIL_PORT = int(os.environ.get("SMTP_PORT", "25"))
 EMAIL_HOST_USER = os.environ.get("SMTP_USER", "") or ""

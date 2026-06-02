@@ -31,6 +31,13 @@ services:
       # it will fail silently in dev. Set SMTP_HOST to a real or test
       # server (e.g. mailpit running on the docker host) if you need to
       # exercise the registration / submit / bulk-email flows end-to-end.
+      #
+      # Safety net: every outbound message gets its recipient rewritten
+      # to this address. Keeps test/dev deployments — especially ones
+      # seeded with last year's production data — from accidentally
+      # mailing real participants. Override per-deploy via .env if you
+      # need a different sink. Unset / empty disables the redirect.
+      EMAIL_REDIRECT_TO: nmd@hb9tvk.org
     volumes:
       - ${NMD_LOCAL_DATA_DIR}:/data
     restart: unless-stopped
