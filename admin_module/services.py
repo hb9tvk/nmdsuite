@@ -92,33 +92,51 @@ def close_registration(contest: Contest, *, actor) -> None:
     notifications.send_registration_closed_broadcast(contest=contest, actor=actor)
 
 
-@transaction.atomic
 def close_log_submission(contest: Contest, *, actor) -> int:
-    """Close logs, auto-submit anyone who hadn't submitted yet, and run
-    the scoring pipeline.
+    """Close logs, auto-submit anyone who hadn't submitted yet, run the
+    scoring pipeline, and email the auto-submitted participants the
+    same log-submitted confirmation a self-submit would have triggered.
 
     Returns the number of auto-submitted participants. Sets
     ``auto_submitted=True`` alongside ``submitted_at`` so the matching
     reverse can un-submit exactly those rows without disturbing
     legitimate operator submissions.
 
-    Scoring runs at the end so the LOGS_CLOSED state always lands with
-    fresh ScoringRecord rows — no separate admin step required.
+    DB writes (auto-submit flags, state flip, audit, rescoring) all live
+    inside one ``transaction.atomic`` block; the per-participant
+    confirmation emails fire *after* commit so SMTP latency doesn't
+    hold SQLite's write lock — same pattern as :func:`submit_log`.
     """
-    _require_state(contest, (Contest.State.REGISTRATION_CLOSED,))
-    now = timezone.now()
-    pending_qs = Participant.objects.filter(
-        contest=contest, cancelled_at__isnull=True, submitted_at__isnull=True,
-    )
-    auto_submitted = pending_qs.update(submitted_at=now, auto_submitted=True)
-    contest.state = Contest.State.LOGS_CLOSED
-    contest.save(update_fields=["state"])
-    audit(
-        action="contest.close_logs", actor=actor,
-        target=str(contest.year), contest=contest,
-        payload={"auto_submitted": auto_submitted},
-    )
-    rescore_contest(contest, actor=actor, source="close_logs")
+    with transaction.atomic():
+        _require_state(contest, (Contest.State.REGISTRATION_CLOSED,))
+        now = timezone.now()
+        pending_qs = Participant.objects.filter(
+            contest=contest, cancelled_at__isnull=True, submitted_at__isnull=True,
+        )
+        # Snapshot the affected participants BEFORE the bulk update so we
+        # can email them afterwards — once submitted_at is set, the
+        # original "still pending" queryset is empty.
+        auto_submitted_participants = list(pending_qs)
+        auto_submitted = pending_qs.update(submitted_at=now, auto_submitted=True)
+        contest.state = Contest.State.LOGS_CLOSED
+        contest.save(update_fields=["state"])
+        audit(
+            action="contest.close_logs", actor=actor,
+            target=str(contest.year), contest=contest,
+            payload={"auto_submitted": auto_submitted},
+        )
+        rescore_contest(contest, actor=actor, source="close_logs")
+
+    # Confirmation emails are best-effort; EmailLog already records
+    # SENT/FAILED on each row, so an SMTP problem here doesn't roll back
+    # the state transition.
+    from portal.emails import send_log_submitted_confirmation
+    for participant in auto_submitted_participants:
+        # Re-fetch so submitted_at + auto_submitted reflect the post-update
+        # state (the snapshot rows are stale by one field).
+        participant.refresh_from_db()
+        send_log_submitted_confirmation(participant=participant)
+
     return auto_submitted
 
 
@@ -147,14 +165,21 @@ def rescore_contest(contest: Contest, *, actor, source: str = "manual") -> dict[
     return summary
 
 
-@transaction.atomic
 def publish_results(contest: Contest, *, actor) -> None:
-    _require_state(contest, (Contest.State.LOGS_CLOSED, Contest.State.SCORED))
-    contest.state = Contest.State.PUBLISHED
-    contest.results_published_at = timezone.now()
-    contest.save(update_fields=["state", "results_published_at"])
-    audit(action="contest.publish", actor=actor,
-          target=str(contest.year), contest=contest)
+    """Flip the contest to PUBLISHED and notify every active participant.
+
+    DB writes run in one ``transaction.atomic``; the broadcast happens
+    *after* the commit so SMTP latency doesn't hold the write lock.
+    """
+    with transaction.atomic():
+        _require_state(contest, (Contest.State.LOGS_CLOSED, Contest.State.SCORED))
+        contest.state = Contest.State.PUBLISHED
+        contest.results_published_at = timezone.now()
+        contest.save(update_fields=["state", "results_published_at"])
+        audit(action="contest.publish", actor=actor,
+              target=str(contest.year), contest=contest)
+    from . import notifications
+    notifications.send_results_published_broadcast(contest=contest, actor=actor)
 
 
 # --- Reverse transitions -----------------------------------------------------------------

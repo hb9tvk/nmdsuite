@@ -143,3 +143,23 @@ def send_registration_closed_broadcast(
         actor=actor,
         attachments=[(pdf_name, pdf_bytes, "application/pdf")],
     )
+
+
+def send_results_published_broadcast(
+    *, contest: Contest, actor: Any,
+) -> BroadcastResult:
+    """Notify every active participant that the contest results are
+    public. The body links the year-indexed public ranking page and
+    each participant's own portal scoring page. Fired from
+    :func:`admin_module.services.publish_results`."""
+    base = settings.NMD_BASE_URL.rstrip("/")
+    return _broadcast(
+        contest=contest,
+        template_base="results_published",
+        audit_action="contest.notify_results_published",
+        actor=actor,
+        extra_context={
+            "public_ranking_url": f"{base}/ranking/{contest.year}/",
+            "portal_scoring_url": f"{base}/submission/scoring/",
+        },
+    )

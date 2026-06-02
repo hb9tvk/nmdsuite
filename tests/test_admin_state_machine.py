@@ -120,7 +120,8 @@ def test_close_registration_broadcast_failure_does_not_block(seeded_contest, set
 
 
 @pytest.mark.django_db
-def test_close_log_submission_auto_submits_pending(seeded_contest):
+def test_close_log_submission_auto_submits_pending(seeded_contest, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
     seeded_contest.state = Contest.State.REGISTRATION_CLOSED
     seeded_contest.save()
     submitted = _make_participant(seeded_contest, username="A1", callsign="A1/P", submitted=True)
@@ -158,11 +159,40 @@ def test_close_log_submission_rejects_wrong_state(seeded_contest):
         services.close_log_submission(seeded_contest, actor=_make_staff_user())
 
 
+@pytest.mark.django_db
+def test_close_log_submission_emails_auto_submitted_participants(seeded_contest, settings):
+    """Each pending participant the close auto-submits gets the same
+    log-submitted confirmation a self-submit would have triggered.
+    Already-submitted and cancelled participants do NOT get a fresh
+    confirmation here."""
+    from django.core import mail
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+    seeded_contest.state = Contest.State.REGISTRATION_CLOSED
+    seeded_contest.save()
+    _make_participant(seeded_contest, username="A1", callsign="A1/P", submitted=True)
+    pending = _make_participant(seeded_contest, username="A2", callsign="A2/P")
+    _make_participant(seeded_contest, username="A3", callsign="A3/P", cancelled=True)
+
+    services.close_log_submission(seeded_contest, actor=_make_staff_user())
+
+    # Only the auto-submitted participant should have received a mail.
+    recipients = sorted(addr for msg in mail.outbox for addr in msg.to)
+    assert recipients == [pending.email]
+    msg = mail.outbox[0]
+    assert pending.callsign in msg.subject
+    # Body uses the standard log-submitted template (trilingual sections,
+    # contains the ADIF download link).
+    assert "=== Deutsch ===" in msg.body
+    assert "/submission/log.adi" in msg.body
+
+
 # --- publish_results -------------------------------------------------------------------------
 
 
 @pytest.mark.django_db
-def test_publish_results_happy_path(seeded_contest):
+def test_publish_results_happy_path(seeded_contest, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
     seeded_contest.state = Contest.State.LOGS_CLOSED
     seeded_contest.save()
     services.publish_results(seeded_contest, actor=_make_staff_user())
@@ -176,6 +206,44 @@ def test_publish_results_rejects_wrong_state(seeded_contest):
     # Still REGISTRATION_OPEN — can't publish yet.
     with pytest.raises(TransitionError):
         services.publish_results(seeded_contest, actor=_make_staff_user())
+
+
+@pytest.mark.django_db
+def test_publish_results_notifies_active_participants(seeded_contest, settings):
+    """Each active participant gets a results-published mail with links
+    to the public ranking page and their personal portal scoring page."""
+    from django.core import mail
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    b = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
+    _make_participant(
+        seeded_contest, username="HB9CAN", callsign="HB9CAN/P", cancelled=True,
+    )
+    seeded_contest.state = Contest.State.LOGS_CLOSED
+    seeded_contest.save()
+
+    services.publish_results(seeded_contest, actor=_make_staff_user())
+
+    recipients = sorted(addr for msg in mail.outbox for addr in msg.to)
+    assert recipients == sorted([a.email, b.email])
+    sample = mail.outbox[0]
+    assert f"NMD {seeded_contest.year}" in sample.subject
+    assert (
+        "Results published" in sample.subject
+        or "veröffentlicht" in sample.subject
+    )
+    assert "=== Deutsch ===" in sample.body
+    assert "=== Français ===" in sample.body
+    assert "=== Italiano ===" in sample.body
+    # Both navigation links surface in the body.
+    assert f"/ranking/{seeded_contest.year}/" in sample.body
+    assert "/submission/scoring/" in sample.body
+    # No attachments on this one (unlike F2a).
+    assert sample.attachments == []
+    entry = AuditLog.objects.get(action="contest.notify_results_published")
+    assert entry.payload["sent"] == 2
+    assert entry.payload["failed"] == 0
 
 
 # --- setup_new_contest -----------------------------------------------------------------------
@@ -334,7 +402,8 @@ def test_view_close_registration_post(client, seeded_contest):
 
 
 @pytest.mark.django_db
-def test_view_close_log_submission_post_auto_submits(client, seeded_contest):
+def test_view_close_log_submission_post_auto_submits(client, seeded_contest, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
     seeded_contest.state = Contest.State.REGISTRATION_CLOSED
     seeded_contest.save()
     pending = _make_participant(seeded_contest, username="P1", callsign="P1/P")
@@ -360,12 +429,13 @@ def test_view_publish_results_post(client, seeded_contest):
 
 
 @pytest.mark.django_db
-def test_close_log_submission_auto_runs_scoring(seeded_contest):
+def test_close_log_submission_auto_runs_scoring(seeded_contest, settings):
     """The close-logs transition must run the scoring pipeline as part
     of the same atomic action — the LOGS_CLOSED state always lands with
     fresh ScoringRecord rows, so the admin doesn't have a separate
     'now run scoring' step to remember."""
     from core.models import QsoEntry, ScoringRecord
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
     seeded_contest.state = Contest.State.REGISTRATION_CLOSED
     seeded_contest.save()

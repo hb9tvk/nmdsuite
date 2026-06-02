@@ -1,0 +1,41 @@
+{% load i18n %}{# Trilingual body, mirroring the legacy invitation email format. #}
+=== Deutsch ===
+
+Hallo {{ participant.first_name }}
+
+Die Resultate des NMD {{ contest.year }} ({{ contest.contest_date }}) sind veröffentlicht.
+
+Öffentliche Rangliste:        {{ public_ranking_url }}
+Deine persönliche Wertung:    {{ portal_scoring_url }}
+
+Vielen Dank für deine Teilnahme — wir hoffen, dich im nächsten Jahr wieder dabei zu haben.
+
+Bei Fragen: nmd@uska.ch
+
+=== Français ===
+
+Bonjour {{ participant.first_name }}
+
+Les résultats du NMD {{ contest.year }} ({{ contest.contest_date }}) sont publiés.
+
+Classement public :            {{ public_ranking_url }}
+Ton scoring personnel :        {{ portal_scoring_url }}
+
+Merci pour ta participation — nous espérons te retrouver l'année prochaine.
+
+Questions : nmd@uska.ch
+
+=== Italiano ===
+
+Ciao {{ participant.first_name }}
+
+I risultati del NMD {{ contest.year }} ({{ contest.contest_date }}) sono pubblicati.
+
+Classifica pubblica:           {{ public_ranking_url }}
+Il tuo punteggio personale:    {{ portal_scoring_url }}
+
+Grazie per aver partecipato — speriamo di ritrovarti l'anno prossimo.
+
+Domande: nmd@uska.ch
+
+— NMD Kommission USKA/HTC
