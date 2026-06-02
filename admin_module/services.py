@@ -71,13 +71,25 @@ def _require_state(contest: Contest, allowed: tuple[str, ...]) -> None:
         )
 
 
-@transaction.atomic
 def close_registration(contest: Contest, *, actor) -> None:
-    _require_state(contest, (Contest.State.REGISTRATION_OPEN,))
-    contest.state = Contest.State.REGISTRATION_CLOSED
-    contest.save(update_fields=["state"])
-    audit(action="contest.close_registration", actor=actor,
-          target=str(contest.year), contest=contest)
+    """Lock further registrations and notify every active participant.
+
+    The DB writes run inside one ``transaction.atomic``; the broadcast
+    runs *after* the transaction commits so SMTP latency doesn't hold
+    SQLite's write lock across the network round-trip (same reason
+    ``submit_log`` is structured that way).
+    """
+    with transaction.atomic():
+        _require_state(contest, (Contest.State.REGISTRATION_OPEN,))
+        contest.state = Contest.State.REGISTRATION_CLOSED
+        contest.save(update_fields=["state"])
+        audit(action="contest.close_registration", actor=actor,
+              target=str(contest.year), contest=contest)
+    # Email broadcast is best-effort; EmailLog rows record SENT/FAILED.
+    # Local import keeps notifications out of the import graph for code
+    # paths that never close registration.
+    from . import notifications
+    notifications.send_registration_closed_broadcast(contest=contest, actor=actor)
 
 
 @transaction.atomic

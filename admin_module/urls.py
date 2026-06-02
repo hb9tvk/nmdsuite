@@ -7,6 +7,7 @@ urlpatterns = [
     path("audit/", views.audit_log, name="audit_log"),
     path("fixstation/", views.fixstation_review, name="fixstation_review"),
     path("ranking-preview/", views.ranking_preview, name="ranking_preview"),
+    path("participant-list-preview/", views.participant_list_preview, name="participant_list_preview"),
     # Contest lifecycle transitions (M4.2). All POST-only.
     path("contest/close-registration/", views.close_registration, name="close_registration"),
     path("contest/close-logs/", views.close_log_submission, name="close_log_submission"),

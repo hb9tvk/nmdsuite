@@ -639,10 +639,15 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Iscrizione e modifica per conto",
     ),
     "Participant list (PDF)": ("Teilnehmerliste (PDF)", "Liste des participants (PDF)", "Elenco partecipanti (PDF)"),
-    "downloadable roster (available after registration closes)": (
-        "Herunterladbare Liste (verfügbar nach Anmeldeschluss)",
-        "Liste téléchargeable (disponible après la fermeture de l'inscription)",
-        "Elenco scaricabile (disponibile dopo la chiusura delle iscrizioni)",
+    "Participant list preview (PDF)": (
+        "Vorschau Teilnehmerliste (PDF)",
+        "Aperçu de la liste des participants (PDF)",
+        "Anteprima elenco partecipanti (PDF)",
+    ),
+    "review the layout before closing registration; attached to the participants' close-of-registration email": (
+        "Layout prüfen, bevor die Anmeldung geschlossen wird; wird der entsprechenden E-Mail an die Teilnehmer angehängt",
+        "Vérifier la mise en page avant de clore les inscriptions ; jointe à l'e-mail de clôture envoyé aux participants",
+        "Verifica il layout prima di chiudere le iscrizioni; viene allegato all'e-mail di chiusura inviata ai partecipanti",
     ),
     "send a message to all active participants": (
         "Eine Nachricht an alle aktiven Teilnehmer senden",

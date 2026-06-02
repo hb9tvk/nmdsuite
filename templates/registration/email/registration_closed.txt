@@ -1,0 +1,44 @@
+{% load i18n %}{# Trilingual body, mirroring the legacy invitation email format. #}
+=== Deutsch ===
+
+Hallo {{ participant.first_name }}
+
+Die Anmeldung für den NMD {{ contest.year }} ({{ contest.contest_date }}) ist nun geschlossen.
+
+Die vollständige Teilnehmerliste findest du als PDF im Anhang dieser E-Mail.
+Sie kann jederzeit auch als PDF oder CSV im Portal heruntergeladen werden:
+{{ portal_url }}
+
+Falls nötig, kannst du deine Anmeldedaten (z. B. den Standort) im Portal weiterhin anpassen oder deine Teilnahme stornieren — bis zum Contest-Start.
+
+Bei Fragen: nmd@uska.ch
+
+=== Français ===
+
+Bonjour {{ participant.first_name }}
+
+Les inscriptions au NMD {{ contest.year }} ({{ contest.contest_date }}) sont désormais closes.
+
+La liste complète des participants est jointe à cet e-mail au format PDF.
+Tu peux aussi la télécharger à tout moment en PDF ou en CSV depuis le portail :
+{{ portal_url }}
+
+Si nécessaire, tu peux encore modifier tes données d'inscription (p. ex. le lieu) ou annuler ta participation depuis le portail — jusqu'au début du contest.
+
+Questions : nmd@uska.ch
+
+=== Italiano ===
+
+Ciao {{ participant.first_name }}
+
+Le iscrizioni al NMD {{ contest.year }} ({{ contest.contest_date }}) sono ora chiuse.
+
+L'elenco completo dei partecipanti è allegato a questa e-mail in formato PDF.
+Può anche essere scaricato in qualsiasi momento in PDF o CSV dal portale:
+{{ portal_url }}
+
+Se necessario, puoi ancora modificare i tuoi dati di iscrizione (per esempio il luogo) o annullare la tua partecipazione dal portale — fino all'inizio del contest.
+
+Domande: nmd@uska.ch
+
+— NMD Kommission USKA/HTC

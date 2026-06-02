@@ -35,7 +35,8 @@ def _make_participant(contest, *, username, callsign, submitted=False, cancelled
 
 
 @pytest.mark.django_db
-def test_close_registration_happy_path(seeded_contest):
+def test_close_registration_happy_path(seeded_contest, settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
     staff = _make_staff_user()
     assert seeded_contest.state == Contest.State.REGISTRATION_OPEN
     services.close_registration(seeded_contest, actor=staff)
@@ -50,6 +51,69 @@ def test_close_registration_rejects_wrong_state(seeded_contest):
     seeded_contest.save()
     with pytest.raises(TransitionError):
         services.close_registration(seeded_contest, actor=_make_staff_user())
+
+
+@pytest.mark.django_db
+def test_close_registration_notifies_active_participants(seeded_contest, settings):
+    """Each active participant receives a registration-closed mail.
+    Cancelled rows and rows with a blank email are skipped. A single
+    audit row records the broadcast outcome."""
+    from django.core import mail
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+    active = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    other = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
+    _make_participant(
+        seeded_contest, username="HB9CAN", callsign="HB9CAN/P", cancelled=True,
+    )
+
+    services.close_registration(seeded_contest, actor=_make_staff_user())
+
+    recipients = sorted(addr for msg in mail.outbox for addr in msg.to)
+    assert recipients == sorted([active.email, other.email])
+    # Subject + body use the right templates.
+    sample = mail.outbox[0]
+    assert f"NMD {seeded_contest.year}" in sample.subject
+    assert "Registration closed" in sample.subject or "geschlossen" in sample.subject
+    assert "=== Deutsch ===" in sample.body
+    assert "=== Français ===" in sample.body
+    assert "=== Italiano ===" in sample.body
+    # Participant-list PDF is attached to every message.
+    for msg in mail.outbox:
+        assert len(msg.attachments) == 1
+        name, content, mimetype = msg.attachments[0]
+        assert name == f"nmd-{seeded_contest.year}-participants.pdf"
+        assert mimetype == "application/pdf"
+        assert content.startswith(b"%PDF-")
+    # Broadcast audited with counts.
+    entry = AuditLog.objects.get(action="contest.notify_registration_closed")
+    assert entry.payload["sent"] == 2
+    assert entry.payload["failed"] == 0
+
+
+@pytest.mark.django_db
+def test_close_registration_broadcast_failure_does_not_block(seeded_contest, settings):
+    """If SMTP refuses one recipient, the others still get through and
+    the audit row reflects the partial outcome."""
+    from django.core import mail
+    from unittest.mock import patch
+
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    _make_participant(seeded_contest, username="HB9OK", callsign="HB9OK/P")
+    _make_participant(seeded_contest, username="HB9BAD", callsign="HB9BAD/P")
+
+    original_send = mail.EmailMessage.send
+
+    def _flaky_send(self, *args, **kwargs):
+        if self.to == ["hb9bad@x.org"]:
+            raise RuntimeError("simulated SMTP refusal")
+        return original_send(self, *args, **kwargs)
+
+    with patch("django.core.mail.EmailMessage.send", _flaky_send):
+        services.close_registration(seeded_contest, actor=_make_staff_user())
+
+    entry = AuditLog.objects.get(action="contest.notify_registration_closed")
+    assert entry.payload == {"total": 2, "sent": 1, "failed": 1}
 
 
 # --- close_log_submission --------------------------------------------------------------------

@@ -171,6 +171,31 @@ def test_participant_list_available_to_staff_even_without_participation(client, 
     assert response.content.startswith(b"%PDF-")
 
 
+@pytest.mark.django_db
+def test_admin_preview_renders_regardless_of_state(client, seeded_contest):
+    """The admin-side preview bypasses the state gate so staff can review
+    the PDF layout before closing registration (and triggering the
+    attached broadcast)."""
+    assert seeded_contest.state == Contest.State.REGISTRATION_OPEN  # gate would block portal route
+    _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    staff = User.objects.create_user(username="STAFF", password="x", email="s@x.org", is_staff=True)
+    client.force_login(staff)
+    response = client.get("/admin/participant-list-preview/")
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/pdf"
+    assert response.content.startswith(b"%PDF-")
+    assert f"nmd-{seeded_contest.year}-participants.pdf" in response["Content-Disposition"]
+
+
+@pytest.mark.django_db
+def test_admin_preview_requires_staff(client, seeded_contest):
+    """Non-staff authenticated users get redirected by _staff_required."""
+    p = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    client.force_login(p.user)
+    response = client.get("/admin/participant-list-preview/")
+    assert response.status_code in (301, 302, 403)
+
+
 # --- dashboard link visibility ---------------------------------------------------------------
 
 

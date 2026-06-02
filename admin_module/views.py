@@ -741,6 +741,34 @@ def bulk_email(request):
     )
 
 
+# --- Participant-list preview ------------------------------------------------------------------
+
+
+@_staff_required
+def participant_list_preview(request):
+    """Render the participant list as PDF for the active contest, regardless
+    of contest state. Lets staff sanity-check the layout (column widths,
+    page breaks, …) BEFORE closing registration — at which point the same
+    PDF gets attached to the broadcast email and is too late to fix.
+
+    The portal-side equivalent (:func:`portal.views.participant_list`)
+    keeps its registration-closed gate; participants only get to see the
+    list once it's stable."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    from core.participant_list_pdf import build_participant_list_pdf
+
+    blob = build_participant_list_pdf(contest)
+    filename = f"nmd-{contest.year}-participants.pdf"
+    response = HttpResponse(blob, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- Ranking preview --------------------------------------------------------------------------
 
 
