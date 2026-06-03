@@ -145,6 +145,11 @@ CSRF_TRUSTED_ORIGINS = [
     if o.strip()
 ]
 
+# Allow the WordPress site at nmd.uska.ch to iframe the public Django
+# pages via ?embed=1. Django defaults to "DENY"; "SAMEORIGIN" permits
+# embedding from the same hostname only (we share nmd.uska.ch with WP).
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
 # Trust the proxy's X-Forwarded-Proto header so request.is_secure() and
 # build_absolute_uri() know we're behind HTTPS. Combined with
 # USE_X_FORWARDED_HOST below for the host header.
