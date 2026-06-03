@@ -45,6 +45,22 @@ body {
     padding: 0.2rem 0.4rem;
     border-radius: 3px;
 }
+/* Embed mode (?embed=1): page is iframed inside the WP site, which already
+   shows its own top nav. Slim the Django topnav down to a neutral bar that
+   only carries the language switcher so it doesn't clash with whatever
+   colour scheme WP is using above it. */
+.embed-mode header.topnav {
+    background: transparent;
+    color: inherit;
+    padding: 0.25rem 0.75rem;
+    min-height: 0;
+}
+.embed-mode .lang-switcher select {
+    background: rgba(0,0,0,0.06);
+    color: #222;
+    border: 1px solid rgba(0,0,0,0.15);
+}
+.embed-mode { background: #ffffff; }
 /* Dropdown options render on the OS default (white) background — the
    .topnav's white text would be invisible there. Force readable
    dark-on-white for the dropdown items. */
