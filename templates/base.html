@@ -1,8 +1,11 @@
 {% load i18n static %}
-{# ``?embed=1`` strips the Django chrome (brand, nav links, login/logout, footer)
-   so the page can be iframed inside the WordPress site at nmd.uska.ch and
-   still show the WP top nav above. Same-origin, so cookies + CSRF flow
-   naturally. The language switcher stays — it's per-page state, not chrome. #}
+{% comment %}
+    ``?embed=1`` strips the Django chrome (brand, nav links, login/logout,
+    footer) so the page can be iframed inside the WordPress site at
+    nmd.uska.ch and still show the WP top nav above. Same-origin, so
+    cookies + CSRF flow naturally. The language switcher stays — it's
+    per-page state, not chrome.
+{% endcomment %}
 {% with embed=request.GET.embed %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE|default:'de' }}">
@@ -66,9 +69,12 @@
     {% endif %}
     {% block extra_scripts %}{% endblock %}
     {% if embed %}
-        {# Lightweight postMessage-based auto-height: tells the WP parent how
-           tall to make the iframe whenever the body grows/shrinks. Same-origin,
-           but `*` target is fine here — we control the receiver too. #}
+        {% comment %}
+            Lightweight postMessage-based auto-height: tells the WP parent how
+            tall to make the iframe whenever the body grows/shrinks.
+            Same-origin, but `*` target is fine here — we control the
+            receiver too.
+        {% endcomment %}
         <script>
             (function () {
                 function postHeight() {
