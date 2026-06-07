@@ -68,6 +68,7 @@
             {% endif %}
             {% if participant_list_available %}
                 <a href="{% url 'portal:participant_list' %}" class="btn">{% trans "Participant list (PDF)" %}</a>
+                <a href="{% url 'portal:participant_list_csv' %}" class="btn">{% trans "Participant list (CSV)" %}</a>
             {% endif %}
             {% if participant.submitted_at %}
                 <a href="{% url 'portal:adif_download' %}" class="btn">{% trans "Download log (ADIF)" %}</a>

@@ -16,6 +16,7 @@ urlpatterns = [
     path("submit/", views.submit, name="submit"),
     path("scoring/", views.scoring, name="scoring"),
     path("participant-list.pdf", views.participant_list, name="participant_list"),
+    path("participant-list.csv", views.participant_list_csv, name="participant_list_csv"),
     path("log.adi", views.adif_download, name="adif_download"),
     path(
         "login/",

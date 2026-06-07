@@ -411,6 +411,26 @@ def participant_list(request):
     return response
 
 
+@login_required
+def participant_list_csv(request):
+    """Stream the participant list as CSV for logging-program import.
+    Same gating as the PDF download — available once registration has
+    closed."""
+    contest = _active_contest()
+    if not _participant_list_available(contest):
+        messages.info(request, _("The participant list will be available once registration closes."))
+        return redirect("portal:dashboard")
+
+    from core.participant_list_csv import build_participant_list_csv
+
+    blob = build_participant_list_csv(contest)
+    filename = f"nmd-{contest.year}-participants.csv"
+    response = HttpResponse(blob, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- ADIF export -----------------------------------------------------------------------------
 
 

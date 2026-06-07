@@ -117,6 +117,7 @@
         <ul class="admin-tools-list">
             <li><a href="{% url 'admin_module:participants_index' %}">{% trans "Participants" %}</a> — {% trans "on-behalf registration and editing" %}</li>
             <li><a href="{% url 'admin_module:participant_list_preview' %}">{% trans "Participant list preview (PDF)" %}</a> — {% trans "review the layout before closing registration; attached to the participants' close-of-registration email" %}</li>
+            <li><a href="{% url 'admin_module:participant_list_csv_preview' %}">{% trans "Participant list preview (CSV)" %}</a> — {% trans "same data in the format dedicated logging software expects" %}</li>
             {% if contest %}
                 <li><a href="{% url 'admin_module:ranking_preview' %}">{% trans "Ranking preview" %}</a> — {% trans "what the public page would show right now (admin-only)" %}</li>
                 <li><a href="{% url 'admin_module:ranking_pdf' %}">{% trans "Ranking (PDF)" %}</a> — {% trans "downloadable ranking for the club magazine" %}</li>

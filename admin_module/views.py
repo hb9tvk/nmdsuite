@@ -769,6 +769,25 @@ def participant_list_preview(request):
     return response
 
 
+@_staff_required
+def participant_list_csv_preview(request):
+    """Same as :func:`participant_list_preview` but for the CSV format
+    consumed by dedicated logging software."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    from core.participant_list_csv import build_participant_list_csv
+
+    blob = build_participant_list_csv(contest)
+    filename = f"nmd-{contest.year}-participants.csv"
+    response = HttpResponse(blob, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- Ranking PDF (magazine export) -------------------------------------------------------------
 
 

@@ -639,15 +639,26 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Iscrizione e modifica per conto",
     ),
     "Participant list (PDF)": ("Teilnehmerliste (PDF)", "Liste des participants (PDF)", "Elenco partecipanti (PDF)"),
+    "Participant list (CSV)": ("Teilnehmerliste (CSV)", "Liste des participants (CSV)", "Elenco partecipanti (CSV)"),
     "Participant list preview (PDF)": (
         "Vorschau Teilnehmerliste (PDF)",
         "Aperçu de la liste des participants (PDF)",
         "Anteprima elenco partecipanti (PDF)",
     ),
+    "Participant list preview (CSV)": (
+        "Vorschau Teilnehmerliste (CSV)",
+        "Aperçu de la liste des participants (CSV)",
+        "Anteprima elenco partecipanti (CSV)",
+    ),
     "review the layout before closing registration; attached to the participants' close-of-registration email": (
         "Layout prüfen, bevor die Anmeldung geschlossen wird; wird der entsprechenden E-Mail an die Teilnehmer angehängt",
         "Vérifier la mise en page avant de clore les inscriptions ; jointe à l'e-mail de clôture envoyé aux participants",
         "Verifica il layout prima di chiudere le iscrizioni; viene allegato all'e-mail di chiusura inviata ai partecipanti",
+    ),
+    "same data in the format dedicated logging software expects": (
+        "Dieselben Daten im Format, das spezialisierte Logging-Programme erwarten",
+        "Mêmes données au format attendu par les logiciels de journal dédiés",
+        "Stessi dati nel formato richiesto dai programmi di logging dedicati",
     ),
     "send a message to all active participants": (
         "Eine Nachricht an alle aktiven Teilnehmer senden",
@@ -1126,7 +1137,7 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "NMD %(year)s — Conferma di iscrizione",
     ),
     "Register for the NMD": ("Für den NMD anmelden", "S'inscrire au NMD", "Iscriviti al NMD"),
-    "Register for NMD %(year)s": ("Für NMD %(year)s anmelden", "S'inscrire au NMD %(year)s", "Iscrizione al NMD %(year)s"),
+    "Register for NMD %(year)s": ("Für den NMD %(year)s anmelden", "S'inscrire au NMD %(year)s", "Iscrizione al NMD %(year)s"),
     "\n            The contest takes place on %(date)s, 06:00–09:59 UTC.\n        ": (
         "\n            Der Contest findet am %(date)s von 06:00 bis 09:59 UTC statt.\n        ",
         "\n            Le contest a lieu le %(date)s, de 06:00 à 09:59 UTC.\n        ",
