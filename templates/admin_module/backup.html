@@ -36,6 +36,19 @@
     </section>
 
     <section class="admin-overview">
+        <h2>{% trans "Pictures" %}</h2>
+        <p>
+            {% trans "Download every uploaded participant picture as a tar.gz, mirroring the on-disk layout. Separate from the SQLite snapshot so the (potentially large) image set can be archived independently." %}
+        </p>
+        <form method="post" action="{% url 'admin_module:pictures_download' %}" class="inline-form">
+            {% csrf_token %}
+            <p class="actions">
+                <button type="submit" class="btn">{% trans "Download pictures" %}</button>
+            </p>
+        </form>
+    </section>
+
+    <section class="admin-overview">
         <h2>{% trans "Restore" %}</h2>
         <p class="hint">
             {% trans "Uploads a previously-downloaded SQLite file and replaces the live database with it. The previous database is moved aside as a .bak file on the server." %}

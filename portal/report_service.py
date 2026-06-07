@@ -13,10 +13,10 @@ truth for "what's uploaded"; this module turns that into bytes on disk.
 """
 from __future__ import annotations
 
+import io
 import re
-import shutil
+import tarfile
 from pathlib import Path
-from typing import Iterable
 
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
@@ -187,3 +187,30 @@ def delete_everything(participant: Participant) -> None:
             # year directory is shared. Don't recursively delete arbitrary
             # paths under /data on a cancel action.
             pass
+
+
+# --- backup ----------------------------------------------------------------------------------
+
+
+def build_pictures_tarball() -> bytes:
+    """Return a ``.tar.gz`` of every year-named directory under
+    :func:`_data_root`. The tarball mirrors the on-disk layout
+    (``<year>/<callsign>/<callsign>_<idx>.<ext>``) so it can be
+    unpacked directly back into ``/data`` to restore.
+
+    Only top-level directories whose name is all digits (a contest
+    year) are included — keeps stray files (``nmdsuite.sqlite3``,
+    backup ``.bak`` files, etc.) out of the archive.
+
+    Built in memory because the picture set is small enough in practice
+    (~50 participants × 6 photos × a few MB). Switch to a streaming
+    generator if that stops being true.
+    """
+    buf = io.BytesIO()
+    root = _data_root()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        if root.is_dir():
+            for entry in sorted(root.iterdir()):
+                if entry.is_dir() and entry.name.isdigit():
+                    tar.add(str(entry), arcname=entry.name)
+    return buf.getvalue()

@@ -335,3 +335,89 @@ def test_admin_picture_image_blocked_for_non_staff(client, participant):
     client.force_login(user)  # the owner, but not staff
     response = client.get(f"/admin/reports/{p.pk}/picture/1/")
     assert response.status_code in (301, 302, 403)
+
+
+# --- pictures tarball (F3.3) -----------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_build_pictures_tarball_includes_every_uploaded_file(participant):
+    import io
+    import tarfile
+
+    _, p, _ = participant
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    report_service.add_picture(
+        p, SimpleUploadedFile("b.png", _png_bytes(), content_type="image/png"),
+    )
+
+    blob = report_service.build_pictures_tarball()
+    with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tar:
+        names = set(tar.getnames())
+    year = str(p.contest.year)
+    assert f"{year}/HB9TVK/HB9TVK_1.png" in names
+    assert f"{year}/HB9TVK/HB9TVK_2.png" in names
+
+
+@pytest.mark.django_db
+def test_build_pictures_tarball_skips_non_year_entries(participant, tmp_path):
+    """Stray top-level files (the SQLite DB, .bak files) must not leak
+    into the picture archive."""
+    import io
+    import tarfile
+
+    (tmp_path / "nmdsuite.sqlite3").write_bytes(b"not actually a database")
+    (tmp_path / "garbage.txt").write_text("ignore me")
+
+    blob = report_service.build_pictures_tarball()
+    with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tar:
+        names = tar.getnames()
+    assert all("nmdsuite.sqlite3" not in n for n in names)
+    assert all("garbage.txt" not in n for n in names)
+
+
+@pytest.mark.django_db
+def test_build_pictures_tarball_handles_missing_data_root(settings, tmp_path):
+    """Brand-new deployment with nothing uploaded yet → empty but valid
+    tar.gz, no exception."""
+    import io
+    import tarfile
+
+    settings.NMD_DATA_ROOT = tmp_path / "does-not-exist"
+    blob = report_service.build_pictures_tarball()
+    with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tar:
+        assert tar.getnames() == []
+
+
+@pytest.mark.django_db
+def test_admin_pictures_download_requires_staff(client, participant):
+    user, _, _ = participant
+    client.force_login(user)
+    response = client.post("/admin/backup/pictures/")
+    assert response.status_code in (301, 302, 403)
+
+
+@pytest.mark.django_db
+def test_admin_pictures_download_streams_tarball_and_audits(client, participant):
+    from core.models import AuditLog
+
+    _, p, _ = participant
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    staff = User.objects.create_user(
+        username="STAFF", password="x", email="s@x.org", is_staff=True,
+    )
+    client.force_login(staff)
+    response = client.post("/admin/backup/pictures/")
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/gzip"
+    disposition = response["Content-Disposition"]
+    assert "attachment" in disposition
+    assert "nmdsuite-pictures-" in disposition
+    assert disposition.endswith('.tar.gz"')
+    entry = AuditLog.objects.get(action="pictures.download")
+    assert entry.actor == staff
+    assert entry.payload["size_bytes"] > 0

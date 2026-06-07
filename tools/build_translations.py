@@ -815,6 +815,12 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Photo %(n)s de %(call)s",
         "Foto %(n)s di %(call)s",
     ),
+    "Download every uploaded participant picture as a tar.gz, mirroring the on-disk layout. Separate from the SQLite snapshot so the (potentially large) image set can be archived independently.": (
+        "Lade alle hochgeladenen Teilnehmerbilder als tar.gz herunter, in derselben Verzeichnisstruktur wie auf der Festplatte. Getrennt vom SQLite-Snapshot, damit der (möglicherweise grosse) Bilderbestand unabhängig archiviert werden kann.",
+        "Téléchargez toutes les photos déposées par les participants sous forme d'un tar.gz, avec la même arborescence que sur le disque. Séparé du snapshot SQLite pour pouvoir archiver indépendamment l'ensemble (potentiellement volumineux) des images.",
+        "Scarica tutte le foto caricate dai partecipanti come tar.gz, mantenendo la stessa struttura su disco. Separato dallo snapshot SQLite per archiviare in modo indipendente l'insieme (potenzialmente grande) di immagini.",
+    ),
+    "Download pictures": ("Bilder herunterladen", "Télécharger les photos", "Scarica le foto"),
     "Log entry — %(callsign)s": ("Log-Eingabe — %(callsign)s", "Saisie du journal — %(callsign)s", "Inserimento log — %(callsign)s"),
     "On-behalf editing. The portal's post-submit lock is bypassed here so staff can amend a submitted log if needed.": (
         "Stellvertretende Bearbeitung. Die Portal-Sperre nach Einreichung wird hier umgangen, damit Staff bei Bedarf nachbessern kann.",

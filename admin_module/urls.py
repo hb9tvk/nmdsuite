@@ -39,4 +39,5 @@ urlpatterns = [
     path("backup/", views.backup_index, name="backup_index"),
     path("backup/download/", views.backup_download, name="backup_download"),
     path("backup/restore/", views.backup_restore, name="backup_restore"),
+    path("backup/pictures/", views.pictures_download, name="pictures_download"),
 ]

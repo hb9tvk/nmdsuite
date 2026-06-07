@@ -683,6 +683,30 @@ def backup_restore(request):
     return redirect(f"{reverse('admin_module:backup_index')}?restored=1")
 
 
+@_staff_required
+@require_http_methods(["POST"])
+def pictures_download(request):
+    """Stream every uploaded participant picture as a single tar.gz.
+    Sister to :func:`backup_download` — kept separate per F3 design so
+    the SQLite snapshot and the (potentially large) image set can be
+    grabbed independently."""
+    from portal.report_service import build_pictures_tarball
+
+    blob = build_pictures_tarball()
+    stamp = timezone.now().strftime("%Y-%m-%d-%H%M")
+    filename = f"nmdsuite-pictures-{stamp}.tar.gz"
+    audit(
+        action="pictures.download",
+        actor=request.user,
+        target=filename,
+        payload={"size_bytes": len(blob)},
+    )
+    response = HttpResponse(blob, content_type="application/gzip")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- bulk email (M4.4) ------------------------------------------------------------------------
 
 
