@@ -34,7 +34,7 @@ def index(request):
         return render(request, "registration/closed.html", {"reason": "state", "contest": contest})
 
     if request.method == "POST":
-        form = RegistrationForm(request.POST)
+        form = RegistrationForm(request.POST, contest=contest)
         if form.is_valid():
             payload = dict(form.cleaned_data)
             payload["operating_modes"] = form.operating_modes_value()
@@ -55,7 +55,7 @@ def index(request):
                 request.session["registration_user_was_created"] = outcome.user_was_created
                 return redirect(reverse("registration:success"))
     else:
-        form = RegistrationForm()
+        form = RegistrationForm(contest=contest)
 
     from core.picker import map_picker_context
 

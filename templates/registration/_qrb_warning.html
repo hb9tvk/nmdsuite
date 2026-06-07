@@ -1,0 +1,22 @@
+{% load i18n %}
+{% if form.nearby_stations %}
+    <div class="banner banner-warn">
+        <strong>{% trans "Another station is registered nearby." %}</strong>
+        <p>
+            {% trans "Operating stations too close together can cause receiver overload from the neighbour's strong signal. We recommend picking a location at least 3 km away from every other station." %}
+        </p>
+        <ul>
+            {% for call, dist in form.nearby_stations %}
+                <li>{{ call }} — {{ dist }} m</li>
+            {% endfor %}
+        </ul>
+        <label class="qrb-ack">
+            <input type="checkbox" name="qrb_acknowledged" value="on"
+                   {% if form.qrb_acknowledged.value %}checked{% endif %}>
+            {% trans "I'm aware of the nearby station(s) and want to register anyway." %}
+        </label>
+        {% if form.qrb_acknowledged.errors %}
+            <div class="errorlist">{{ form.qrb_acknowledged.errors }}</div>
+        {% endif %}
+    </div>
+{% endif %}

@@ -113,8 +113,9 @@ def test_portal_csv_available_after_registration_closed(client, seeded_contest):
     client.force_login(p.user)
     response = client.get("/submission/participant-list.csv")
     assert response.status_code == 200
-    assert response["Content-Type"] == "text/csv; charset=utf-8"
-    assert f"nmd-{seeded_contest.year}-participants.csv" in response["Content-Disposition"]
+    assert response["Content-Type"] == "text/plain; charset=utf-8"
+    expected_name = f"NMD_Stn{seeded_contest.year % 100:02d}.txt"
+    assert expected_name in response["Content-Disposition"]
     assert b"hb9tvk/p" in response.content
 
 
@@ -129,7 +130,9 @@ def test_admin_csv_preview_works_in_any_state(client, seeded_contest):
     client.force_login(staff)
     response = client.get("/admin/participant-list-preview.csv")
     assert response.status_code == 200
-    assert response["Content-Type"] == "text/csv; charset=utf-8"
+    assert response["Content-Type"] == "text/plain; charset=utf-8"
+    expected_name = f"NMD_Stn{seeded_contest.year % 100:02d}.txt"
+    assert expected_name in response["Content-Disposition"]
     assert b"hb9tvk/p" in response.content
 
 

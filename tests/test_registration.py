@@ -221,3 +221,89 @@ def test_no_active_contest_renders_closed(client):
     response = client.get("/anmeldung/")
     assert response.status_code == 200
     assert b"closed" in response.content.lower() or b"keinen aktiven" in response.content.lower() or b"no active" in response.content.lower()
+
+
+# --- QRB proximity warning ------------------------------------------------------------------
+
+
+def _make_neighbour(contest, *, callsign, lv95_e, lv95_n):
+    """Create an active neighbouring participant at the given LV95 coords."""
+    from django.utils import timezone
+    user = User.objects.create_user(
+        username=callsign, password="x", email=f"{callsign.lower()}@x.org",
+    )
+    return Participant.objects.create(
+        contest=contest, user=user, callsign=callsign,
+        first_name=callsign, email=f"{callsign.lower()}@x.org",
+        coord_system_input="ch1903plus",
+        coord_input_e=str(lv95_e), coord_input_n=str(lv95_n),
+        ch1903p_e=lv95_e, ch1903p_n=lv95_n,
+        wgs84_lat=46.8, wgs84_lon=8.2,
+        altitude_m=1500, canton="BE", operating_modes=3,
+    )
+
+
+# Drive the QRB tests with CH1903+ (LV95) coord input so the form's
+# parsed LV95 is exactly what we type — no WGS84-conversion ambiguity to
+# fight when placing a neighbour at a known offset.
+_QRB_E = 2_681_000
+_QRB_N = 1_237_000
+_QRB_FORM = {**VALID_FORM, "coord_input_e": str(_QRB_E), "coord_input_n": str(_QRB_N)}
+
+
+@pytest.mark.django_db
+def test_post_within_3km_without_ack_is_rejected_and_lists_neighbour(client, seeded_contest):
+    _make_neighbour(
+        seeded_contest, callsign="HB9CLOSE",
+        lv95_e=_QRB_E + 1000, lv95_n=_QRB_N,
+    )
+    response = client.post("/anmeldung/", _QRB_FORM)
+    assert response.status_code == 200  # form re-rendered with errors
+    # No new account created — registration didn't go through.
+    assert not User.objects.filter(username="HB9TVK").exists()
+    # Banner with the close neighbour shows up.
+    body = response.content.decode()
+    assert "HB9CLOSE" in body
+
+
+@pytest.mark.django_db
+def test_post_within_3km_with_ack_succeeds(client, seeded_contest):
+    _make_neighbour(
+        seeded_contest, callsign="HB9CLOSE",
+        lv95_e=_QRB_E + 1000, lv95_n=_QRB_N,
+    )
+    response = client.post(
+        "/anmeldung/",
+        {**_QRB_FORM, "qrb_acknowledged": "on"},
+        follow=True,
+    )
+    assert response.status_code == 200
+    assert User.objects.filter(username="HB9TVK").exists()
+
+
+@pytest.mark.django_db
+def test_post_far_neighbour_does_not_trigger_warning(client, seeded_contest):
+    _make_neighbour(
+        seeded_contest, callsign="HB9FAR",
+        lv95_e=_QRB_E + 5000, lv95_n=_QRB_N,
+    )
+    response = client.post("/anmeldung/", _QRB_FORM, follow=True)
+    assert response.status_code == 200
+    assert User.objects.filter(username="HB9TVK").exists()
+
+
+@pytest.mark.django_db
+def test_qrb_check_skips_cancelled_neighbours(client, seeded_contest):
+    """A cancelled participant doesn't physically occupy the location any
+    more — don't pretend they're a conflict."""
+    n = _make_neighbour(
+        seeded_contest, callsign="HB9CANC",
+        lv95_e=_QRB_E + 1000, lv95_n=_QRB_N,
+    )
+    from django.utils import timezone
+    n.cancelled_at = timezone.now()
+    n.save(update_fields=["cancelled_at"])
+
+    response = client.post("/anmeldung/", _QRB_FORM, follow=True)
+    assert response.status_code == 200
+    assert User.objects.filter(username="HB9TVK").exists()

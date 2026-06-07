@@ -400,6 +400,28 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Il tuo nominativo contest. Una /P finale viene rimossa automaticamente — al NMD è implicita.",
     ),
     "First name": ("Vorname", "Prénom", "Nome"),
+
+    # QRB proximity warning (registration form)
+    "Another station is registered nearby.": (
+        "In der Nähe ist bereits eine Station angemeldet.",
+        "Une autre station est inscrite à proximité.",
+        "Un'altra stazione è già iscritta nelle vicinanze.",
+    ),
+    "Operating stations too close together can cause receiver overload from the neighbour's strong signal. We recommend picking a location at least 3 km away from every other station.": (
+        "Zu nahe beieinander betriebene Stationen können den Empfänger durch das starke Signal des Nachbarn übersteuern. Wir empfehlen, einen Standort mindestens 3 km entfernt von jeder anderen Station zu wählen.",
+        "Des stations trop proches peuvent provoquer une saturation du récepteur par le signal puissant du voisin. Nous recommandons de choisir un emplacement à au moins 3 km de toute autre station.",
+        "Stazioni operative troppo vicine possono causare il sovraccarico del ricevitore dovuto al forte segnale del vicino. Consigliamo di scegliere una postazione ad almeno 3 km da ogni altra stazione.",
+    ),
+    "I'm aware of the nearby station(s) and want to register anyway.": (
+        "Ich bin mir der nahegelegenen Station(en) bewusst und möchte mich trotzdem anmelden.",
+        "Je suis conscient·e de la ou des stations à proximité et je souhaite m'inscrire malgré tout.",
+        "Sono consapevole della/e stazione/i vicina/e e voglio iscrivermi comunque.",
+    ),
+    "Another station is registered within %(km)s km of your chosen location. Please consider moving further away to avoid receiver overload, or tick the box to confirm you're aware of the conflict.": (
+        "In weniger als %(km)s km von deinem Standort ist eine andere Station angemeldet. Erwäge, weiter weg zu ziehen, um Empfänger-Übersteuerung zu vermeiden, oder bestätige, dass du den Konflikt kennst.",
+        "Une autre station est inscrite à moins de %(km)s km de l'emplacement choisi. Envisage de t'éloigner davantage pour éviter la saturation du récepteur, ou coche la case pour confirmer que tu es au courant.",
+        "Un'altra stazione è iscritta entro %(km)s km dalla tua posizione. Considera di spostarti più lontano per evitare il sovraccarico del ricevitore, oppure spunta la casella per confermare di esserne consapevole.",
+    ),
     "First name(s)": ("Vorname(n)", "Prénom(s)", "Nome(i)"),
     "If multi-operator station: list all first names joined with '+'.": (
         "Falls Mehrmannstation: Alle Vornamen mit '+' verbunden.",

@@ -320,7 +320,7 @@ def participant_register(request):
         return redirect("admin_module:index")
 
     if request.method == "POST":
-        form = RegistrationForm(request.POST)
+        form = RegistrationForm(request.POST, contest=contest)
         if form.is_valid():
             payload = dict(form.cleaned_data)
             payload["operating_modes"] = form.operating_modes_value()
@@ -342,7 +342,7 @@ def participant_register(request):
                     "admin_module:participant_detail", pk=outcome.participant.pk,
                 )
     else:
-        form = RegistrationForm()
+        form = RegistrationForm(contest=contest)
 
     return render(
         request,
@@ -805,8 +805,10 @@ def participant_list_csv_preview(request):
     from core.participant_list_csv import build_participant_list_csv
 
     blob = build_participant_list_csv(contest)
-    filename = f"nmd-{contest.year}-participants.csv"
-    response = HttpResponse(blob, content_type="text/csv; charset=utf-8")
+    # Legacy filename convention (NMD_Stn<YY>.txt) — the .txt suffix lets
+    # operators open and edit the file in a plain-text editor.
+    filename = f"NMD_Stn{contest.year % 100:02d}.txt"
+    response = HttpResponse(blob, content_type="text/plain; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     response["Content-Length"] = str(len(blob))
     return response

@@ -1,12 +1,21 @@
 """Registration form for new contest participants."""
 from __future__ import annotations
 
+import math
+
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from .callsigns import is_valid_callsign, login_username, normalize_callsign
 from .constants import SWISS_CANTONS
 from .coords import CoordinateError, parse_coordinate_pair
+
+
+# QRB warning: stations closer than this risk receiver overload from a
+# neighbour's strong nearby signal. 3 km matches the rule-of-thumb used
+# by the contest commission. Permissive — the form lets people register
+# anyway after they tick "I'm aware".
+QRB_THRESHOLD_M = 3000
 
 
 class RegistrationForm(forms.Form):
@@ -94,6 +103,18 @@ class RegistrationForm(forms.Form):
         label=_("Remarks"), required=False, widget=forms.Textarea(attrs={"rows": 3})
     )
 
+    qrb_acknowledged = forms.BooleanField(required=False)
+
+    def __init__(self, *args, contest=None, **kwargs):
+        """``contest`` is needed to look up already-registered stations for
+        the QRB proximity check. Optional so test helpers that don't pass
+        it still work; the check just becomes a no-op."""
+        self.contest = contest
+        super().__init__(*args, **kwargs)
+        # Attribute populated by ``clean()`` when stations < 3 km exist; the
+        # template reads it to render the warning banner.
+        self.nearby_stations: list[tuple[str, int]] = []
+
     # --- field-level cleaning ---------------------------------------------------------------
 
     def clean_callsign(self) -> str:
@@ -141,11 +162,50 @@ class RegistrationForm(forms.Form):
         n_input = cleaned.get("coord_input_n")
         if e_input and n_input:
             try:
-                cleaned["parsed_coords"] = parse_coordinate_pair(e_input, n_input)
+                parsed = parse_coordinate_pair(e_input, n_input)
             except CoordinateError as exc:
                 self.add_error("coord_input_e", str(exc))
+            else:
+                cleaned["parsed_coords"] = parsed
+                self.nearby_stations = self._find_nearby_stations(
+                    parsed.ch1903p_e, parsed.ch1903p_n,
+                )
+                if self.nearby_stations and not cleaned.get("qrb_acknowledged"):
+                    self.add_error(
+                        "qrb_acknowledged",
+                        _(
+                            "Another station is registered within %(km)s km of your "
+                            "chosen location. Please consider moving further away to "
+                            "avoid receiver overload, or tick the box to confirm "
+                            "you're aware of the conflict."
+                        ) % {"km": QRB_THRESHOLD_M // 1000},
+                    )
 
         return cleaned
+
+    def _find_nearby_stations(self, e: float, n: float) -> list[tuple[str, int]]:
+        """Return ``[(callsign, distance_m), …]`` for every active participant
+        whose LV95 coordinates are within :data:`QRB_THRESHOLD_M` of
+        ``(e, n)``, sorted by distance ascending."""
+        if self.contest is None:
+            return []
+        # Local import — keeps the form module's import graph one-way for
+        # tests that mock the form or use it without DB access.
+        from core.models import Participant
+        nearby: list[tuple[str, int]] = []
+        qs = (
+            Participant.objects
+            .filter(contest=self.contest, cancelled_at__isnull=True)
+            .exclude(ch1903p_e__isnull=True)
+            .exclude(ch1903p_n__isnull=True)
+            .values_list("callsign", "ch1903p_e", "ch1903p_n")
+        )
+        for callsign, pe, pn in qs:
+            dist = math.hypot(pe - e, pn - n)
+            if dist < QRB_THRESHOLD_M:
+                nearby.append((callsign, int(round(dist))))
+        nearby.sort(key=lambda x: x[1])
+        return nearby
 
     def operating_modes_value(self) -> int:
         """Encode the two booleans into Participant.Mode (1=CW, 2=SSB, 3=both)."""

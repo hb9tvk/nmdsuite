@@ -49,6 +49,8 @@
             {% include "registration/_field.html" with field=form.remarks %}
         </fieldset>
 
+        {% include "registration/_qrb_warning.html" %}
+
         <p class="actions">
             <button type="submit">{% trans "Register" %}</button>
             <a href="{% url 'admin_module:participants_index' %}">{% trans "Cancel" %}</a>

@@ -46,6 +46,8 @@
             {% include "registration/_field.html" with field=form.remarks %}
         </fieldset>
 
+        {% include "registration/_qrb_warning.html" %}
+
         <button type="submit">{% trans "Submit registration" %}</button>
     </form>
 {% endblock %}
