@@ -261,3 +261,77 @@ def test_dashboard_links_to_report_page(client, participant):
     client.force_login(user)
     body = client.get("/submission/").content.decode()
     assert "/submission/report/" in body
+
+
+# --- admin view (F3.2) -----------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_admin_reports_index_requires_staff(client, participant):
+    user, _, _ = participant  # non-staff
+    client.force_login(user)
+    response = client.get("/admin/reports/")
+    assert response.status_code in (301, 302, 403)
+
+
+@pytest.mark.django_db
+def test_admin_reports_index_lists_participants_with_content(client, participant):
+    user, p, _ = participant
+    report_service.save_text(p, "Beautiful day on the mountain.")
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    staff = User.objects.create_user(
+        username="STAFF", password="x", email="s@x.org", is_staff=True,
+    )
+    client.force_login(staff)
+    response = client.get("/admin/reports/")
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "HB9TVK" in body
+    assert "Beautiful day on the mountain." in body
+    # Picture link points at the admin image stream, not the portal one.
+    assert f"/admin/reports/{p.pk}/picture/1/" in body
+
+
+@pytest.mark.django_db
+def test_admin_reports_index_skips_empty_participants(
+    client, participant, seeded_contest,
+):
+    """A participant with no report text AND no pictures shouldn't show
+    up — keeps the magazine-team view focused on actual content."""
+    user, p, _ = participant  # never saves anything
+    staff = User.objects.create_user(
+        username="STAFF", password="x", email="s@x.org", is_staff=True,
+    )
+    client.force_login(staff)
+    body = client.get("/admin/reports/").content.decode()
+    assert "HB9TVK" not in body
+    assert "No reports submitted yet." in body or "Bisher keine" in body
+
+
+@pytest.mark.django_db
+def test_admin_picture_image_streams_to_staff(client, participant):
+    _, p, _ = participant
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    staff = User.objects.create_user(
+        username="STAFF", password="x", email="s@x.org", is_staff=True,
+    )
+    client.force_login(staff)
+    response = client.get(f"/admin/reports/{p.pk}/picture/1/")
+    assert response.status_code == 200
+    assert response["Content-Type"] == "image/png"
+    assert response.content == _png_bytes()
+
+
+@pytest.mark.django_db
+def test_admin_picture_image_blocked_for_non_staff(client, participant):
+    user, p, _ = participant
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    client.force_login(user)  # the owner, but not staff
+    response = client.get(f"/admin/reports/{p.pk}/picture/1/")
+    assert response.status_code in (301, 302, 403)

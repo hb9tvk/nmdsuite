@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Participant reports" %} — NMD{% endblock %}
+
+{% block content %}
+    <p><a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a></p>
+
+    <h1>{% trans "Participant reports" %} — NMD {{ contest.year }}</h1>
+    <p class="hint">
+        {% trans "Read-only view of every active participant's report text and uploaded pictures. Participants edit on their own portal page." %}
+    </p>
+
+    {% if not rows %}
+        <p>{% trans "No reports submitted yet." %}</p>
+    {% else %}
+        {% for row in rows %}
+            <section class="admin-report-card">
+                <header>
+                    <strong>{{ row.participant.callsign }}</strong>
+                    <span class="muted">{{ row.participant.first_name }}</span>
+                </header>
+
+                {% if row.text %}
+                    <div class="admin-report-text">{{ row.text|linebreaks }}</div>
+                {% else %}
+                    <p class="hint">{% trans "No text submitted." %}</p>
+                {% endif %}
+
+                {% if row.pictures %}
+                    <div class="picture-grid admin-report-pictures">
+                        {% for picture in row.pictures %}
+                            <a class="picture-slot filled"
+                               href="{% url 'admin_module:report_picture_image' pk=row.participant.pk idx=picture.idx %}"
+                               target="_blank"
+                               title="{{ picture.original_filename }}">
+                                <img src="{% url 'admin_module:report_picture_image' pk=row.participant.pk idx=picture.idx %}"
+                                     alt="{% blocktrans with call=row.participant.callsign n=picture.idx %}{{ call }} picture {{ n }}{% endblocktrans %}">
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+        {% endfor %}
+    {% endif %}
+{% endblock %}

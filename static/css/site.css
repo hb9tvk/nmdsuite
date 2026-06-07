@@ -572,3 +572,17 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 }
 .picture-delete button:hover { background: #c0392b; }
 .picture-upload { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+
+.admin-report-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+}
+.admin-report-card > header { display: flex; gap: 0.75rem; align-items: baseline; margin-bottom: 0.5rem; }
+.admin-report-card > header strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.admin-report-card > header .muted { color: var(--muted); }
+.admin-report-text { white-space: pre-line; margin: 0.25rem 0 0.75rem; }
+.admin-report-pictures { margin-top: 0.5rem; max-width: 24rem; }
+.admin-report-pictures a { display: block; }

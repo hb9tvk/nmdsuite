@@ -785,6 +785,36 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Les 6 emplacements de photos sont utilisés. Supprime-en une pour téléverser une nouvelle photo.",
         "Tutti i 6 spazi per le foto sono occupati. Eliminane una per caricarne una nuova.",
     ),
+    "Participant reports": (
+        "Teilnehmerberichte",
+        "Rapports des participants",
+        "Rapporti dei partecipanti",
+    ),
+    "post-contest writeups + photos for the magazine team": (
+        "Berichte und Fotos nach dem Contest, für das Magazin-Team",
+        "Comptes-rendus et photos post-contest, pour l'équipe du magazine",
+        "Resoconti e foto dopo il contest, per la redazione della rivista",
+    ),
+    "Read-only view of every active participant's report text and uploaded pictures. Participants edit on their own portal page.": (
+        "Schreibgeschützte Übersicht über Berichte und Bilder aller aktiven Teilnehmer. Die Teilnehmer selbst bearbeiten ihre Inhalte im Portal.",
+        "Vue en lecture seule des rapports et photos de chaque participant actif. Les participants modifient leurs contenus depuis leur portail.",
+        "Vista in sola lettura dei rapporti e delle foto di ogni partecipante attivo. I partecipanti modificano i propri contenuti dal portale.",
+    ),
+    "No reports submitted yet.": (
+        "Bisher keine Berichte vorhanden.",
+        "Aucun rapport pour l'instant.",
+        "Nessun rapporto finora.",
+    ),
+    "No text submitted.": (
+        "Kein Text eingereicht.",
+        "Aucun texte saisi.",
+        "Nessun testo inserito.",
+    ),
+    "%(call)s picture %(n)s": (
+        "%(call)s Bild %(n)s",
+        "Photo %(n)s de %(call)s",
+        "Foto %(n)s di %(call)s",
+    ),
     "Log entry — %(callsign)s": ("Log-Eingabe — %(callsign)s", "Saisie du journal — %(callsign)s", "Inserimento log — %(callsign)s"),
     "On-behalf editing. The portal's post-submit lock is bypassed here so staff can amend a submitted log if needed.": (
         "Stellvertretende Bearbeitung. Die Portal-Sperre nach Einreichung wird hier umgangen, damit Staff bei Bedarf nachbessern kann.",

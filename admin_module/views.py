@@ -23,7 +23,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
 from core.audit import audit
-from core.models import AuditLog, Contest, Participant, QsoEntry
+from core.models import AuditLog, Contest, Participant, ParticipantPicture, QsoEntry
 from core.picker import map_picker_context
 from portal import qso_service, station_service, submit_service
 from portal.forms import QsoEntryForm, StationDataForm
@@ -785,6 +785,62 @@ def participant_list_csv_preview(request):
     response = HttpResponse(blob, content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     response["Content-Length"] = str(len(blob))
+    return response
+
+
+# --- Participant reports (F3.2) ----------------------------------------------------------------
+
+
+@_staff_required
+def reports_index(request):
+    """List every active participant's report text + thumbnails for the
+    active contest. Read-only — the magazine team uses this to harvest
+    content; the participants themselves edit on the portal side."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    qs = (
+        Participant.objects
+        .filter(contest=contest, cancelled_at__isnull=True)
+        .order_by("callsign")
+        .prefetch_related("pictures")
+    )
+    rows = []
+    for p in qs:
+        text = getattr(getattr(p, "report", None), "text", "")
+        pictures = list(p.pictures.all())
+        if not text and not pictures:
+            continue
+        rows.append({"participant": p, "text": text, "pictures": pictures})
+
+    return render(
+        request,
+        "admin_module/reports.html",
+        {"contest": contest, "rows": rows},
+    )
+
+
+@_staff_required
+def report_picture_image(request, pk: int, idx: int):
+    """Stream the original bytes of one picture for any active participant.
+    Staff variant of the owner-gated portal route — no owner check, used
+    by the reports index template for inline display + direct download."""
+    from portal.report_service import picture_path
+
+    contest = _active_contest()
+    participant = _participant_or_404(contest, pk)
+    picture = get_object_or_404(
+        ParticipantPicture, participant=participant, idx=idx,
+    )
+    path = picture_path(picture)
+    if not path.is_file():
+        raise Http404
+    response = HttpResponse(
+        path.read_bytes(), content_type=picture.content_type,
+    )
+    response["Cache-Control"] = "private, max-age=300"
     return response
 
 
