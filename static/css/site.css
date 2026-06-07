@@ -1,7 +1,7 @@
 :root {
     --bg: #f5f6f5;
     --fg: #1a1a1a;
-    --accent: #1f5f3f;
+    --accent: #3f86c2;
     --accent-fg: #ffffff;
     --border: #d4d6d4;
     --muted: #6b6e6b;
@@ -10,7 +10,7 @@
 * { box-sizing: border-box; }
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
     color: var(--fg);
 }
