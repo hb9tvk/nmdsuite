@@ -201,6 +201,97 @@ def test_portal_report_save_text(client, participant):
     assert ParticipantReport.objects.get(participant=p).text == "Sunny day on the Niesen."
 
 
+# --- captions (CR on F3) ---------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_save_captions_updates_caption_per_slot(participant):
+    _, p, _ = participant
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    report_service.add_picture(
+        p, SimpleUploadedFile("b.png", _png_bytes(), content_type="image/png"),
+    )
+    report_service.save_captions(p, {1: "Summit", 2: "Antenna setup"})
+    assert p.pictures.get(idx=1).caption == "Summit"
+    assert p.pictures.get(idx=2).caption == "Antenna setup"
+
+
+@pytest.mark.django_db
+def test_save_captions_truncates_to_50_chars(participant):
+    _, p, _ = participant
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    report_service.save_captions(p, {1: "x" * 80})
+    assert len(p.pictures.get(idx=1).caption) == 50
+
+
+@pytest.mark.django_db
+def test_save_captions_silently_skips_missing_slots(participant):
+    _, p, _ = participant
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    # idx=4 doesn't exist for this participant; should no-op without error.
+    report_service.save_captions(p, {1: "ok", 4: "ignored"})
+    assert p.pictures.get(idx=1).caption == "ok"
+    assert p.pictures.count() == 1
+
+
+@pytest.mark.django_db
+def test_portal_report_post_saves_text_and_captions(client, participant):
+    user, p, _ = participant
+    client.force_login(user)
+    report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    report_service.add_picture(
+        p, SimpleUploadedFile("b.png", _png_bytes(), content_type="image/png"),
+    )
+    response = client.post(
+        "/submission/report/",
+        {"text": "Great weather.", "caption_1": "View from the top", "caption_2": "Setup"},
+    )
+    assert response.status_code == 302
+    assert ParticipantReport.objects.get(participant=p).text == "Great weather."
+    assert p.pictures.get(idx=1).caption == "View from the top"
+    assert p.pictures.get(idx=2).caption == "Setup"
+
+
+@pytest.mark.django_db
+def test_portal_report_get_renders_captions_in_form(client, participant):
+    user, p, _ = participant
+    client.force_login(user)
+    pic = report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    pic.caption = "Summit photo"
+    pic.save(update_fields=["caption"])
+    body = client.get("/submission/report/").content.decode()
+    # Caption input is attached to the report form via the form="" attribute.
+    assert 'name="caption_1"' in body
+    assert "Summit photo" in body
+    assert 'form="report-form"' in body
+
+
+@pytest.mark.django_db
+def test_admin_reports_shows_captions(client, participant):
+    _, p, _ = participant
+    pic = report_service.add_picture(
+        p, SimpleUploadedFile("a.png", _png_bytes(), content_type="image/png"),
+    )
+    pic.caption = "Lovely view"
+    pic.save(update_fields=["caption"])
+    staff = User.objects.create_user(
+        username="STAFF", password="x", email="s@x.org", is_staff=True,
+    )
+    client.force_login(staff)
+    body = client.get("/admin/reports/").content.decode()
+    assert "Lovely view" in body
+
+
 @pytest.mark.django_db
 def test_portal_picture_upload_creates_picture(client, participant):
     user, p, _ = participant

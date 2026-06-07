@@ -29,13 +29,18 @@
                 {% if row.pictures %}
                     <div class="picture-grid admin-report-pictures">
                         {% for picture in row.pictures %}
-                            <a class="picture-slot filled"
-                               href="{% url 'admin_module:report_picture_image' pk=row.participant.pk idx=picture.idx %}"
-                               target="_blank"
-                               title="{{ picture.original_filename }}">
-                                <img src="{% url 'admin_module:report_picture_image' pk=row.participant.pk idx=picture.idx %}"
-                                     alt="{% blocktrans with call=row.participant.callsign n=picture.idx %}{{ call }} picture {{ n }}{% endblocktrans %}">
-                            </a>
+                            <div class="picture-cell">
+                                <a class="picture-slot filled"
+                                   href="{% url 'admin_module:report_picture_image' pk=row.participant.pk idx=picture.idx %}"
+                                   target="_blank"
+                                   title="{{ picture.original_filename }}">
+                                    <img src="{% url 'admin_module:report_picture_image' pk=row.participant.pk idx=picture.idx %}"
+                                         alt="{% blocktrans with call=row.participant.callsign n=picture.idx %}{{ call }} picture {{ n }}{% endblocktrans %}">
+                                </a>
+                                {% if picture.caption %}
+                                    <div class="picture-caption-display">{{ picture.caption }}</div>
+                                {% endif %}
+                            </div>
                         {% endfor %}
                     </div>
                 {% endif %}

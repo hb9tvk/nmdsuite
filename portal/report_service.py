@@ -108,6 +108,22 @@ def next_empty_slot(participant: Participant) -> int | None:
 # --- mutations -------------------------------------------------------------------------------
 
 
+def save_captions(
+    participant: Participant, captions: dict[int, str],
+) -> None:
+    """Update the ``caption`` field on each picture identified by idx.
+
+    ``captions`` is a ``{idx: caption}`` mapping; unknown idxs are
+    silently skipped (the user can only post fields for slots they're
+    seeing). Captions are truncated at 50 chars as a defensive backstop;
+    the form's ``maxlength`` is the primary guard.
+    """
+    for idx, caption in captions.items():
+        participant.pictures.filter(idx=idx).update(
+            caption=(caption or "")[:50],
+        )
+
+
 def save_text(participant: Participant, text: str) -> ParticipantReport:
     """Persist the report text. Truncates at the model's max_length to
     keep this resilient even if the form lets slightly-long input

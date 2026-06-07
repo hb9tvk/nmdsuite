@@ -536,6 +536,13 @@ def report(request):
 
     if request.method == "POST":
         report_service.save_text(participant, request.POST.get("text", ""))
+        captions: dict[int, str] = {}
+        for idx in range(1, 7):
+            key = f"caption_{idx}"
+            if key in request.POST:
+                captions[idx] = request.POST[key]
+        if captions:
+            report_service.save_captions(participant, captions)
         messages.success(request, _("Report saved."))
         return redirect("portal:report")
 

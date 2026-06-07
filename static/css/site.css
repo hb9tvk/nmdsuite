@@ -571,7 +571,15 @@ footer { color: var(--muted); padding-bottom: 2rem; }
     padding: 0;
 }
 .picture-delete button:hover { background: #c0392b; }
-.picture-upload { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.picture-cell { display: flex; flex-direction: column; gap: 0.35rem; }
+.picture-caption {
+    width: 100%; box-sizing: border-box;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+}
+.picture-upload { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
 
 .admin-report-card {
     background: #fff;
@@ -586,3 +594,9 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .admin-report-text { white-space: pre-line; margin: 0.25rem 0 0.75rem; }
 .admin-report-pictures { margin-top: 0.5rem; max-width: 24rem; }
 .admin-report-pictures a { display: block; }
+.picture-caption-display {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: center;
+    word-break: break-word;
+}

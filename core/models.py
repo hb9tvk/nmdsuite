@@ -185,6 +185,7 @@ class ParticipantPicture(models.Model):
     original_filename = models.CharField(max_length=255)
     content_type = models.CharField(max_length=64)
     file_size = models.PositiveIntegerField()
+    caption = models.CharField(max_length=50, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

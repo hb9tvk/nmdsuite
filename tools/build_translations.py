@@ -787,6 +787,11 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     "Picture deleted.": ("Bild gelöscht.", "Photo supprimée.", "Foto eliminata."),
     "Upload picture": ("Bild hochladen", "Téléverser une photo", "Carica foto"),
     "Picture uploaded.": ("Bild hochgeladen.", "Photo téléversée.", "Foto caricata."),
+    "Caption (max 50 characters)": (
+        "Bildunterschrift (max. 50 Zeichen)",
+        "Légende (50 caractères max.)",
+        "Didascalia (max 50 caratteri)",
+    ),
     "Please choose an image to upload.": (
         "Bitte wähle ein Bild zum Hochladen.",
         "Veuillez choisir une image à téléverser.",

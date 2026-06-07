@@ -10,14 +10,13 @@
         {% trans "Tell us how your contest went — band conditions, interesting QSOs, mishaps, photos from the location. Everything here stays editable for the whole season; the magazine team will harvest reports after the results are published." %}
     </p>
 
-    <form method="post" class="report-form">
+    <form method="post" id="report-form" class="report-form">
         {% csrf_token %}
         <label for="id_report_text">{% trans "Participant report" %}</label>
         <textarea id="id_report_text" name="text" rows="10" maxlength="4096">{{ report.text }}</textarea>
         <small class="hint">{% trans "Up to 4096 characters." %}</small>
-        <p class="actions">
-            <button type="submit">{% trans "Save report" %}</button>
-        </p>
+        {# Captions are HTML5-attached to this form via form="report-form" so
+           one click on "Save report" persists text + every caption at once. #}
     </form>
 
     <section class="report-pictures">
@@ -28,23 +27,38 @@
 
         <div class="picture-grid">
             {% for idx, picture in slots %}
-                <div class="picture-slot{% if picture %} filled{% else %} empty{% endif %}">
+                <div class="picture-cell">
+                    <div class="picture-slot{% if picture %} filled{% else %} empty{% endif %}">
+                        {% if picture %}
+                            <img src="{% url 'portal:report_picture_image' idx=idx %}"
+                                 alt="{% blocktrans with n=idx %}Picture {{ n }}{% endblocktrans %}">
+                            <form method="post"
+                                  action="{% url 'portal:report_picture_delete' idx=idx %}"
+                                  onsubmit="return confirm('{% blocktrans %}Delete this picture?{% endblocktrans %}');"
+                                  class="picture-delete">
+                                {% csrf_token %}
+                                <button type="submit" title="{% trans 'Delete picture' %}">×</button>
+                            </form>
+                        {% else %}
+                            <span class="picture-slot-num">{{ idx }}</span>
+                        {% endif %}
+                    </div>
                     {% if picture %}
-                        <img src="{% url 'portal:report_picture_image' idx=idx %}"
-                             alt="{% blocktrans with n=idx %}Picture {{ n }}{% endblocktrans %}">
-                        <form method="post"
-                              action="{% url 'portal:report_picture_delete' idx=idx %}"
-                              onsubmit="return confirm('{% blocktrans %}Delete this picture?{% endblocktrans %}');"
-                              class="picture-delete">
-                            {% csrf_token %}
-                            <button type="submit" title="{% trans 'Delete picture' %}">×</button>
-                        </form>
-                    {% else %}
-                        <span class="picture-slot-num">{{ idx }}</span>
+                        <input type="text"
+                               form="report-form"
+                               name="caption_{{ idx }}"
+                               maxlength="50"
+                               value="{{ picture.caption }}"
+                               placeholder="{% trans 'Caption (max 50 characters)' %}"
+                               class="picture-caption">
                     {% endif %}
                 </div>
             {% endfor %}
         </div>
+
+        <p class="actions">
+            <button type="submit" form="report-form">{% trans "Save report" %}</button>
+        </p>
 
         {% if can_upload %}
             <form method="post"
