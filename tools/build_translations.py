@@ -743,6 +743,48 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
 
     # Log entry / station / participant_register / participant_station
     "Log entry": ("Log-Eingabe", "Saisie du journal", "Inserimento log"),
+
+    # Report + pictures (F3)
+    "Report and Pictures": ("Teilnehmerbericht", "Rapport et photos", "Rapporto e foto"),
+    "Participant report": ("Teilnehmerbericht", "Rapport du participant", "Rapporto del partecipante"),
+    "Tell us how your contest went — band conditions, interesting QSOs, mishaps, photos from the location. Everything here stays editable for the whole season; the magazine team will harvest reports after the results are published.": (
+        "Erzähl uns, wie dein Contest lief — Bandbedingungen, interessante QSOs, Pannen, Fotos vom Standort. Alles hier bleibt während der ganzen Saison editierbar; das Magazin-Team sammelt die Berichte nach der Veröffentlichung der Resultate ein.",
+        "Raconte-nous comment ton contest s'est passé — propagation, QSO marquants, péripéties, photos de l'emplacement. Tout reste modifiable durant toute la saison ; l'équipe du magazine récupérera les rapports après la publication des résultats.",
+        "Raccontaci com'è andato il tuo contest — propagazione, QSO interessanti, imprevisti, foto dalla postazione. Tutto qui resta modificabile per l'intera stagione; la redazione della rivista raccoglierà i rapporti dopo la pubblicazione dei risultati.",
+    ),
+    "Up to 4096 characters.": (
+        "Bis zu 4096 Zeichen.",
+        "Jusqu'à 4096 caractères.",
+        "Fino a 4096 caratteri.",
+    ),
+    "Save report": ("Bericht speichern", "Enregistrer le rapport", "Salva il rapporto"),
+    "Report saved.": ("Bericht gespeichert.", "Rapport enregistré.", "Rapporto salvato."),
+    "Pictures": ("Bilder", "Photos", "Foto"),
+    "Up to 6 pictures (JPEG, PNG or WebP, max 5 MB each). Originals are stored at full resolution.": (
+        "Bis zu 6 Bilder (JPEG, PNG oder WebP, max. 5 MB pro Bild). Originale werden in voller Auflösung gespeichert.",
+        "Jusqu'à 6 photos (JPEG, PNG ou WebP, 5 Mo max chacune). Les originaux sont conservés en pleine résolution.",
+        "Fino a 6 foto (JPEG, PNG o WebP, max 5 MB ciascuna). Gli originali sono conservati a piena risoluzione.",
+    ),
+    "Picture %(n)s": ("Bild %(n)s", "Photo %(n)s", "Foto %(n)s"),
+    "Delete this picture?": (
+        "Dieses Bild löschen?",
+        "Supprimer cette photo ?",
+        "Eliminare questa foto?",
+    ),
+    "Delete picture": ("Bild löschen", "Supprimer la photo", "Elimina foto"),
+    "Picture deleted.": ("Bild gelöscht.", "Photo supprimée.", "Foto eliminata."),
+    "Upload picture": ("Bild hochladen", "Téléverser une photo", "Carica foto"),
+    "Picture uploaded.": ("Bild hochgeladen.", "Photo téléversée.", "Foto caricata."),
+    "Please choose an image to upload.": (
+        "Bitte wähle ein Bild zum Hochladen.",
+        "Veuillez choisir une image à téléverser.",
+        "Seleziona un'immagine da caricare.",
+    ),
+    "All 6 picture slots are in use. Delete one to upload a new picture.": (
+        "Alle 6 Bildplätze sind belegt. Lösche zuerst ein Bild, um ein neues hochzuladen.",
+        "Les 6 emplacements de photos sont utilisés. Supprime-en une pour téléverser une nouvelle photo.",
+        "Tutti i 6 spazi per le foto sono occupati. Eliminane una per caricarne una nuova.",
+    ),
     "Log entry — %(callsign)s": ("Log-Eingabe — %(callsign)s", "Saisie du journal — %(callsign)s", "Inserimento log — %(callsign)s"),
     "On-behalf editing. The portal's post-submit lock is bypassed here so staff can amend a submitted log if needed.": (
         "Stellvertretende Bearbeitung. Die Portal-Sperre nach Einreichung wird hier umgangen, damit Staff bei Bedarf nachbessern kann.",

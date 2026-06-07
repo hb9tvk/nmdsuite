@@ -527,3 +527,48 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .admin-table th, .admin-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
 .admin-table th { background: #fafafa; font-weight: 600; }
 .admin-table tr:hover td { background: #f7f7f7; }
+
+
+/* Report + pictures (F3) */
+.report-form textarea {
+    width: 100%; min-height: 12rem;
+    padding: 0.5rem; border: 1px solid var(--border); border-radius: 3px;
+    font-family: inherit; font-size: 0.95rem;
+}
+.report-pictures { margin-top: 2rem; }
+.picture-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, auto);
+    gap: 0.75rem;
+    max-width: 36rem;
+    margin: 1rem 0;
+}
+.picture-slot {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fafafa;
+}
+.picture-slot.empty {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 1.5rem; font-weight: 600;
+    background: repeating-linear-gradient(45deg, #f4f4f4 0 8px, #fafafa 8px 16px);
+}
+.picture-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.picture-delete {
+    position: absolute; top: 4px; right: 4px;
+    margin: 0; display: inline;
+}
+.picture-delete button {
+    background: rgba(0,0,0,0.55); color: #fff;
+    border: 0; border-radius: 50%;
+    width: 1.6rem; height: 1.6rem;
+    font-size: 1rem; line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+.picture-delete button:hover { background: #c0392b; }
+.picture-upload { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }

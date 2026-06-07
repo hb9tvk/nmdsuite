@@ -153,6 +153,45 @@ class StationComponent(models.Model):
         unique_together = [("participant", "idx")]
 
 
+# --- Participant report + pictures (F3) -------------------------------------------------------
+
+
+PICTURE_MAX_SLOTS = 6
+
+
+class ParticipantReport(models.Model):
+    """Post-contest "Teilnehmerbericht" — short writeup the participant
+    can submit alongside up to 6 photos. Editable across the whole
+    contest lifecycle (not gated by ``submitted_at``)."""
+
+    participant = models.OneToOneField(
+        Participant, on_delete=models.CASCADE, related_name="report",
+    )
+    text = models.CharField(max_length=4096, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class ParticipantPicture(models.Model):
+    """One uploaded image for a participant's report. Up to
+    :data:`PICTURE_MAX_SLOTS` slots, indexed 1..N. The on-disk file
+    lives under ``/data/<year>/<callsign>/<callsign>_<idx>.<ext>`` —
+    derived in :mod:`portal.report_service`, never stored here."""
+
+    participant = models.ForeignKey(
+        Participant, on_delete=models.CASCADE, related_name="pictures",
+    )
+    idx = models.PositiveSmallIntegerField()
+    extension = models.CharField(max_length=8)  # jpg, png, webp
+    original_filename = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=64)
+    file_size = models.PositiveIntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["idx"]
+        unique_together = [("participant", "idx")]
+
+
 # --- QSO log + scoring ------------------------------------------------------------------------
 
 

@@ -82,6 +82,12 @@ _DB_PATH = Path(os.environ.get("NMD_DB_PATH", str(BASE_DIR / "data" / "nmdsuite.
 # SQLite refuses to create missing parent directories.
 _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+# Root for user-uploaded files (participant report pictures, F3). Defaults
+# to the same dir as the SQLite file so /data carries everything; can be
+# pointed elsewhere via env or overridden per-test without confusing
+# Django's test-DB teardown.
+NMD_DATA_ROOT = Path(os.environ.get("NMD_DATA_ROOT", str(_DB_PATH.parent)))
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

@@ -16,11 +16,11 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
-from core.models import Contest, Participant, QsoEntry
+from core.models import Contest, Participant, ParticipantPicture, QsoEntry
 from core.picker import map_picker_context
 from registration.services import cancel_participation
 
-from . import qso_service, station_service, submit_service
+from . import qso_service, report_service, station_service, submit_service
 from .forms import QsoEntryForm, StationDataForm
 from .qso_upload import UploadParseError, parse_upload
 
@@ -516,3 +516,95 @@ def scoring(request):
             "rows": rows,
         },
     )
+
+
+# --- report + pictures (F3) ------------------------------------------------------------------
+#
+# Editable across the whole contest lifecycle (not gated by submitted_at,
+# unlike the log / station forms). The page wires three POST endpoints:
+# saving the text, uploading one picture, and deleting one picture. The
+# image-stream view returns the raw bytes for display.
+
+
+@login_required
+def report(request):
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        messages.info(request, _("You are not registered for the current contest."))
+        return redirect("portal:dashboard")
+
+    if request.method == "POST":
+        report_service.save_text(participant, request.POST.get("text", ""))
+        messages.success(request, _("Report saved."))
+        return redirect("portal:report")
+
+    report_row = report_service.get_or_create_report(participant)
+    return render(
+        request,
+        "portal/report.html",
+        {
+            "contest": contest,
+            "participant": participant,
+            "report": report_row,
+            "slots": report_service.picture_slots(participant),
+            "can_upload": report_service.next_empty_slot(participant) is not None,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def report_picture_upload(request):
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        messages.info(request, _("You are not registered for the current contest."))
+        return redirect("portal:dashboard")
+
+    upload = request.FILES.get("picture")
+    if upload is None:
+        messages.error(request, _("Please choose an image to upload."))
+        return redirect("portal:report")
+    try:
+        report_service.add_picture(participant, upload)
+    except report_service.PictureUploadError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, _("Picture uploaded."))
+    return redirect("portal:report")
+
+
+@login_required
+@require_http_methods(["POST"])
+def report_picture_delete(request, idx: int):
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        messages.info(request, _("You are not registered for the current contest."))
+        return redirect("portal:dashboard")
+
+    if report_service.delete_picture(participant, idx):
+        messages.success(request, _("Picture deleted."))
+    return redirect("portal:report")
+
+
+@login_required
+def report_picture_image(request, idx: int):
+    """Stream the raw image bytes for inline display. Only the picture's
+    owner can fetch (staff use the admin variant in F3.2)."""
+    contest = _active_contest()
+    participant = _active_participation(request.user, contest)
+    if participant is None:
+        raise Http404
+    picture = get_object_or_404(
+        ParticipantPicture, participant=participant, idx=idx,
+    )
+    path = report_service.picture_path(picture)
+    if not path.is_file():
+        raise Http404
+    response = HttpResponse(
+        path.read_bytes(), content_type=picture.content_type,
+    )
+    response["Cache-Control"] = "private, max-age=300"
+    return response

@@ -128,9 +128,17 @@ def register_participant(
 
 def cancel_participation(participant: Participant, *, actor: User | None = None) -> None:
     """Mark a participant cancelled. The user account is *not* deleted —
-    the operator may re-register later or have data from prior years."""
+    the operator may re-register later or have data from prior years.
+
+    Drops the post-contest report text + any uploaded pictures (per F3
+    design: cancelling makes those orphan content; if the operator
+    re-registers later they can write a fresh report)."""
     participant.cancelled_at = timezone.now()
     participant.save(update_fields=["cancelled_at"])
+    # Local import — keeps the import graph one-way for code paths that
+    # never touch cancel.
+    from portal.report_service import delete_everything as delete_report_data
+    delete_report_data(participant)
     audit(
         action="registration.cancel",
         actor=actor or participant.user,

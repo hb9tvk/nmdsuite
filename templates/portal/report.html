@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Report and Pictures" %} — NMD{% endblock %}
+
+{% block content %}
+    <p><a href="{% url 'portal:dashboard' %}">← {% trans "Back to portal" %}</a></p>
+
+    <h1>{% trans "Report and Pictures" %}</h1>
+    <p class="hint">
+        {% trans "Tell us how your contest went — band conditions, interesting QSOs, mishaps, photos from the location. Everything here stays editable for the whole season; the magazine team will harvest reports after the results are published." %}
+    </p>
+
+    <form method="post" class="report-form">
+        {% csrf_token %}
+        <label for="id_report_text">{% trans "Participant report" %}</label>
+        <textarea id="id_report_text" name="text" rows="10" maxlength="4096">{{ report.text }}</textarea>
+        <small class="hint">{% trans "Up to 4096 characters." %}</small>
+        <p class="actions">
+            <button type="submit">{% trans "Save report" %}</button>
+        </p>
+    </form>
+
+    <section class="report-pictures">
+        <h2>{% trans "Pictures" %}</h2>
+        <p class="hint">
+            {% blocktrans %}Up to 6 pictures (JPEG, PNG or WebP, max 5 MB each). Originals are stored at full resolution.{% endblocktrans %}
+        </p>
+
+        <div class="picture-grid">
+            {% for idx, picture in slots %}
+                <div class="picture-slot{% if picture %} filled{% else %} empty{% endif %}">
+                    {% if picture %}
+                        <img src="{% url 'portal:report_picture_image' idx=idx %}"
+                             alt="{% blocktrans with n=idx %}Picture {{ n }}{% endblocktrans %}">
+                        <form method="post"
+                              action="{% url 'portal:report_picture_delete' idx=idx %}"
+                              onsubmit="return confirm('{% blocktrans %}Delete this picture?{% endblocktrans %}');"
+                              class="picture-delete">
+                            {% csrf_token %}
+                            <button type="submit" title="{% trans 'Delete picture' %}">×</button>
+                        </form>
+                    {% else %}
+                        <span class="picture-slot-num">{{ idx }}</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if can_upload %}
+            <form method="post"
+                  action="{% url 'portal:report_picture_upload' %}"
+                  enctype="multipart/form-data"
+                  class="picture-upload">
+                {% csrf_token %}
+                <input type="file" name="picture"
+                       accept="image/jpeg,image/png,image/webp" required>
+                <button type="submit">{% trans "Upload picture" %}</button>
+            </form>
+        {% else %}
+            <p class="hint">
+                {% trans "All 6 picture slots are in use. Delete one to upload a new picture." %}
+            </p>
+        {% endif %}
+    </section>
+{% endblock %}
