@@ -21,3 +21,25 @@
     {% include "registration/_field.html" with field=form.altitude_m %}
     <div id="altitude-info" class="altitude-info" role="status" aria-live="polite"></div>
 </fieldset>
+
+{% comment %}
+    Modal shown by registration_map.js when the operator picks a location
+    within 3 km of an already-registered station. Hidden by default; the
+    JS unhides it and fills #qrb-modal-list with neighbour rows. Cancel
+    snaps the marker + form fields back to whatever they were before the
+    click; confirm keeps the new location.
+{% endcomment %}
+<div id="qrb-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog">
+        <h2>{% trans "Another station is registered nearby." %}</h2>
+        <p>
+            {% trans "Operating stations too close together can cause receiver overload from the neighbour's strong signal. We recommend picking a location at least 3 km away from every other station." %}
+        </p>
+        <ul id="qrb-modal-list"></ul>
+        <div class="modal-actions">
+            <button type="button" id="qrb-cancel">{% trans "Pick a different location" %}</button>
+            <button type="button" id="qrb-confirm">{% trans "Keep this location anyway" %}</button>
+        </div>
+    </div>
+</div>

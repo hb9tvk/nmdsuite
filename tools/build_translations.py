@@ -417,6 +417,21 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Je suis conscient·e de la ou des stations à proximité et je souhaite m'inscrire malgré tout.",
         "Sono consapevole della/e stazione/i vicina/e e voglio iscrivermi comunque.",
     ),
+    "Pick a different location": (
+        "Anderen Standort wählen",
+        "Choisir un autre emplacement",
+        "Scegli un'altra posizione",
+    ),
+    "Keep this location anyway": (
+        "Diesen Standort trotzdem behalten",
+        "Conserver cet emplacement malgré tout",
+        "Mantieni comunque questa posizione",
+    ),
+    "{call} — {dist} m away": (
+        "{call} — {dist} m entfernt",
+        "{call} — à {dist} m",
+        "{call} — a {dist} m",
+    ),
     "Another station is registered within %(km)s km of your chosen location. Please consider moving further away to avoid receiver overload, or tick the box to confirm you're aware of the conflict.": (
         "In weniger als %(km)s km von deinem Standort ist eine andere Station angemeldet. Erwäge, weiter weg zu ziehen, um Empfänger-Übersteuerung zu vermeiden, oder bestätige, dass du den Konflikt kennst.",
         "Une autre station est inscrite à moins de %(km)s km de l'emplacement choisi. Envisage de t'éloigner davantage pour éviter la saturation du récepteur, ou coche la case pour confirmer que tu es au courant.",

@@ -162,6 +162,13 @@
     let cantonFetchSeq = 0;           // discard stale canton responses
     let userTouchedCanton = false;    // once true, never auto-fill canton
 
+    // QRB proximity check (3 km default). Populated once the existing-
+    // registrations payload arrives; stays empty if the fetch fails or
+    // the list is empty.
+    const qrbThresholdM = config.qrbThresholdM || 3000;
+    let registeredStations = [];      // [{ callsign, e_lv95, n_lv95 }, …]
+    let qrbCheckedKey = null;         // skip the modal when the same point is re-evaluated
+
     function setStatus(msg, kind) {
         if (!status) return;
         status.textContent = msg || "";
@@ -294,9 +301,7 @@
             pickedMarker.addTo(map);
             pickedMarker.on("dragend", () => {
                 const p = pickedMarker.getLatLng();
-                writeFields(p.lat, p.lng);
-                fetchAltitude(p.lat, p.lng);
-                fetchCanton(p.lat, p.lng);
+                userPick(p.lat, p.lng);
             });
         } else {
             pickedMarker.setLatLng(latlng);
@@ -306,6 +311,146 @@
         }
         fetchAltitude(lat, lon);
         fetchCanton(lat, lon);
+    }
+
+    function removeMarker() {
+        if (pickedMarker) {
+            map.removeLayer(pickedMarker);
+            pickedMarker = null;
+        }
+    }
+
+    // --- QRB modal -----------------------------------------------------------------------------
+
+    function findNearbyStations(lat, lon) {
+        if (!registeredStations.length) return [];
+        const lv = wgs84ToLV95(lat, lon);
+        const out = [];
+        for (const s of registeredStations) {
+            const dx = s.e - lv.e;
+            const dy = s.n - lv.n;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < qrbThresholdM) {
+                out.push({ callsign: s.callsign, distance: Math.round(d) });
+            }
+        }
+        out.sort((a, b) => a.distance - b.distance);
+        return out;
+    }
+
+    function captureState() {
+        return {
+            latlng: pickedMarker ? pickedMarker.getLatLng() : null,
+            e: eInput ? eInput.value : "",
+            n: nInput ? nInput.value : "",
+            altitude: altInput ? altInput.value : "",
+            canton: cantonInput ? cantonInput.value : "",
+            qrbKey: qrbCheckedKey,
+        };
+    }
+
+    function restoreState(snap) {
+        if (snap.latlng) {
+            // Re-place marker without re-checking QRB (snap is by definition OK).
+            setMarker(snap.latlng.lat, snap.latlng.lng, { recenter: false });
+        } else {
+            removeMarker();
+        }
+        if (eInput) eInput.value = snap.e;
+        if (nInput) nInput.value = snap.n;
+        if (altInput) altInput.value = snap.altitude;
+        if (cantonInput) cantonInput.value = snap.canton;
+        if (altInfo) altInfo.textContent = "";  // clear the altitude warning
+        qrbCheckedKey = snap.qrbKey;
+    }
+
+    const modal = document.getElementById("qrb-modal");
+    const modalList = document.getElementById("qrb-modal-list");
+    const modalCancel = document.getElementById("qrb-cancel");
+    const modalConfirm = document.getElementById("qrb-confirm");
+    let modalPending = null;  // { onCancel, onConfirm } or null
+
+    function showQrbModal(nearby, handlers) {
+        if (!modal || !modalList) return;
+        const fmt = config.qrbListItemFormat || "{call} — {dist} m";
+        modalList.innerHTML = "";
+        for (const n of nearby) {
+            const li = document.createElement("li");
+            li.textContent = fmt
+                .replace("{call}", n.callsign)
+                .replace("{dist}", n.distance);
+            modalList.appendChild(li);
+        }
+        modalPending = handlers;
+        modal.hidden = false;
+    }
+
+    function hideQrbModal() {
+        if (modal) modal.hidden = true;
+        modalPending = null;
+    }
+
+    if (modalCancel) modalCancel.addEventListener("click", () => {
+        const pending = modalPending;
+        hideQrbModal();
+        if (pending && typeof pending.onCancel === "function") pending.onCancel();
+    });
+    if (modalConfirm) modalConfirm.addEventListener("click", () => {
+        const pending = modalPending;
+        hideQrbModal();
+        markQrbAcknowledged();
+        if (pending && typeof pending.onConfirm === "function") pending.onConfirm();
+    });
+
+    function markQrbAcknowledged() {
+        // The server-side QRB check still runs on submit; this tells it the
+        // operator has already confirmed via the modal, so it doesn't refuse
+        // the submission a second time with the in-page banner. Sets the
+        // qrb_acknowledged checkbox if the banner is already rendered (form
+        // re-rendered after a different validation error), otherwise injects
+        // a hidden input into the registration form.
+        const existing = document.querySelector('input[name="qrb_acknowledged"]');
+        if (existing) {
+            if (existing.type === "checkbox") {
+                existing.checked = true;
+            } else {
+                existing.value = "on";
+            }
+            return;
+        }
+        const form = document.querySelector("form.reg-form");
+        if (!form) return;
+        const hidden = document.createElement("input");
+        hidden.type = "hidden";
+        hidden.name = "qrb_acknowledged";
+        hidden.value = "on";
+        form.appendChild(hidden);
+    }
+
+    function userPick(lat, lon, options) {
+        // Single entry point for user-initiated picks (map click, marker
+        // drag). Snapshots current state, applies the new pick, then
+        // shows the QRB modal if it's within the threshold of an already-
+        // registered station. Cancel = restore snapshot.
+        const key = lat.toFixed(6) + "," + lon.toFixed(6);
+        if (key === qrbCheckedKey) {
+            // Same coordinates we just confirmed — skip the modal.
+            setMarker(lat, lon, options);
+            writeFields(lat, lon);
+            return;
+        }
+        const snapshot = captureState();
+        setMarker(lat, lon, options);
+        writeFields(lat, lon);
+        const nearby = findNearbyStations(lat, lon);
+        if (nearby.length === 0) {
+            qrbCheckedKey = key;
+            return;
+        }
+        showQrbModal(nearby, {
+            onConfirm: () => { qrbCheckedKey = key; },
+            onCancel: () => restoreState(snapshot),
+        });
     }
 
     function writeFields(lat, lon) {
@@ -352,8 +497,7 @@
     // --- event wiring -------------------------------------------------------------------------
 
     map.on("click", (ev) => {
-        setMarker(ev.latlng.lat, ev.latlng.lng);
-        writeFields(ev.latlng.lat, ev.latlng.lng);
+        userPick(ev.latlng.lat, ev.latlng.lng);
     });
 
     if (eInput && nInput) {
@@ -392,7 +536,8 @@
         fetch(config.registrationsUrl, { credentials: "same-origin" })
             .then((r) => r.ok ? r.json() : { participants: [] })
             .then((data) => {
-                (data.participants || []).forEach((p) => {
+                const participants = data.participants || [];
+                participants.forEach((p) => {
                     const m = L.circleMarker([p.lat, p.lon], {
                         radius: 6,
                         color: "#1f5f3f",
@@ -404,6 +549,13 @@
                     m.bindPopup(`<strong>${p.callsign}</strong>${altitude}<br>${p.canton || ""}`);
                     m.bindTooltip(p.callsign, { direction: "top", offset: [0, -6] });
                     m.addTo(map);
+                });
+                // Snapshot LV95 coords for the QRB distance check. The
+                // payload only carries WGS84; convert once now, not on
+                // every click.
+                registeredStations = participants.map((p) => {
+                    const lv = wgs84ToLV95(p.lat, p.lon);
+                    return { callsign: p.callsign, e: lv.e, n: lv.n };
                 });
             })
             .catch(() => { /* non-fatal: form still works without the pins */ });

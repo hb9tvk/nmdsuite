@@ -20,7 +20,9 @@ Leaflet + map JS bootstrap. Required context: form, registrations_url
         warnInvalid: "{% trans 'Coordinates could not be parsed.' %}",
         warnOutOfBounds: "{% trans 'Coordinates are outside Switzerland.' %}",
         warnLowAltitude: "{% trans 'Below 800 m — contest rules require minimum 800 m a.s.l.' %}",
-        altitudeFromSwisstopo: "{% trans 'Altitude from Swisstopo: {n} m' %}"
+        altitudeFromSwisstopo: "{% trans 'Altitude from Swisstopo: {n} m' %}",
+        qrbThresholdM: 3000,
+        qrbListItemFormat: "{% trans '{call} — {dist} m away' %}"
     };
 </script>
 <script src="{% static 'js/registration_map.js' %}"></script>
