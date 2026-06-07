@@ -23,7 +23,11 @@ class RegistrationForm(forms.Form):
         help_text=_("Your contest callsign. We strip a trailing /P automatically — the portable suffix is implicit on NMD."),
         widget=forms.TextInput(attrs={"style": "text-transform: uppercase", "oninput": "this.value=this.value.toUpperCase()"}),
     )
-    first_name = forms.CharField(label=_("First name"), max_length=80)
+    first_name = forms.CharField(
+        label=_("First name(s)"),
+        max_length=80,
+        help_text=_("If multi-operator station: list all first names joined with '+'."),
+    )
     email = forms.EmailField(label=_("Email"))
 
     multi_op = forms.TypedChoiceField(

@@ -400,6 +400,12 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Il tuo nominativo contest. Una /P finale viene rimossa automaticamente — al NMD è implicita.",
     ),
     "First name": ("Vorname", "Prénom", "Nome"),
+    "First name(s)": ("Vorname(n)", "Prénom(s)", "Nome(i)"),
+    "If multi-operator station: list all first names joined with '+'.": (
+        "Falls Mehrmannstation: Alle Vornamen mit '+' verbunden.",
+        "Si station multiopérateur : tous les prénoms reliés par « + ».",
+        "Se stazione con più operatori: tutti i nomi uniti con '+'.",
+    ),
     "Email": ("E-Mail", "E-mail", "E-mail"),
     "Station type": ("Stationstyp", "Type de station", "Tipo di stazione"),
     "Single-operator station": (
@@ -743,6 +749,12 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
 
     # Log entry / station / participant_register / participant_station
     "Log entry": ("Log-Eingabe", "Saisie du journal", "Inserimento log"),
+    "Edit": ("Bearbeiten", "Modifier", "Modifica"),
+    "Downloads and results": (
+        "Downloads und Resultate",
+        "Téléchargements et résultats",
+        "Download e risultati",
+    ),
 
     # Report + pictures (F3)
     "Report and Pictures": ("Teilnehmerbericht", "Rapport et photos", "Rapporto e foto"),
