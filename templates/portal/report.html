@@ -15,8 +15,11 @@
         <label for="id_report_text">{% trans "Participant report" %}</label>
         <textarea id="id_report_text" name="text" rows="10" maxlength="4096">{{ report.text }}</textarea>
         <small class="hint">{% trans "Up to 4096 characters." %}</small>
-        {# Captions are HTML5-attached to this form via form="report-form" so
-           one click on "Save report" persists text + every caption at once. #}
+        {% comment %}
+            Captions are HTML5-attached to this form via form="report-form"
+            so one click on "Save report" persists text + every caption at
+            once.
+        {% endcomment %}
     </form>
 
     <section class="report-pictures">
