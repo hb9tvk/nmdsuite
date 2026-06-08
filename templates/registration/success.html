@@ -16,7 +16,14 @@
         <p>{% trans "We've sent a confirmation email. Use your existing password to sign in to the portal — or request a reset if you've forgotten it." %}</p>
     {% endif %}
 
-    <p><a href="{% url 'portal:login' %}">{% trans "Go to the participant portal" %}</a></p>
+    <p>
+        {# Break out of the WP iframe — the portal isn't designed to live
+           inside it (no embed mode), and the WP nav would just sit above
+           the login form awkwardly. #}
+        <a href="{% url 'portal:login' %}" target="_blank" rel="noopener noreferrer">
+            {% trans "Go to the participant portal" %}
+        </a>
+    </p>
 {% endblock %}
 
 {% block extra_scripts %}
