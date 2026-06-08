@@ -1199,6 +1199,33 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Conferma la dichiarazione del regolamento prima di inviare.",
     ),
 
+    # Public registrations list
+    "Registered stations": ("Angemeldete Stationen", "Stations inscrites", "Stazioni iscritte"),
+    "Contest on %(date)s.": (
+        "Contest am %(date)s.",
+        "Contest le %(date)s.",
+        "Contest il %(date)s.",
+    ),
+    "Registered stations — NMD %(year)s": (
+        "Angemeldete Stationen — NMD %(year)s",
+        "Stations inscrites — NMD %(year)s",
+        "Stazioni iscritte — NMD %(year)s",
+    ),
+    "There is no upcoming contest at the moment.": (
+        "Im Moment ist kein Contest geplant.",
+        "Aucun contest n'est prévu pour le moment.",
+        "Al momento non è previsto alcun contest.",
+    ),
+    "No registrations yet.": (
+        "Noch keine Anmeldungen.",
+        "Aucune inscription pour l'instant.",
+        "Ancora nessuna iscrizione.",
+    ),
+    "Call sign": ("Rufzeichen", "Indicatif", "Nominativo"),
+    "CH1903 coordinates": ("CH1903-Koordinaten", "Coordonnées CH1903", "Coordinate CH1903"),
+    "Location": ("Standort", "Lieu", "Luogo"),
+    "Mode": ("Betriebsart", "Mode", "Modalità"),
+
     # Public ranking
     "Public ranking": ("Öffentliche Rangliste", "Classement public", "Classifica pubblica"),
     "live results page as participants see it": (

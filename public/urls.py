@@ -8,4 +8,5 @@ from . import views
 
 urlpatterns = [
     path("<int:year>/", views.ranking, name="ranking"),
+    path("registrations/", views.registrations, name="registrations"),
 ]
