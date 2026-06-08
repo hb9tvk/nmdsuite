@@ -54,7 +54,12 @@
                         <td>{{ row.participant.first_name }}</td>
                         <td>{{ row.participant.canton }}</td>
                         <td>{% if row.participant.multi_op %}✓{% endif %}</td>
-                        <td>{{ row.status }}</td>
+                        <td>
+                            {% if row.status == 'pending' %}{% trans "Pending" %}
+                            {% elif row.status == 'submitted' %}{% trans "Submitted" %}
+                            {% elif row.status == 'cancelled' %}{% trans "Cancelled" %}
+                            {% else %}{{ row.status }}{% endif %}
+                        </td>
                         <td>
                             <a href="{% url 'admin_module:participant_station' pk=row.participant.pk %}">{% trans "Edit" %}</a>
                         </td>
