@@ -27,7 +27,10 @@ def _make_staff_user(username: str = "STAFF") -> User:
     )
 
 
-def _make_participant(contest, *, username, callsign, submitted=False, auto_submitted=False) -> Participant:
+def _make_participant(
+    contest, *, username, callsign,
+    submitted=False, auto_submitted=False, cancelled=False,
+) -> Participant:
     user = User.objects.create_user(username=username, password="x", email=f"{username.lower()}@x.org")
     return Participant.objects.create(
         contest=contest, user=user, callsign=callsign, first_name=username,
@@ -37,6 +40,7 @@ def _make_participant(contest, *, username, callsign, submitted=False, auto_subm
         altitude_m=1500, canton="BE", location_text="Niederhorn", operating_modes=3,
         submitted_at=timezone.now() if submitted else None,
         auto_submitted=auto_submitted,
+        cancelled_at=timezone.now() if cancelled else None,
     )
 
 
@@ -438,3 +442,86 @@ def test_detail_page_shows_release_when_submitted(client, seeded_contest):
     body = client.get(f"/admin/participants/{p.pk}/").content.decode()
     assert "Release submission" in body
     assert "Submit log on behalf" not in body
+
+
+# --- on-behalf cancellation -----------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_cancel_view_marks_participant_cancelled_and_audits(client, seeded_contest):
+    p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
+    staff = _make_staff_user()
+    client.force_login(staff)
+    response = client.post(f"/admin/participants/{p.pk}/cancel/")
+    assert response.status_code == 302
+    p.refresh_from_db()
+    assert p.cancelled_at is not None
+    entry = AuditLog.objects.get(action="registration.cancel", target=p.callsign)
+    assert entry.actor == staff
+    assert entry.payload.get("on_behalf") is True
+
+
+@pytest.mark.django_db
+def test_cancel_view_idempotent_when_already_cancelled(client, seeded_contest):
+    p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ", cancelled=True)
+    client.force_login(_make_staff_user())
+    response = client.post(f"/admin/participants/{p.pk}/cancel/")
+    assert response.status_code == 302
+    # No new audit row for the no-op call.
+    assert AuditLog.objects.filter(action="registration.cancel").count() == 0
+
+
+@pytest.mark.django_db
+def test_cancel_view_requires_post(client, seeded_contest):
+    p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
+    client.force_login(_make_staff_user())
+    response = client.get(f"/admin/participants/{p.pk}/cancel/")
+    assert response.status_code == 405
+
+
+@pytest.mark.django_db
+def test_cancel_view_wipes_report_text_and_pictures(client, seeded_contest, settings, tmp_path):
+    """Same cleanup behavior the portal-side cancel performs — report
+    text + uploaded pictures get dropped on behalf too."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from core.models import ParticipantPicture, ParticipantReport
+    from portal import report_service
+
+    settings.NMD_DATA_ROOT = tmp_path
+    p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
+    report_service.save_text(p, "I had a great contest")
+    report_service.add_picture(
+        p, SimpleUploadedFile(
+            "a.png",
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+            b"\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+            b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01"
+            b"\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82",
+            content_type="image/png",
+        ),
+    )
+    expected_path = tmp_path / str(p.contest.year) / "HB9XYZ" / "HB9XYZ_1.png"
+    assert expected_path.is_file()
+
+    client.force_login(_make_staff_user())
+    client.post(f"/admin/participants/{p.pk}/cancel/")
+
+    assert not ParticipantReport.objects.filter(participant=p).exists()
+    assert not ParticipantPicture.objects.filter(participant=p).exists()
+    assert not expected_path.is_file()
+
+
+@pytest.mark.django_db
+def test_detail_page_shows_cancel_button_when_not_cancelled(client, seeded_contest):
+    p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ")
+    client.force_login(_make_staff_user())
+    body = client.get(f"/admin/participants/{p.pk}/").content.decode()
+    assert "Cancel participation" in body
+
+
+@pytest.mark.django_db
+def test_detail_page_hides_cancel_button_when_already_cancelled(client, seeded_contest):
+    p = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ", cancelled=True)
+    client.force_login(_make_staff_user())
+    body = client.get(f"/admin/participants/{p.pk}/").content.decode()
+    assert "Cancel participation" not in body

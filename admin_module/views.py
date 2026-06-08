@@ -627,6 +627,32 @@ def participant_release(request, pk: int):
     return redirect("admin_module:participant_detail", pk=participant.pk)
 
 
+@_staff_required
+@require_http_methods(["POST"])
+def participant_cancel(request, pk: int):
+    """Cancel a participant on their behalf. Same backing service as the
+    portal-side cancel — sets ``cancelled_at``, wipes any report text +
+    uploaded pictures, audits the action. Allowed regardless of submitted
+    state; staff are the final authority."""
+    from registration.services import cancel_participation
+
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+    participant = _participant_or_404(contest, pk)
+
+    if participant.cancelled_at is not None:
+        messages.info(request, _("Already cancelled."))
+    else:
+        cancel_participation(participant, actor=request.user)
+        messages.success(
+            request,
+            _("Cancelled participation for %(call)s.") % {"call": participant.callsign},
+        )
+    return redirect("admin_module:participants_index")
+
+
 # --- backup / restore (M4.5) ------------------------------------------------------------------
 
 

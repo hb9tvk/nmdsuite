@@ -33,6 +33,7 @@ urlpatterns = [
     path("participants/<int:pk>/log/upload/", views.participant_qso_upload, name="participant_qso_upload"),
     path("participants/<int:pk>/submit/", views.participant_submit, name="participant_submit"),
     path("participants/<int:pk>/release/", views.participant_release, name="participant_release"),
+    path("participants/<int:pk>/cancel/", views.participant_cancel, name="participant_cancel"),
     # Bulk email (M4.4).
     path("email/", views.bulk_email, name="bulk_email"),
     # Backup / restore (M4.5).

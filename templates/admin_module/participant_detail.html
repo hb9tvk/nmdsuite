@@ -103,6 +103,15 @@
                     <button type="submit" class="btn">{% trans "Submit log on behalf" %}</button>
                 </form>
             {% endif %}
+            {% if not participant.cancelled_at %}
+                {% blocktrans asvar cancel_confirm_msg with callsign=participant.callsign %}Cancel {{ callsign }}'s participation? Their report text and uploaded pictures will be deleted. The user account is kept; they can re-register before the contest.{% endblocktrans %}
+                <form method="post" action="{% url 'admin_module:participant_cancel' pk=participant.pk %}"
+                      class="inline-form"
+                      onsubmit="return confirm('{{ cancel_confirm_msg|escapejs }}');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">{% trans "Cancel participation" %}</button>
+                </form>
+            {% endif %}
         </p>
     </section>
 {% endblock %}

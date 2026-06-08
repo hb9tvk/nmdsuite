@@ -139,11 +139,14 @@ def cancel_participation(participant: Participant, *, actor: User | None = None)
     # never touch cancel.
     from portal.report_service import delete_everything as delete_report_data
     delete_report_data(participant)
+    is_on_behalf = actor is not None and actor != participant.user
+    payload = {"on_behalf": True} if is_on_behalf else {}
     audit(
         action="registration.cancel",
         actor=actor or participant.user,
         target=participant.callsign,
         contest=participant.contest,
+        payload=payload,
     )
 
 

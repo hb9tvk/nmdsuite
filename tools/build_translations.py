@@ -783,6 +783,22 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Soumettre le journal pour son compte",
         "Inviare il log per conto",
     ),
+    "Cancel participation": (
+        "Anmeldung annullieren",
+        "Annuler l'inscription",
+        "Annulla iscrizione",
+    ),
+    "Cancel %(callsign)s's participation? Their report text and uploaded pictures will be deleted. The user account is kept; they can re-register before the contest.": (
+        "Anmeldung von %(callsign)s annullieren? Berichtstext und hochgeladene Bilder werden gelöscht. Das Benutzerkonto bleibt bestehen; eine erneute Anmeldung ist vor dem Contest jederzeit möglich.",
+        "Annuler l'inscription de %(callsign)s ? Le texte du rapport et les photos seront supprimés. Le compte utilisateur est conservé ; la réinscription reste possible avant le contest.",
+        "Annullare l'iscrizione di %(callsign)s? Il testo del rapporto e le foto caricate saranno cancellati. L'account utente viene mantenuto; può iscriversi nuovamente prima del contest.",
+    ),
+    "Cancelled participation for %(call)s.": (
+        "Teilnahme für %(call)s annulliert.",
+        "Inscription annulée pour %(call)s.",
+        "Iscrizione annullata per %(call)s.",
+    ),
+    "Already cancelled.": ("Bereits annulliert.", "Déjà annulée.", "Già annullata."),
 
     # Log entry / station / participant_register / participant_station
     "Log entry": ("Log-Eingabe", "Saisie du journal", "Inserimento log"),
