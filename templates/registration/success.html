@@ -18,3 +18,29 @@
 
     <p><a href="{% url 'portal:login' %}">{% trans "Go to the participant portal" %}</a></p>
 {% endblock %}
+
+{% block extra_scripts %}
+    {% if request.GET.embed %}
+        <script>
+            (function () {
+                // After the form-submit redirect the WP parent is still
+                // scrolled to wherever the submit button was. Bring the
+                // iframe back into view so the "Thank you" header is visible.
+                // Same-origin lets us find our own iframe element directly.
+                try {
+                    const frames = window.parent.document.querySelectorAll("iframe");
+                    for (const f of frames) {
+                        if (f.contentWindow === window) {
+                            f.scrollIntoView({ behavior: "smooth", block: "start" });
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // Cross-origin fallback — ignored by the documented WP
+                    // snippet but harmless to send.
+                    window.parent.postMessage({ type: "nmd-iframe-scroll-into-view" }, "*");
+                }
+            })();
+        </script>
+    {% endif %}
+{% endblock %}

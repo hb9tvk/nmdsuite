@@ -53,7 +53,13 @@ def index(request):
                 )
                 request.session["registration_success_callsign"] = outcome.participant.callsign
                 request.session["registration_user_was_created"] = outcome.user_was_created
-                return redirect(reverse("registration:success"))
+                # Preserve ?embed=1 across the redirect so the success page
+                # also renders chrome-stripped when the form is iframed
+                # into the WP site.
+                target = reverse("registration:success")
+                if request.GET.get("embed"):
+                    target += "?embed=1"
+                return redirect(target)
     else:
         form = RegistrationForm(contest=contest)
 
