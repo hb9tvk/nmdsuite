@@ -44,6 +44,7 @@
                     <th>{% trans "Canton" %}</th>
                     <th>{% trans "Multi-op" %}</th>
                     <th>{% trans "Status" %}</th>
+                    <th>{% trans "Comment" %}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -59,6 +60,13 @@
                             {% elif row.status == 'submitted' %}{% trans "Submitted" %}
                             {% elif row.status == 'cancelled' %}{% trans "Cancelled" %}
                             {% else %}{{ row.status }}{% endif %}
+                        </td>
+                        <td>
+                            {% if row.participant.remarks %}
+                                <a href="{% url 'admin_module:participant_station' pk=row.participant.pk %}#id_remarks">{% trans "Yes" %}</a>
+                            {% else %}
+                                {% trans "No" %}
+                            {% endif %}
                         </td>
                         <td>
                             <a href="{% url 'admin_module:participant_station' pk=row.participant.pk %}">{% trans "Edit" %}</a>

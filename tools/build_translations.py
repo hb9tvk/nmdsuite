@@ -1074,6 +1074,7 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     ),
     "Registration data": ("Anmeldedaten", "Données d'inscription", "Dati d'iscrizione"),
     "No": ("Nein", "Non", "No"),
+    "Comment": ("Kommentar", "Commentaire", "Commento"),
     "Download log (ADIF)": ("Log herunterladen (ADIF)", "Télécharger le journal (ADIF)", "Scarica log (ADIF)"),
     "View your scoring": ("Wertung ansehen", "Voir ton scoring", "Visualizza il tuo punteggio"),
     "This replaces your existing QSO list and station description. Continue?": (
