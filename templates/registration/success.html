@@ -24,17 +24,12 @@
         <script>
             (function () {
                 // After the form-submit redirect the WP parent is still
-                // scrolled to wherever the submit button was. Bring the
-                // iframe back into view so the "Thank you" header is visible.
-                // Same-origin lets us find our own iframe element directly.
+                // scrolled to wherever the submit button was. Scroll the
+                // whole WP page back to the top so the operator sees the
+                // WP nav AND the "Thank you" message together. Same-origin
+                // lets us do this directly.
                 try {
-                    const frames = window.parent.document.querySelectorAll("iframe");
-                    for (const f of frames) {
-                        if (f.contentWindow === window) {
-                            f.scrollIntoView({ behavior: "smooth", block: "start" });
-                            return;
-                        }
-                    }
+                    window.parent.scrollTo({ top: 0, behavior: "smooth" });
                 } catch (e) {
                     // Cross-origin fallback — ignored by the documented WP
                     // snippet but harmless to send.
