@@ -56,7 +56,7 @@
                     </form>
                 {% endif %}
                 {% if contest.state == 'published' %}
-                    <p class="hint">{% trans "Contest published. Use the 'Setup new contest' form below when ready to start a new edition." %}</p>
+                    <p class="hint">{% trans "Contest published. Use the 'Setup new contest' form at the bottom of this page when ready to start a new edition." %}</p>
                 {% endif %}
                 {% if contest.state == 'reg_closed' or contest.state == 'logs_closed' or contest.state == 'published' %}
                     <form method="post" action="{% url 'admin_module:revert_state' %}"
@@ -67,22 +67,6 @@
                     </form>
                 {% endif %}
             </div>
-        </section>
-
-        <section class="admin-setup-new">
-            <h2>{% trans "Setup new contest" %}</h2>
-            <p class="hint">
-                {% trans "Archives the current contest and deactivates all non-staff accounts. Participants will need to re-register." %}
-            </p>
-            <form method="post" action="{% url 'admin_module:setup_new_contest' %}"
-                  onsubmit="return confirm('{% blocktrans %}This archives the current contest AND deactivates every participant account. Are you sure?{% endblocktrans %}');">
-                {% csrf_token %}
-                <label>
-                    {% trans "New contest year:" %}
-                    <input type="number" name="year" min="2000" max="2100" required>
-                </label>
-                <button type="submit" class="btn-danger">{% trans "Archive + create" %}</button>
-            </form>
         </section>
 
         <section class="admin-counts">
@@ -159,6 +143,29 @@
                 </tbody>
             </table>
             <p><a href="{% url 'admin_module:audit_log' %}">{% trans "Full audit log →" %}</a></p>
+        </section>
+    {% endif %}
+
+    {% if contest %}
+        {% comment %}
+            Tucked at the very bottom because it's a one-per-year, hard-to-
+            reverse action. Sitting next to the everyday lifecycle buttons
+            made it too easy to click by accident.
+        {% endcomment %}
+        <section class="admin-setup-new">
+            <h2>{% trans "Setup new contest" %}</h2>
+            <p class="hint">
+                {% trans "Archives the current contest and deactivates all non-staff accounts. Participants will need to re-register." %}
+            </p>
+            <form method="post" action="{% url 'admin_module:setup_new_contest' %}"
+                  onsubmit="return confirm('{% blocktrans %}This archives the current contest AND deactivates every participant account. Are you sure?{% endblocktrans %}');">
+                {% csrf_token %}
+                <label>
+                    {% trans "New contest year:" %}
+                    <input type="number" name="year" min="2000" max="2100" required>
+                </label>
+                <button type="submit" class="btn-danger">{% trans "Archive + create" %}</button>
+            </form>
         </section>
     {% endif %}
 {% endblock %}

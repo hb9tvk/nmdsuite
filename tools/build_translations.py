@@ -645,10 +645,10 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Pubblicare i risultati? I partecipanti potranno vedere il dettaglio del proprio punteggio.",
     ),
     "Publish results": ("Resultate veröffentlichen", "Publier les résultats", "Pubblicare i risultati"),
-    "Contest published. Use the 'Setup new contest' form below when ready to start a new edition.": (
-        "Contest veröffentlicht. Verwende das Formular 'Neuen Contest einrichten' unten, wenn du eine neue Ausgabe starten möchtest.",
-        "Contest publié. Utilise le formulaire « Nouveau contest » ci-dessous quand tu es prêt à démarrer une nouvelle édition.",
-        "Contest pubblicato. Usa il modulo «Nuovo contest» qui sotto quando sei pronto a iniziare una nuova edizione.",
+    "Contest published. Use the 'Setup new contest' form at the bottom of this page when ready to start a new edition.": (
+        "Contest veröffentlicht. Verwende das Formular 'Neuen Contest einrichten' unten auf dieser Seite, wenn du eine neue Ausgabe starten möchtest.",
+        "Contest publié. Utilise le formulaire « Nouveau contest » au bas de cette page quand tu es prêt à démarrer une nouvelle édition.",
+        "Contest pubblicato. Usa il modulo «Nuovo contest» in fondo a questa pagina quando sei pronto a iniziare una nuova edizione.",
     ),
     "Revert to the previous state? If reverting 'log submission closed', the auto-submitted logs will be unlocked so operators can edit again.": (
         "In den vorherigen Zustand zurückkehren? Beim Zurücksetzen von 'Log-Einreichung geschlossen' werden die automatisch eingereichten Logs wieder entsperrt.",
