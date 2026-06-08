@@ -1,6 +1,8 @@
 {% load i18n %}
-{# Shared Location fieldset — Swisstopo map + auto-detection of system / altitude / canton. #}
-{# Required context: form (must expose location_text, coord_input_e, coord_input_n, altitude_m, canton). #}
+{% comment %}
+    Shared Location fieldset — Swisstopo map + auto-detection of system / altitude / canton.
+    Required context: form (must expose location_text, coord_input_e, coord_input_n, altitude_m, canton).
+{% endcomment %}
 <fieldset class="location-fieldset">
     <legend>{% trans "Location" %}</legend>
     <p class="hint">

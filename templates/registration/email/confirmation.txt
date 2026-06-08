@@ -1,4 +1,4 @@
-{% load i18n %}{# Trilingual body, mirroring the legacy invitation email format. #}
+{% load i18n %}{% comment %}Trilingual body, mirroring the legacy invitation email format.{% endcomment %}
 === Deutsch ===
 
 Hallo {{ participant.first_name }}

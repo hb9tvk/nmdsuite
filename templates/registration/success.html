@@ -17,9 +17,11 @@
     {% endif %}
 
     <p>
-        {# Break out of the WP iframe — the portal isn't designed to live
-           inside it (no embed mode), and the WP nav would just sit above
-           the login form awkwardly. #}
+        {% comment %}
+            Break out of the WP iframe — the portal isn't designed to live
+            inside it (no embed mode), and the WP nav would just sit above
+            the login form awkwardly.
+        {% endcomment %}
         <a href="{% url 'portal:login' %}" target="_blank" rel="noopener noreferrer">
             {% trans "Go to the participant portal" %}
         </a>
