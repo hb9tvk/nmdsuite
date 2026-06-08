@@ -307,3 +307,38 @@ def test_qrb_check_skips_cancelled_neighbours(client, seeded_contest):
     response = client.post("/anmeldung/", _QRB_FORM, follow=True)
     assert response.status_code == 200
     assert User.objects.filter(username="HB9TVK").exists()
+
+
+# --- re-register after cancel -----------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_can_register_again_after_cancelling_in_same_contest(client, seeded_contest):
+    """The cancelled Participant row + UniqueConstraint(contest, user)
+    used to block re-registration with the 'already registered' error.
+    The new flow drops the cancelled row first so the operator gets a
+    clean fresh registration."""
+    from registration.services import cancel_participation
+
+    # First registration goes through normally.
+    response = client.post("/anmeldung/", VALID_FORM, follow=True)
+    assert response.status_code == 200
+    p = Participant.objects.get(user__username="HB9TVK", contest=seeded_contest)
+
+    # Operator cancels.
+    cancel_participation(p)
+    p.refresh_from_db()
+    assert p.cancelled_at is not None
+
+    # Second registration with the same callsign should succeed and land
+    # as a fresh active Participant — same user, new row.
+    response = client.post("/anmeldung/", VALID_FORM, follow=True)
+    assert response.status_code == 200
+    active = Participant.objects.filter(
+        user__username="HB9TVK", contest=seeded_contest, cancelled_at__isnull=True,
+    )
+    assert active.count() == 1
+    # The cancelled row was swept; only the new active one remains.
+    assert Participant.objects.filter(
+        user__username="HB9TVK", contest=seeded_contest,
+    ).count() == 1

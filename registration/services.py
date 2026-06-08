@@ -81,6 +81,16 @@ def register_participant(
 
     parsed = form_data["parsed_coords"]
 
+    # If the user previously cancelled their participation in THIS contest,
+    # the row + UniqueConstraint(contest, user) still blocks a re-register.
+    # Drop the cancelled row (cascade clears any leftover QSO entries /
+    # station components / report / pictures so the new registration starts
+    # clean). Only cancelled rows are touched — an active duplicate still
+    # raises IntegrityError, which is correct.
+    Participant.objects.filter(
+        contest=contest, user=user, cancelled_at__isnull=False,
+    ).delete()
+
     participant = Participant.objects.create(
         contest=contest,
         user=user,
