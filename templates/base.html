@@ -23,15 +23,14 @@
     <header class="topnav">
         {% if not embed %}
             <a class="brand" href="{% url 'portal:dashboard' %}">NMD</a>
-            <nav>
-                {% if not user.is_staff %}
-                    <a href="{% url 'registration:index' %}">{% trans "Sign up" %}</a>
-                    <a href="{% url 'portal:dashboard' %}">{% trans "Portal" %}</a>
-                {% endif %}
-                {% if user.is_staff %}
+            {# Participants reach the registration form via the WP site
+               (iframed) and the brand link already covers "go home", so
+               the only nav entry left is the staff Administration link. #}
+            {% if user.is_staff %}
+                <nav>
                     <a href="{% url 'admin_module:index' %}">{% trans "Administration" %}</a>
-                {% endif %}
-            </nav>
+                </nav>
+            {% endif %}
         {% endif %}
         <div class="topnav-right">
             {% include "_language_switcher.html" %}

@@ -40,7 +40,9 @@ def _registration_body_embed(client) -> str:
 def test_registration_normal_mode_has_full_chrome(client, seeded_contest):
     body = _registration_body(client)
     assert ">NMD</a>" in body                        # brand link
-    assert "Sign up" in body or "Anmelden" in body or "Inscription" in body
+    # Login entry for anonymous visitors (part of the chrome that embed
+    # mode strips out).
+    assert "Login" in body or "Connexion" in body or "Accesso" in body
     assert "<footer" in body
     assert "nmd-iframe-height" not in body           # auto-resize JS hidden
 
