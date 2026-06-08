@@ -668,6 +668,7 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Questo archivia il contest attuale E disattiva ogni account partecipante. Sei sicuro?",
     ),
     "Year:": ("Jahr:", "Année :", "Anno:"),
+    "New contest year:": ("Jahr des neuen Contests:", "Année du nouveau contest :", "Anno del nuovo contest:"),
     "Archive + create": ("Archivieren + erstellen", "Archiver + créer", "Archivia + crea"),
     "Participants": ("Teilnehmer", "Participants", "Partecipanti"),
     "Registered (incl. cancelled)": ("Angemeldet (inkl. abgemeldet)", "Inscrits (y compris annulés)", "Iscritti (inclusi annullati)"),

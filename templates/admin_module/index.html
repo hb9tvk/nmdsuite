@@ -78,7 +78,7 @@
                   onsubmit="return confirm('{% blocktrans %}This archives the current contest AND deactivates every participant account. Are you sure?{% endblocktrans %}');">
                 {% csrf_token %}
                 <label>
-                    {% trans "Year:" %}
+                    {% trans "New contest year:" %}
                     <input type="number" name="year" min="2000" max="2100" required>
                 </label>
                 <button type="submit" class="btn-danger">{% trans "Archive + create" %}</button>
