@@ -115,7 +115,7 @@
             <li><a href="{% url 'scoring:index' %}">{% trans "Scoring review" %}</a> — {% trans "per-QSO status, points, suspected calls" %}</li>
             <li><a href="{% url 'admin_module:fixstation_review' %}">{% trans "Fixstation review" %}</a> — {% trans "verify suspicious non-NMD callsigns against external databases" %}</li>
             <li><a href="{% url 'admin_module:audit_log' %}">{% trans "Audit log" %}</a> — {% trans "every admin/system action with filters" %}</li>
-            <li><a href="/django-admin/">{% trans "Django admin" %}</a> — {% trans "low-level data inspection (registrations, QSOs, emails, etc.)" %}</li>
+            <li><a href="{% url 'admin:index' %}">{% trans "Django admin" %}</a> — {% trans "low-level data inspection (registrations, QSOs, emails, etc.)" %}</li>
         </ul>
     </section>
 
