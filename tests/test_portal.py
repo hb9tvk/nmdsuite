@@ -61,6 +61,38 @@ def test_dashboard_for_unregistered_user(client, seeded_contest):
 
 
 @pytest.mark.django_db
+def test_dashboard_redirects_staff_to_admin_ui(client, seeded_contest):
+    """Staff log in via /submission/login/ but have no participant role —
+    bounce them to the admin index instead of the useless dashboard."""
+    staff = User.objects.create_user(
+        username="STAFF", password="x", email="s@x.org", is_staff=True,
+    )
+    client.force_login(staff)
+    response = client.get("/submission/")
+    assert response.status_code == 302
+    assert response["Location"].endswith("/admin/")
+
+
+@pytest.mark.django_db
+def test_login_accepts_lowercase_staff_username(client, seeded_contest):
+    """Staff accounts created via createsuperuser don't follow the
+    callsign convention. The login form's callsign normalization used
+    to uppercase the input unconditionally, breaking the username
+    lookup for mixed/lowercase staff usernames."""
+    User.objects.create_user(
+        username="kohler", password="staff-pass-1234", email="k@x.org",
+        is_staff=True,
+    )
+    response = client.post(
+        "/submission/login/",
+        {"username": "kohler", "password": "staff-pass-1234"},
+        follow=False,
+    )
+    assert response.status_code == 302  # successful login → redirect
+    assert "/submission/login/" not in response["Location"]
+
+
+@pytest.mark.django_db
 def test_dashboard_for_registered_user_shows_data(client, registered_user):
     user, participant = registered_user
     client.force_login(user)

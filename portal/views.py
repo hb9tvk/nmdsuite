@@ -64,6 +64,12 @@ def _editable_participation_or_redirect(request) -> tuple[Participant | None, ob
 
 @login_required
 def dashboard(request):
+    # Staff members log in via the same /submission/login/ surface but
+    # have no participation to view — bounce them to the admin UI so
+    # they don't land on a useless "you're not registered" screen, and
+    # so the LOGIN_REDIRECT_URL works uniformly for both roles.
+    if request.user.is_staff:
+        return redirect("admin_module:index")
     contest = _active_contest()
     participant = _active_participation(request.user, contest)
     return render(

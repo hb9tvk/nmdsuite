@@ -15,11 +15,36 @@ class CallsignAuthenticationForm(AuthenticationForm):
     Operators sometimes enter their callsign lower-case, or include the on-air
     ``/P`` suffix that we strip when creating the user account. Apply the same
     normalization here so login accepts whichever form they type.
+
+    Staff accounts created via ``createsuperuser`` don't follow the
+    callsign convention (the username may be lowercase or mixed-case).
+    If the normalized form doesn't match any user, fall back to a
+    case-insensitive lookup against the raw input — so a staff member
+    who created their account as ``kohler`` can still log in here.
     """
 
     def clean_username(self) -> str:
-        raw = self.cleaned_data.get("username", "")
-        return login_username(normalize_callsign(raw))
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        raw = (self.cleaned_data.get("username") or "").strip()
+        if not raw:
+            return raw
+        normalized = login_username(normalize_callsign(raw))
+        if User.objects.filter(username=normalized).exists():
+            return normalized
+        # Staff fallback: case-insensitive match against the raw input.
+        fallback = (
+            User.objects
+            .filter(username__iexact=raw)
+            .values_list("username", flat=True)
+            .first()
+        )
+        if fallback:
+            return fallback
+        # Let authenticate() surface the standard "invalid credentials"
+        # error rather than us second-guessing here.
+        return normalized
 
 
 # Identity fields that the operator can never change after registration.
