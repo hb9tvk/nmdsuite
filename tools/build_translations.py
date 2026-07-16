@@ -813,10 +813,10 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     # Report + pictures (F3)
     "Report and Pictures": ("Teilnehmerbericht", "Rapport et photos", "Rapporto e foto"),
     "Participant report": ("Teilnehmerbericht", "Rapport du participant", "Rapporto del partecipante"),
-    "Tell us how your contest went — band conditions, interesting QSOs, mishaps, photos from the location. Everything here stays editable for the whole season; the magazine team will harvest reports after the results are published.": (
-        "Erzähl uns, wie dein Contest lief — Bandbedingungen, interessante QSOs, Pannen, Fotos vom Standort. Alles hier bleibt während der ganzen Saison editierbar; das Magazin-Team sammelt die Berichte nach der Veröffentlichung der Resultate ein.",
-        "Raconte-nous comment ton contest s'est passé — propagation, QSO marquants, péripéties, photos de l'emplacement. Tout reste modifiable durant toute la saison ; l'équipe du magazine récupérera les rapports après la publication des résultats.",
-        "Raccontaci com'è andato il tuo contest — propagazione, QSO interessanti, imprevisti, foto dalla postazione. Tutto qui resta modificabile per l'intera stagione; la redazione della rivista raccoglierà i rapporti dopo la pubblicazione dei risultati.",
+    "Tell us how your contest went — band conditions, interesting QSOs, mishaps, photos from the location. Everything here stays editable for the whole season. By submitting your report or uploading pictures, you give us permission to publish them in HB-Radio. For private messages to the commission, please use the email address nmd@uska.ch.": (
+        "Erzähl uns, wie dein Contest lief — Bandbedingungen, interessante QSOs, Pannen, Fotos vom Standort. Alles hier bleibt während der ganzen Saison editierbar. Mit der Eingabe des Berichtes bzw. dem Hochladen von Bildern gibst du uns die Erlaubnis für die Publikation im HB-Radio. Für private Mitteilungen an die Kommission, bitte die Email Adresse nmd@uska.ch verwenden.",
+        "Raconte-nous comment ton contest s'est passé — propagation, QSO marquants, péripéties, photos de l'emplacement. Tout reste modifiable durant toute la saison. En saisissant ton rapport ou en téléchargeant des photos, tu nous donnes l'autorisation de les publier dans HB-Radio. Pour des messages privés à la commission, merci d'utiliser l'adresse e-mail nmd@uska.ch.",
+        "Raccontaci com'è andato il tuo contest — propagazione, QSO interessanti, imprevisti, foto dalla postazione. Tutto qui resta modificabile per l'intera stagione. Inserendo il rapporto o caricando le foto, ci dai il permesso di pubblicarli su HB-Radio. Per comunicazioni private alla commissione, usa l'indirizzo e-mail nmd@uska.ch.",
     ),
     "Up to 4096 characters.": (
         "Bis zu 4096 Zeichen.",

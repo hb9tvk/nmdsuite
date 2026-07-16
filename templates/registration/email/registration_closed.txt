@@ -11,6 +11,8 @@ Sie kann jederzeit auch als PDF oder CSV im Portal heruntergeladen werden:
 
 Falls nötig, kannst du deine Anmeldedaten (z. B. den Standort) im Portal weiterhin anpassen oder deine Teilnahme stornieren — bis zum Contest-Start.
 
+NMD Treffen: Am 8.8.2026 findet wiederum das NMD Treffen in Olten statt, siehe https://nmd.uska.ch/index.php/nmd-treffen/
+
 Bei Fragen: nmd@uska.ch
 
 === Français ===
@@ -25,6 +27,8 @@ Tu peux aussi la télécharger à tout moment en PDF ou en CSV depuis le portail
 
 Si nécessaire, tu peux encore modifier tes données d'inscription (p. ex. le lieu) ou annuler ta participation depuis le portail — jusqu'au début du contest.
 
+Rencontre NMD : Le 8.8.2026, la rencontre NMD aura de nouveau lieu à Olten, voir https://nmd.uska.ch/index.php/nmd-treffen/
+
 Questions : nmd@uska.ch
 
 === Italiano ===
@@ -38,6 +42,8 @@ Può anche essere scaricato in qualsiasi momento in PDF o CSV dal portale:
 {{ portal_url }}
 
 Se necessario, puoi ancora modificare i tuoi dati di iscrizione (per esempio il luogo) o annullare la tua partecipazione dal portale — fino all'inizio del contest.
+
+Incontro NMD: L'8.8.2026 si terrà nuovamente l'incontro NMD a Olten, vedi https://nmd.uska.ch/index.php/nmd-treffen/
 
 Domande: nmd@uska.ch
 
