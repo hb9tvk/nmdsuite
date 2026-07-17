@@ -70,6 +70,24 @@
             {% endif %}
         </p>
 
+        {% if not participant.submitted_at %}
+            {% blocktrans asvar upload_confirm_msg %}This replaces your existing QSO list and station description. Continue?{% endblocktrans %}
+            <section class="qso-upload">
+                <h2>{% trans "Upload .nmd or .csv file" %}</h2>
+                <p class="hint">
+                    {% trans "An .nmd file carries both the QSO log and the station description; uploading replaces both." %}
+                </p>
+                <form method="post" enctype="multipart/form-data"
+                      action="{% url 'portal:qso_upload' %}"
+                      onsubmit="return confirm('{{ upload_confirm_msg|escapejs }}');"
+                      class="qso-upload-form">
+                    {% csrf_token %}
+                    <input type="file" name="file" accept=".csv,.nmd" required>
+                    <button type="submit">{% trans "Upload" %}</button>
+                </form>
+            </section>
+        {% endif %}
+
         {% if participant_list_available or participant.submitted_at or contest.results_published_at %}
             <h2>{% trans "Downloads and results" %}</h2>
             <p class="actions">
@@ -87,22 +105,6 @@
         {% endif %}
 
         {% if not participant.submitted_at %}
-            {% blocktrans asvar upload_confirm_msg %}This replaces your existing QSO list and station description. Continue?{% endblocktrans %}
-            <section class="qso-upload">
-                <h2>{% trans "Upload .nmd or .csv file" %}</h2>
-                <p class="hint">
-                    {% trans "An .nmd file carries both the QSO log and the station description; uploading replaces both." %}
-                </p>
-                <form method="post" enctype="multipart/form-data"
-                      action="{% url 'portal:qso_upload' %}"
-                      onsubmit="return confirm('{{ upload_confirm_msg|escapejs }}');"
-                      class="qso-upload-form">
-                    {% csrf_token %}
-                    <input type="file" name="file" accept=".csv,.nmd" required>
-                    <button type="submit">{% trans "Upload" %}</button>
-                </form>
-            </section>
-
             <hr class="dashboard-divider">
 
             <section class="dashboard-finalise">
