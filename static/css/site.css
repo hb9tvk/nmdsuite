@@ -592,6 +592,17 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .admin-report-card > header strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .admin-report-card > header .muted { color: var(--muted); }
 .admin-report-text { white-space: pre-line; margin: 0.25rem 0 0.75rem; }
+.email-preview {
+    white-space: pre-wrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    max-height: 32rem;
+    overflow: auto;
+}
 .admin-report-pictures { margin-top: 0.5rem; max-width: 24rem; }
 .admin-report-pictures a { display: block; }
 .picture-caption-display {

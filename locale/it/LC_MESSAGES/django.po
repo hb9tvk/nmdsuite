@@ -2091,3 +2091,21 @@ msgstr "Seleziona un partecipante a sinistra per vedere il suo log QSO con stato
 
 #~ msgid "Open log submission"
 #~ msgstr "Log-Einreichung öffnen"
+
+msgid "NMD %(year)s — Submit your log and station data"
+msgstr "NMD %(year)s — Invia il tuo log e i dati della stazione"
+
+msgid "Log reminder email"
+msgstr "E-mail di promemoria log"
+
+msgid "prewritten trilingual reminder to submit log and station data"
+msgstr "promemoria trilingue predefinito per inviare il log e i dati della stazione"
+
+msgid "Log reminder email — NMD %(year)s"
+msgstr "E-mail di promemoria log — NMD %(year)s"
+
+msgid "Sends the fixed trilingual (DE/FR/IT) reminder below to submit log and station data. The text contains no dates, so it can be reused unchanged every year."
+msgstr "Invia il promemoria trilingue fisso qui sotto (DE/FR/IT) per l'invio del log e dei dati della stazione. Il testo non contiene date e può essere riutilizzato invariato ogni anno."
+
+msgid "Preview"
+msgstr "Anteprima"

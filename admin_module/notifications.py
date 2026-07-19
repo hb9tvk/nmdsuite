@@ -145,6 +145,24 @@ def send_registration_closed_broadcast(
     )
 
 
+def send_log_reminder_broadcast(
+    *, contest: Contest, actor: Any,
+) -> BroadcastResult:
+    """Remind every active participant to submit log and station data.
+
+    The template text is deliberately date-agnostic (the deadline is
+    stated as "within 8 days" relative to the contest), so staff can
+    fire it unchanged every year right after the contest weekend. Not
+    part of the state machine — triggered manually from the admin
+    dashboard."""
+    return _broadcast(
+        contest=contest,
+        template_base="log_reminder",
+        audit_action="contest.notify_log_reminder",
+        actor=actor,
+    )
+
+
 def send_results_published_broadcast(
     *, contest: Contest, actor: Any,
 ) -> BroadcastResult:

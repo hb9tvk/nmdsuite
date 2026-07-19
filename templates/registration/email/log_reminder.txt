@@ -1,0 +1,68 @@
+{% load i18n %}{% comment %}Trilingual body. Deliberately date-agnostic (the 8-day deadline is stated relative to the contest) so staff can resend it unchanged every year.{% endcomment %}
+=== Deutsch ===
+
+Hallo {{ participant.first_name }}
+
+Danke für deine Teilnahme am NMD! Beachte, dass das Log und die Stationsdaten innert 8 Tagen eingereicht werden müssen.
+
+Am einfachsten geht dies über das Teilnehmerportal:
+
+{{ portal_url }}
+
+Dort kannst du die Logdatei vom Logprogramm (T2, HB9HQX, TVKLog) direkt hochladen. Wenn du ein Papierlog hast, kannst du dieses unter 'Log-Eingabe' eintippen.
+
+Nicht vergessen, auf 'Log einreichen' zu klicken, wenn Log- und Stationsdaten eingegeben sind.
+
+Wenn du das Portal nicht verwenden willst, kannst du das Log wie früher an nmd@uska.ch schicken.
+
+NEU: Gerne kannst du auch einen kurzen Bericht sowie Fotos direkt im Portal (unter 'Teilnehmerbericht') hochladen.
+
+Zur Erinnerung: NMD Treffen in Olten: https://nmd.uska.ch/index.php/nmd-treffen/
+
+Bei Fragen: nmd@uska.ch
+
+=== Français ===
+
+Bonjour {{ participant.first_name }}
+
+Merci pour ta participation au NMD ! Attention : le log et les données de la station doivent être soumis dans les 8 jours.
+
+Le plus simple est de passer par le portail des participants :
+
+{{ portal_url }}
+
+Tu peux y téléverser directement le fichier log de ton programme de log (T2, HB9HQX, TVKLog). Si tu as un log papier, tu peux le saisir sous « Saisie du journal ».
+
+N'oublie pas de cliquer sur « Soumettre le journal » une fois le log et les données de la station saisis.
+
+Si tu ne veux pas utiliser le portail, tu peux envoyer ton log comme auparavant à nmd@uska.ch.
+
+NOUVEAU : tu peux aussi déposer un bref rapport ainsi que des photos directement dans le portail (sous « Rapport et photos »).
+
+Pour rappel : rencontre NMD à Olten : https://nmd.uska.ch/index.php/nmd-treffen/
+
+Pour toute question : nmd@uska.ch
+
+=== Italiano ===
+
+Ciao {{ participant.first_name }}
+
+Grazie per la tua partecipazione al NMD! Ricorda che il log e i dati della stazione devono essere inviati entro 8 giorni.
+
+Il modo più semplice è tramite il portale dei partecipanti:
+
+{{ portal_url }}
+
+Lì puoi caricare direttamente il file di log del tuo programma di log (T2, HB9HQX, TVKLog). Se hai un log cartaceo, puoi inserirlo sotto «Inserimento log».
+
+Non dimenticare di cliccare su «Invia log» una volta inseriti il log e i dati della stazione.
+
+Se non vuoi usare il portale, puoi inviare il log come in passato a nmd@uska.ch.
+
+NOVITÀ: puoi anche caricare un breve rapporto e delle foto direttamente nel portale (sotto «Rapporto e foto»).
+
+Promemoria: incontro NMD a Olten: https://nmd.uska.ch/index.php/nmd-treffen/
+
+Per domande: nmd@uska.ch
+
+73, NMD Kommission USKA/HTC

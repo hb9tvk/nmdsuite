@@ -1,0 +1,1 @@
+{% load i18n %}{% blocktrans with year=contest.year %}NMD {{ year }} — Submit your log and station data{% endblocktrans %}

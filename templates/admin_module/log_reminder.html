@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Log reminder email" %} — {% trans "Administration" %}{% endblock %}
+
+{% block content %}
+    <p>
+        <a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a>
+    </p>
+
+    <h1>{% blocktrans with year=contest.year %}Log reminder email — NMD {{ year }}{% endblocktrans %}</h1>
+
+    <p class="hint">
+        {% trans "Sends the fixed trilingual (DE/FR/IT) reminder below to submit log and station data. The text contains no dates, so it can be reused unchanged every year." %}
+    </p>
+
+    <section class="admin-overview">
+        <h2>{% trans "Recipients" %}</h2>
+        <p>
+            {% blocktrans count n=recipient_count %}
+                {{ n }} active participant will receive this message.
+            {% plural %}
+                {{ n }} active participants will receive this message.
+            {% endblocktrans %}
+        </p>
+        {% if recipients %}
+            <details>
+                <summary>{% trans "Show recipient list" %}</summary>
+                <ul class="bulk-email-recipients">
+                    {% for p in recipients %}
+                        <li>{{ p.callsign }} &lt;{{ p.email }}&gt;</li>
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endif %}
+    </section>
+
+    <section class="admin-overview">
+        <h2>{% trans "Preview" %}</h2>
+        <p><strong>{% trans "Subject" %}:</strong> {{ preview_subject }}</p>
+        <pre class="email-preview">{{ preview_body }}</pre>
+    </section>
+
+    {% blocktrans asvar send_confirm_msg count n=recipient_count %}Send this message to {{ n }} participant?{% plural %}Send this message to {{ n }} participants?{% endblocktrans %}
+    <form method="post"
+          onsubmit="return confirm('{{ send_confirm_msg|escapejs }}');">
+        {% csrf_token %}
+        <p class="actions">
+            <button type="submit" class="btn-danger">{% trans "Send now" %}</button>
+            <a href="{% url 'admin_module:index' %}">{% trans "Cancel" %}</a>
+        </p>
+    </form>
+{% endblock %}

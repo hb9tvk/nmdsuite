@@ -11,12 +11,14 @@ setup-new), on-behalf editing, bulk email, and backup/restore.
 """
 from __future__ import annotations
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -38,7 +40,7 @@ from registration.callsigns import normalize_callsign
 from registration.forms import RegistrationForm
 from registration.services import register_participant
 
-from . import backup_service, email_service, fixstation_service, services
+from . import backup_service, email_service, fixstation_service, notifications, services
 from .forms import BulkEmailForm
 
 
@@ -787,6 +789,65 @@ def bulk_email(request):
             "contest": contest,
             "recipients": recipients,
             "recipient_count": recipient_count,
+        },
+    )
+
+
+@_staff_required
+def log_reminder_email(request):
+    """Preview-and-send page for the prewritten log-submission reminder.
+
+    Unlike :func:`bulk_email` there is nothing to compose — the
+    trilingual text lives in ``registration/email/log_reminder.txt`` —
+    so GET shows the recipient list plus the rendered text and POST
+    fires the broadcast.
+    """
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    recipients = list(email_service.active_recipients(contest))
+
+    if request.method == "POST":
+        result = notifications.send_log_reminder_broadcast(
+            contest=contest, actor=request.user,
+        )
+        if result.failed:
+            messages.warning(
+                request,
+                _("Sent %(sent)d of %(total)d messages; %(failed)d failed.") % {
+                    "sent": result.sent, "total": result.total, "failed": result.failed,
+                },
+            )
+        else:
+            messages.success(
+                request, _("Sent %(sent)d messages.") % {"sent": result.sent},
+            )
+        return redirect("admin_module:index")
+
+    # Preview rendered for the first recipient so staff see real values
+    # in the placeholders; with no recipients yet the name is blank but
+    # the page still shows the text.
+    ctx = {
+        "contest": contest,
+        "portal_url": f"{settings.NMD_BASE_URL.rstrip('/')}/submission/",
+        "participant": recipients[0] if recipients else None,
+    }
+    preview_subject = render_to_string(
+        "registration/email/log_reminder_subject.txt", ctx,
+    ).strip()
+    preview_body = render_to_string("registration/email/log_reminder.txt", ctx)
+
+    return render(
+        request,
+        "admin_module/log_reminder.html",
+        {
+            "contest": contest,
+            "recipients": recipients,
+            "recipient_count": len(recipients),
+            "preview_subject": preview_subject,
+            "preview_body": preview_body,
         },
     )
 

@@ -36,6 +36,7 @@ urlpatterns = [
     path("participants/<int:pk>/cancel/", views.participant_cancel, name="participant_cancel"),
     # Bulk email (M4.4).
     path("email/", views.bulk_email, name="bulk_email"),
+    path("email/log-reminder/", views.log_reminder_email, name="log_reminder_email"),
     # Backup / restore (M4.5).
     path("backup/", views.backup_index, name="backup_index"),
     path("backup/download/", views.backup_download, name="backup_download"),
