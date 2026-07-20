@@ -535,6 +535,7 @@ footer { color: var(--muted); padding-bottom: 2rem; }
     padding: 0.5rem; border: 1px solid var(--border); border-radius: 3px;
     font-family: inherit; font-size: 0.95rem;
 }
+.report-unsaved { color: #c0392b; font-size: 0.85rem; }
 .report-pictures { margin-top: 2rem; }
 .picture-grid {
     display: grid;

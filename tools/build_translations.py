@@ -825,6 +825,16 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     ),
     "Save report": ("Bericht speichern", "Enregistrer le rapport", "Salva il rapporto"),
     "Report saved.": ("Bericht gespeichert.", "Rapport enregistré.", "Rapporto salvato."),
+    "Unsaved changes": (
+        "Nicht gespeicherte Änderungen",
+        "Modifications non enregistrées",
+        "Modifiche non salvate",
+    ),
+    "You have unsaved changes. Leave the page anyway?": (
+        "Du hast nicht gespeicherte Änderungen. Seite trotzdem verlassen?",
+        "Vous avez des modifications non enregistrées. Quitter la page quand même ?",
+        "Hai modifiche non salvate. Uscire comunque dalla pagina?",
+    ),
     "Pictures": ("Bilder", "Photos", "Foto"),
     "Up to 6 pictures (JPEG, PNG or WebP, max 5 MB each). Originals are stored at full resolution.": (
         "Bis zu 6 Bilder (JPEG, PNG oder WebP, max. 5 MB pro Bild). Originale werden in voller Auflösung gespeichert.",

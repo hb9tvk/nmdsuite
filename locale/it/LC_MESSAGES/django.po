@@ -2109,3 +2109,9 @@ msgstr "Invia il promemoria trilingue fisso qui sotto (DE/FR/IT) per l'invio del
 
 msgid "Preview"
 msgstr "Anteprima"
+
+msgid "Unsaved changes"
+msgstr "Modifiche non salvate"
+
+msgid "You have unsaved changes. Leave the page anyway?"
+msgstr "Hai modifiche non salvate. Uscire comunque dalla pagina?"
