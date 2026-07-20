@@ -2109,3 +2109,9 @@ msgstr "Versendet die untenstehende fixe dreisprachige Erinnerung (DE/FR/IT) zur
 
 msgid "Preview"
 msgstr "Vorschau"
+
+msgid "Unsaved changes"
+msgstr "Nicht gespeicherte Änderungen"
+
+msgid "You have unsaved changes. Leave the page anyway?"
+msgstr "Du hast nicht gespeicherte Änderungen. Seite trotzdem verlassen?"

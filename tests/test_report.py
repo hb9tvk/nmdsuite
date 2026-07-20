@@ -277,6 +277,27 @@ def test_portal_report_get_renders_captions_in_form(client, participant):
 
 
 @pytest.mark.django_db
+def test_portal_report_has_save_button_and_unsaved_guard(client, participant):
+    """A Save button lives inside the report form (above the pictures
+    section) and the unsaved-changes guard script is wired up, so the
+    operator sees Save without scrolling and gets warned before losing
+    unsaved text."""
+    user, p, _ = participant
+    client.force_login(user)
+    body = client.get("/submission/report/").content.decode()
+    # The in-form actions block (Save button + unsaved hint) sits inside the
+    # form, before the pictures section — untranslated attributes anchor the
+    # ordering so this doesn't depend on the active locale.
+    form_open = body.index('id="report-form"')
+    pictures_start = body.index('class="report-pictures"')
+    in_form_actions = body.index("data-unsaved-hint")
+    assert form_open < in_form_actions < pictures_start
+    # Guard is present: warning message + the script that enforces it.
+    assert "data-unsaved-warning" in body
+    assert "report_form.js" in body
+
+
+@pytest.mark.django_db
 def test_admin_reports_shows_captions(client, participant):
     _, p, _ = participant
     pic = report_service.add_picture(

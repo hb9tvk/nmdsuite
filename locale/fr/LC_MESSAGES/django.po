@@ -2109,3 +2109,9 @@ msgstr "Envoie le rappel trilingue fixe ci-dessous (DE/FR/IT) pour la soumission
 
 msgid "Preview"
 msgstr "Aperçu"
+
+msgid "Unsaved changes"
+msgstr "Modifications non enregistrées"
+
+msgid "You have unsaved changes. Leave the page anyway?"
+msgstr "Vous avez des modifications non enregistrées. Quitter la page quand même ?"

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n static %}
 {% block title %}{% trans "Report and Pictures" %} — NMD{% endblock %}
 
 {% block content %}
@@ -10,16 +10,23 @@
         {% trans "Tell us how your contest went — band conditions, interesting QSOs, mishaps, photos from the location. Everything here stays editable for the whole season. By submitting your report or uploading pictures, you give us permission to publish them in HB-Radio. For private messages to the commission, please use the email address nmd@uska.ch." %}
     </p>
 
-    <form method="post" id="report-form" class="report-form">
+    <form method="post" id="report-form" class="report-form"
+          data-unsaved-warning="{% trans 'You have unsaved changes. Leave the page anyway?' %}">
         {% csrf_token %}
         <label for="id_report_text">{% trans "Participant report" %}</label>
         <textarea id="id_report_text" name="text" rows="10" maxlength="4096">{{ report.text }}</textarea>
         <small class="hint">{% trans "Up to 4096 characters." %}</small>
         {% comment %}
-            Captions are HTML5-attached to this form via form="report-form"
-            so one click on "Save report" persists text + every caption at
-            once.
+            Save button sits right under the text so it's visible the moment
+            the operator finishes typing — the pictures section (and its
+            duplicate Save button) can be far down the page. Captions are
+            HTML5-attached to this form via form="report-form", so either
+            Save button persists text + every caption at once.
         {% endcomment %}
+        <p class="actions">
+            <button type="submit">{% trans "Save report" %}</button>
+            <span class="report-unsaved" data-unsaved-hint hidden>{% trans "Unsaved changes" %}</span>
+        </p>
     </form>
 
     <section class="report-pictures">
@@ -79,4 +86,8 @@
             </p>
         {% endif %}
     </section>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="{% static 'js/report_form.js' %}"></script>
 {% endblock %}
