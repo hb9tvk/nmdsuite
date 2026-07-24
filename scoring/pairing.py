@@ -24,6 +24,22 @@ Decisions encoded here:
   for dupe purposes, ``_qso_half`` derives the half from the
   **earlier** of the paired pair's timestamps when a mate exists,
   so both ScoringRecords agree.
+- **Contest-window stragglers**: a QSO is valid only if it *started*
+  before 10:00 UTC (and no earlier than 06:00). Operators sometimes log
+  the *end* of a boundary QSO — e.g. a contact that started at 09:59 gets
+  logged as 10:02 by one side. The permissive log parser leaves such
+  out-of-window rows with ``utc_time = None``, which would drop them from
+  scoring entirely and, worse, leave their in-window counterpart with no
+  mate to match against (so the operator who logged correctly gets
+  nothing). Instead ``_scorable_qsos`` reconstructs a transient timestamp
+  for any well-formed clock time so the row can still serve as a pairing
+  candidate, and ``_qso_time_valid`` decides whether it *counts*: an
+  in-window row always counts (never penalise an operator for the peer's
+  timekeeping); an out-of-window row counts only when it pairs with an
+  in-window mate such that the earlier of the two timestamps is itself
+  in-window — i.e. the pair proves the contact started in time, so BOTH
+  sides score. The reconstructed timestamp is in-memory only; the row is
+  never saved, so it still shows as out-of-window in the log editor.
 - Callsign normalisation: ``/P``/``/M``/``/MM`` portable suffixes are
   stripped on both sides before comparing — operators are inconsistent
   about typing the suffix into the remote-call field. Uses the same
@@ -46,9 +62,10 @@ Decisions encoded here:
 """
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, time, timedelta, timezone
 
 from django.db import transaction
 
@@ -236,6 +253,70 @@ def classify_qso(
     return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
 
 
+_HHMM_RE = re.compile(r"^\d{4}$")
+
+
+def _parse_clock(utc_raw: str, contest: Contest) -> datetime | None:
+    """Parse a raw ``HHMM`` field into a UTC datetime on the contest date,
+    accepting ANY well-formed wall-clock time — including one just outside
+    the contest window.
+
+    The permissive log parser (``portal.qso_service``) only fills
+    ``QsoEntry.utc_time`` for in-window times (06:00–09:59); boundary
+    stragglers like ``1002`` are stored with ``utc_time = None``. This
+    reconstructs a timestamp for them so they can serve as pairing
+    candidates. Returns ``None`` for genuinely unparseable input.
+    """
+    raw = (utc_raw or "").strip()
+    if not _HHMM_RE.match(raw):
+        return None
+    hh, mm = int(raw[:2]), int(raw[2:])
+    if not (0 <= hh <= 23 and 0 <= mm <= 59):
+        return None
+    return datetime.combine(contest.contest_date, time(hh, mm, tzinfo=timezone.utc))
+
+
+def _scorable_qsos(participant: Participant, contest: Contest) -> list[QsoEntry]:
+    """The participant's QSOs eligible for scoring, each carrying a usable
+    ``utc_time``, ordered by time.
+
+    Rows the permissive parser left with ``utc_time = None`` purely because
+    their logged time fell just outside the contest window get a TRANSIENT,
+    in-memory timestamp here (see :func:`_parse_clock`) — the row is never
+    saved, so its stored ``utc_time`` stays null and it still shows as
+    out-of-window in the log editor. This only makes it *available* as a
+    pairing candidate; whether it earns points is decided by
+    :func:`_qso_time_valid`. Rows with a truly unparseable time, blank
+    ``mode``, or blank ``remote_call`` are dropped, same as before.
+    """
+    scorable: list[QsoEntry] = []
+    for q in participant.qsos.exclude(mode="").exclude(remote_call=""):
+        if q.utc_time is None:
+            q.utc_time = _parse_clock(q.utc_raw, contest)  # transient, never saved
+        if q.utc_time is not None:
+            scorable.append(q)
+    scorable.sort(key=lambda q: (q.utc_time, q.id))
+    return scorable
+
+
+def _qso_time_valid(qso: QsoEntry, contest: Contest, mate: QsoEntry | None) -> bool:
+    """Whether ``qso`` counts toward scoring given the contest window.
+
+    A QSO whose own logged time is inside the window (06:00–09:59:59 UTC)
+    always counts — an operator is never penalised for the peer's
+    timekeeping. A QSO logged just *outside* the window counts only when it
+    pairs with an in-window mate such that the EARLIER of the two timestamps
+    is itself in-window: e.g. one side logs 09:59 and the other logs the
+    QSO's end as 10:02 — the pair proves the contact started before 10:00,
+    so both sides count. An out-of-window QSO with no such anchor does not.
+    """
+    if contest.start_utc <= qso.utc_time <= contest.end_utc:
+        return True
+    if mate is None or mate.utc_time is None:
+        return False
+    return contest.start_utc <= min(qso.utc_time, mate.utc_time) <= contest.end_utc
+
+
 def _qso_half(qso: QsoEntry, contest: Contest, *, mate: QsoEntry | None = None) -> int:
     """Half of the contest a QSO belongs to (1 = pre-split, 2 = post-split).
 
@@ -256,9 +337,12 @@ def score_contest(contest: Contest) -> dict[str, int]:
 
     Wipes existing ``ScoringRecord`` rows for this contest and rebuilds them
     from scratch. Returns a ``{status: count}`` summary. Cancelled
-    participants are excluded. Rows with no ``utc_time`` / ``mode`` /
-    ``remote_call`` are silently skipped — they're permissive saves that
-    aren't ready to score.
+    participants are excluded. Rows with an unparseable time, blank ``mode``,
+    or blank ``remote_call`` are silently skipped — they're permissive saves
+    that aren't ready to score. Rows logged just outside the contest window
+    are skipped too *unless* they pair with an in-window mate (see
+    ``_qso_time_valid``); such stragglers still act as pairing candidates so
+    their in-window counterpart matches cleanly.
 
     Pipeline order: classify → detect suspected → apply overrides →
     mark dupes → assign points → persist. Overrides run before dedupe so
@@ -280,13 +364,7 @@ def score_contest(contest: Contest) -> dict[str, int]:
     participants_by_key: dict[str, Participant] = {match_key(p.callsign): p for p in participants}
     key_by_participant_id: dict[int, str] = {p.id: k for k, p in participants_by_key.items()}
     qsos_by_key: dict[str, list[QsoEntry]] = {
-        k: list(
-            p.qsos
-            .filter(utc_time__isnull=False)
-            .exclude(mode="")
-            .exclude(remote_call="")
-            .order_by("utc_time", "id")
-        )
+        k: _scorable_qsos(p, contest)
         for k, p in participants_by_key.items()
     }
 
@@ -303,6 +381,11 @@ def score_contest(contest: Contest) -> dict[str, int]:
             result = classify_qso(
                 qso, peer_qsos=peer_qsos, my_key=p_key, peer_callsign=peer_callsign,
             )
+            if not _qso_time_valid(qso, contest, result.matched_qso):
+                # Out of the contest window and not rescued by an in-window
+                # pair — not a scorable QSO. Matches the pre-existing
+                # behaviour of dropping rows with no parsed time: no record.
+                continue
             records.append(ScoringRecord(
                 qso=qso,
                 status=result.status,

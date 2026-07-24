@@ -473,6 +473,75 @@ def test_score_contest_paired_qso_across_h1_h2_boundary_uses_canonical_half(seed
 
 
 @pytest.mark.django_db
+def test_score_contest_boundary_qso_logged_after_close_scores_both_sides(seeded_contest):
+    """A QSO that started at 09:59 but whose *end* one side logged as 10:02.
+
+    The permissive parser leaves the out-of-window row with ``utc_time =
+    None`` (only the raw HHMM is kept). The QSO still started before 10:00,
+    so both sides must score — the operator who logged correctly must not be
+    denied points because their peer logged the end time. The reconstructed
+    timestamp used to pair the straggler is transient: the row stays null in
+    the DB (and out-of-window in the log editor)."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
+    t_in = seeded_contest.end_utc.replace(second=0)  # 09:59:00, in window
+
+    qa = _qso(a, t=t_in, remote_call="HB9ABC/P", txts=TXT_A, txtr=TXT_B)
+    # B logged the QSO's end at 10:02: out of window, so utc_time is null but
+    # the raw HHMM is well-formed — exactly what portal.qso_service stores.
+    qb = QsoEntry.objects.create(
+        participant=b, utc_raw="1002", utc_time=None, mode="CW",
+        remote_call="HB9TVK/P", rsts="599", rstr="599", txts=TXT_B, txtr=TXT_A,
+    )
+
+    score_contest(seeded_contest)
+
+    ra = ScoringRecord.objects.get(qso=qa)
+    rb = ScoringRecord.objects.get(qso=qb)
+    assert ra.status == ScoringStatus.FULL_MATCH
+    assert rb.status == ScoringStatus.FULL_MATCH
+    assert ra.points == 4
+    assert rb.points == 4
+    assert ra.matched_qso == qb
+    assert rb.matched_qso == qa
+    # The reconstructed timestamp is in-memory only — never persisted.
+    qb.refresh_from_db()
+    assert qb.utc_time is None
+
+
+@pytest.mark.django_db
+def test_score_contest_out_of_window_qso_without_mate_is_dropped(seeded_contest):
+    """A straggler with no in-window counterpart to anchor it does not score
+    — unchanged from before, when a null ``utc_time`` dropped it outright."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    qa = QsoEntry.objects.create(
+        participant=a, utc_raw="1002", utc_time=None, mode="CW",
+        remote_call="DL1ABC", rsts="599", rstr="599",
+    )
+    score_contest(seeded_contest)
+    assert not ScoringRecord.objects.filter(qso=qa).exists()
+
+
+@pytest.mark.django_db
+def test_score_contest_both_sides_after_close_do_not_score(seeded_contest):
+    """When both operators place the QSO after 10:00, the earlier of the two
+    timestamps is still out of window — the contact started too late, so
+    neither side scores."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
+    qa = QsoEntry.objects.create(
+        participant=a, utc_raw="1002", utc_time=None, mode="CW",
+        remote_call="HB9ABC/P", rsts="599", rstr="599", txts=TXT_A, txtr=TXT_B,
+    )
+    qb = QsoEntry.objects.create(
+        participant=b, utc_raw="1003", utc_time=None, mode="CW",
+        remote_call="HB9TVK/P", rsts="599", rstr="599", txts=TXT_B, txtr=TXT_A,
+    )
+    score_contest(seeded_contest)
+    assert not ScoringRecord.objects.filter(qso__in=[qa, qb]).exists()
+
+
+@pytest.mark.django_db
 def test_score_contest_dxcall_missing_portable_suffix_loses_points(seeded_contest):
     """End-to-end reproduction of the user's bug report: HB9CGA/P logged
     HB3YMQ (no /P) instead of HB3YMQ/P. The receiver loses their 4 points;
