@@ -147,6 +147,45 @@ def test_candidates_flag_existing_invalid_marks(seeded_contest):
     assert candidates[0].is_invalid is True
 
 
+@pytest.mark.django_db
+def test_candidates_exclude_scored_suspected_call_mismatch(seeded_contest):
+    """A non-NMD remote the scoring engine already resolved as a suspected
+    mis-hearing of a real NMD station must not surface — it's not an unknown
+    call to verify. Repro: HB9EPE/P logged HB9BXQ/P (nonexistent) for a QSO
+    the engine pinned to HB9BQB/P."""
+    epe = _make_participant(seeded_contest, username="HB9EPE", callsign="HB9EPE/P")
+    _make_participant(seeded_contest, username="HB9BQB", callsign="HB9BQB/P")
+    qso = _add_qso(epe, remote="HB9BXQ/P")  # wrong call, does not exist
+    ScoringRecord.objects.create(
+        qso=qso,
+        status=ScoringStatus.SUSPECTED_CALL_MISMATCH,
+        suspected_correct_call="HB9BQB/P",
+    )
+
+    assert build_candidates(seeded_contest) == []
+
+
+@pytest.mark.django_db
+def test_candidates_suppress_is_per_sighting_not_per_call(seeded_contest):
+    """Only the resolved sighting is suppressed: if another operator logged
+    the same call and scoring did NOT resolve it, the call still surfaces,
+    counting only the un-resolved sighting."""
+    epe = _make_participant(seeded_contest, username="HB9EPE", callsign="HB9EPE/P")
+    other = _make_participant(seeded_contest, username="HB9OTH", callsign="HB9OTH/P")
+    resolved = _add_qso(epe, remote="DL1XYZ")
+    _add_qso(other, remote="DL1XYZ")
+    ScoringRecord.objects.create(
+        qso=resolved,
+        status=ScoringStatus.SUSPECTED_CALL_MISMATCH,
+        suspected_correct_call="HB9BQB/P",
+    )
+
+    candidates = build_candidates(seeded_contest)
+    by_call = {c.callsign: c for c in candidates}
+    assert set(by_call) == {"DL1XYZ"}
+    assert by_call["DL1XYZ"].logger_count == 1  # only HB9OTH's un-resolved sighting
+
+
 # --- view ------------------------------------------------------------------------------------
 
 

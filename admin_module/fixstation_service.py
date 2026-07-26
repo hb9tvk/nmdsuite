@@ -6,15 +6,27 @@ callsign would go undetected without admin verification. Each
 candidate gets external-lookup links (QRZ.com, QRZCQ, HamQTH) so
 staff can sanity-check the call against the public databases.
 
-Operates on what's in the QSO log directly (no dependence on a
-scoring run). Cancelled participants are excluded.
+Driven by the QSO log; cancelled participants are excluded. One
+scoring result is consulted: a non-NMD sighting the pairing engine
+already resolved as a suspected mis-hearing of a real NMD station
+(``SUSPECTED_CALL_MISMATCH``) is suppressed — the true station is
+known and the QSO already scores 0, so there is nothing left for an
+admin to verify. Before any scoring run there are no such records and
+every sighting surfaces, same as before.
 """
 from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
 
-from core.models import Contest, InvalidCallsign, Participant, QsoEntry
+from core.models import (
+    Contest,
+    InvalidCallsign,
+    Participant,
+    QsoEntry,
+    ScoringRecord,
+    ScoringStatus,
+)
 from registration.callsigns import core_callsign, normalize_callsign
 
 # How many distinct NMD loggers a callsign can have and still be
@@ -38,7 +50,10 @@ def build_candidates(contest: Contest) -> list[FixstationCandidate]:
 
     Two flavours of candidate are surfaced:
     - **Non-NMD remotes** (1-2 loggers): operator could have misheard
-      the call; admin verifies against external databases.
+      the call; admin verifies against external databases. Sightings
+      the scoring engine already pinned to a real NMD sender
+      (``SUSPECTED_CALL_MISMATCH``) are excluded — they aren't unknown
+      calls, just mis-hearings we've already resolved.
     - **NMD callsigns logged without /P** (the bare form): the
       operator forgot the portable suffix. The pairing engine already
       treats this as SUSPECTED_CALL_MISMATCH (0 pt), but surfacing
@@ -52,9 +67,24 @@ def build_candidates(contest: Contest) -> list[FixstationCandidate]:
         .values_list("callsign", flat=True)
     }
 
+    # QSOs the scoring engine already resolved as a suspected mis-hearing of
+    # a real NMD station: the true station is known and the QSO scores 0, so
+    # there's nothing for an admin to verify. Used to suppress such non-NMD
+    # sightings below. Empty until a scoring run exists (the review surface
+    # is used post-scoring), in which case nothing is suppressed.
+    suspected_qso_ids = set(
+        ScoringRecord.objects
+        .filter(
+            qso__participant__contest=contest,
+            status=ScoringStatus.SUSPECTED_CALL_MISMATCH,
+        )
+        .values_list("qso_id", flat=True)
+    )
+
     # Group QSO remote calls by core_callsign → set of NMD logger callsigns.
-    # Non-NMD: every sighting counts. NMD bare: only sightings without a
-    # slash count (correct /P loggings aren't suspicious).
+    # Non-NMD: every sighting counts, except ones already resolved as a
+    # suspected mis-hearing. NMD bare: only sightings without a slash count
+    # (correct /P loggings aren't suspicious).
     loggers_by_call: dict[str, set[str]] = defaultdict(set)
     for qso in (
         QsoEntry.objects
@@ -71,9 +101,15 @@ def build_candidates(contest: Contest) -> list[FixstationCandidate]:
         if not core:
             continue
         if core in registered_keys:
-            # NMD station — only count loggings that omitted the /P.
+            # NMD station — only count loggings that omitted the /P. These
+            # missing-/P sightings are surfaced deliberately (see docstring)
+            # even though scoring flags them SUSPECTED.
             if "/" in norm:
                 continue
+        elif qso.id in suspected_qso_ids:
+            # Non-NMD call already pinned to a real NMD sender the operator
+            # misheard — resolved, not something to review here.
+            continue
         loggers_by_call[core].add(qso.participant.callsign)
 
     flagged = set(
