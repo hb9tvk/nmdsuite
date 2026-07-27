@@ -111,6 +111,26 @@ def test_review_unknown_participant_404s(client, seeded_contest):
 
 
 @pytest.mark.django_db
+def test_review_participant_shows_qso_times_in_utc_not_server_tz(client, seeded_contest):
+    """Regression: the column is labelled UTC, so it must render UTC even when
+    the deployment's TIME_ZONE is a non-UTC zone (Europe/Zurich = UTC+2 in
+    summer, which was showing CEST times under a UTC header)."""
+    from django.test import override_settings
+
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc + timedelta(minutes=23)  # 06:23 UTC
+    _qso(a, t=t, remote_call="DL1XYZ", mode="SSB", rsts="59", rstr="59")
+    score_contest(seeded_contest)
+
+    client.force_login(_make_staff_user())
+    with override_settings(TIME_ZONE="Europe/Zurich"):
+        response = client.get(f"/scoring/{a.pk}/")
+    body = response.content.decode()
+    assert "06:23" in body       # UTC, as the header promises
+    assert "08:23" not in body   # CEST (UTC+2) — the bug
+
+
+@pytest.mark.django_db
 def test_review_year_switcher_renders_all_contest_years(client, seeded_contest):
     """The sidebar's year switcher should list every Contest row, including archived."""
     from datetime import date, datetime, time, timezone
