@@ -44,6 +44,13 @@ Decisions encoded here:
   stripped on both sides before comparing — operators are inconsistent
   about typing the suffix into the remote-call field. Uses the same
   helper the login flow uses (``registration.callsigns.login_username``).
+- **Peer callsign swaps**: when the peer's log claims us but the texts
+  are beyond tolerance, the fuzzy stage still runs before settling on
+  TEXT_MISMATCH — the peer may have swapped the callsigns of two
+  contacts, attaching their claim on us to the wrong row. If another of
+  their QSOs matches our texts in both directions, that row is the real
+  pair (FULL_MATCH). The complementary re-attribution of the peer's own
+  mis-called rows happens in ``scoring.suspected``.
 - Text tolerance: up to 2 character errors on the receiver side still
   counts as a full match (see ``scoring.text_match.DEFAULT_MAX_ERRORS``).
   The comparison is **asymmetric on purpose**: we can't tell whether a
@@ -183,10 +190,15 @@ def classify_qso(
     - **Strict**: peer's recorded dxcall normalises to ``my_key``. Receiver-
       direction text-distance decides FULL_MATCH vs TEXT_MISMATCH (the
       sender is always assumed correct; see :func:`_receiver_distance`).
-    - **Fuzzy**: peer's dxcall doesn't match us, but their texts match ours
-      *in both directions* within ``max_errors``. Strong evidence the peer
-      typed a wrong dxcall for our QSO. Classified as FULL_MATCH — we got
-      the call right, the peer's typo isn't our problem.
+    - **Fuzzy**: their texts match ours *in both directions* within
+      ``max_errors``. Strong evidence the candidate is the peer's record of
+      our QSO even though they typed a wrong dxcall. Classified as
+      FULL_MATCH — we got the call right, the peer's typo isn't our
+      problem. Runs when there is no strict candidate, and ALSO as a
+      rescue when the strict mate's text is beyond tolerance (a peer who
+      swapped the callsigns of two contacts leaves their claim on us
+      attached to the wrong row); only if the rescue finds nothing does
+      the strict mate yield TEXT_MISMATCH.
     """
     if peer_qsos is None:
         status = ScoringStatus.HB9_QSO if is_swiss_callsign(qso.remote_call) else ScoringStatus.DX_QSO
@@ -226,7 +238,14 @@ def classify_qso(
             )
         if has_texts and distance <= max_errors:
             return Classification(status=ScoringStatus.FULL_MATCH, matched_qso=mate, text_distance=distance)
-        return Classification(status=ScoringStatus.TEXT_MISMATCH, matched_qso=mate, text_distance=distance)
+        # The strict mate's text doesn't fit ours at all. Don't charge the
+        # receiver yet — fall through to the fuzzy stage: if a DIFFERENT
+        # QSO in the peer's log carries our texts (both directions), the
+        # peer swapped callsigns between two contacts and their claim on
+        # us belongs to someone else. The strict mate itself can't be
+        # re-picked by the fuzzy filter — it just failed the same
+        # receiver-direction test the filter applies. If nothing rescues,
+        # TEXT_MISMATCH against the strict mate (bottom of function).
 
     # Stage 2 — fuzzy: peer typed a wrong dxcall but their texts match ours both ways.
     fuzzy_candidates = [c for c in in_window if _is_fuzzy_pair(qso, c, max_errors)]
@@ -250,6 +269,14 @@ def classify_qso(
             text_distance=distance,
         )
 
+    if mate is not None:
+        # Strict mate with bad text and no fuzzy rescue — a genuine
+        # receiving error on our side.
+        return Classification(
+            status=ScoringStatus.TEXT_MISMATCH,
+            matched_qso=mate,
+            text_distance=_receiver_distance(qso, mate),
+        )
     return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
 
 

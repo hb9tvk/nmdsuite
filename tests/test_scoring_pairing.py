@@ -625,3 +625,82 @@ def test_score_contest_summary_counts(seeded_contest):
     assert summary[ScoringStatus.FULL_MATCH] == 2  # both sides of the pair
     assert summary[ScoringStatus.DX_QSO] == 1
     assert summary[ScoringStatus.HB9_QSO] == 1
+
+
+@pytest.mark.django_db
+def test_classify_strict_mate_with_bad_text_rescued_by_fuzzy(seeded_contest):
+    """The peer swapped callsigns between two contacts: their claim on us
+    carries hopeless text, but another of their rows matches our texts in
+    both directions — that row is our real pair, so FULL_MATCH instead of
+    TEXT_MISMATCH against the wrong row."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
+    t = seeded_contest.start_utc
+    q = _qso(a, t=t, remote_call="HB9ABC/P", txts=TXT_A, txtr=TXT_B)
+    # B's claim on us — belongs to a different contact, texts don't fit.
+    wrong_claim = _qso(b, t=t, remote_call="HB9TVK/P",
+                       txts="COMPLETELY DIFFERENT WORDS 999",
+                       txtr="ALSO NOT MATCHING ANYTHING 888")
+    # B's record of OUR QSO, filed under a mistyped callsign.
+    real = _qso(b, t=t + timedelta(minutes=2), remote_call="HB9ZZZ/P",
+                txts=TXT_B, txtr=TXT_A)
+
+    result = classify_qso(
+        q, peer_qsos=[wrong_claim, real],
+        my_key=match_key(a.callsign), peer_callsign=b.callsign,
+    )
+    assert result.status == ScoringStatus.FULL_MATCH
+    assert result.matched_qso == real
+
+
+@pytest.mark.django_db
+def test_score_contest_swapped_callsigns_rescue_and_reattribution(seeded_contest):
+    """End-to-end reproduction of the HB9HRJ field report: HRJ worked CYX
+    (early) and ABO (later) but logged the callsigns crossed — the CYX QSO
+    under a non-participant call, the ABO QSO under CYX's call.
+
+    Expected: both innocent peers get FULL_MATCH against HRJ's *correct*
+    rows (CYX via the fuzzy rescue — its strict mate has hopeless text);
+    both of HRJ's rows score 0 with the TRUE reason (wrong callsign, with
+    the real peer named), not a bogus text-mismatch."""
+    hrj = _make_participant(seeded_contest, username="HB9HRJ", callsign="HB9HRJ/P")
+    abo = _make_participant(seeded_contest, username="HB9ABO", callsign="HB9ABO/P")
+    cyx = _make_participant(seeded_contest, username="HB9CYX", callsign="HB9CYX/P")
+    t = seeded_contest.start_utc
+    ANT18 = "THE ANTENNA IS UP 018"
+    ANT20 = "THE TOWER IS DOWN 020"   # > 2 errors vs ANT18 — no lucky near-match
+    BAUM = "DER BAUM IST GROSS 111"
+    BENU = "BENUTZER HANDBUCH 222"
+
+    # Real QSO 1: HRJ↔CYX — HRJ logs it under HB9CEX (non-participant).
+    q_hrj_1 = _qso(hrj, t=t + timedelta(minutes=7), remote_call="HB9CEX/P", txts=ANT18, txtr=BAUM)
+    q_cyx = _qso(cyx, t=t + timedelta(minutes=9), remote_call="HB9HRJ/P", txts=BAUM, txtr=ANT18)
+    # Real QSO 2: HRJ↔ABO — HRJ logs it under CYX's call.
+    q_hrj_2 = _qso(hrj, t=t + timedelta(minutes=15), remote_call="HB9CYX/P", txts=ANT20, txtr=BENU)
+    q_abo = _qso(abo, t=t + timedelta(minutes=18), remote_call="HB9HRJ/P", txts=BENU, txtr=ANT20)
+
+    score_contest(seeded_contest)
+
+    r_abo = ScoringRecord.objects.get(qso=q_abo)
+    assert r_abo.status == ScoringStatus.FULL_MATCH
+    assert r_abo.matched_qso == q_hrj_2
+    assert r_abo.points == 4
+
+    # CYX pairs with HRJ's true row via the fuzzy rescue — NOT text-mismatched
+    # against the row HRJ mislabelled with CYX's call.
+    r_cyx = ScoringRecord.objects.get(qso=q_cyx)
+    assert r_cyx.status == ScoringStatus.FULL_MATCH
+    assert r_cyx.matched_qso == q_hrj_1
+    assert r_cyx.points == 4
+
+    # HRJ's rows: 0 points each, with the true reason and the real peer named.
+    r1 = ScoringRecord.objects.get(qso=q_hrj_1)
+    assert r1.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert r1.suspected_correct_call == "HB9CYX/P"
+    assert r1.points == 0
+
+    r2 = ScoringRecord.objects.get(qso=q_hrj_2)
+    assert r2.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert r2.suspected_correct_call == "HB9ABO/P"
+    assert r2.matched_qso is None
+    assert r2.points == 0

@@ -175,8 +175,10 @@ def test_suspected_skips_records_with_empty_candidate_txts(seeded_contest):
 
 @pytest.mark.django_db
 def test_suspected_does_not_touch_full_or_text_mismatch(seeded_contest):
-    """FULL_MATCH has a confirmed pair (no second-guessing); TEXT_MISMATCH
-    also has one (with bad text). Both stay as-is."""
+    """FULL_MATCH has a confirmed pair (no second-guessing). TEXT_MISMATCH
+    can only be overturned by BOTH-direction text evidence; here the
+    candidate only matches the receiver direction (their txtr is garbage),
+    so it stays TEXT_MISMATCH."""
     a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
     c = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
     t = seeded_contest.start_utc
@@ -245,6 +247,36 @@ def test_suspected_leaves_legitimate_hb9_qso_with_empty_text_alone(seeded_contes
     flipped = detect_suspected(records, qsos_by_key=qbk, participants_by_key=pbk, key_by_participant_id=kbpid)
     assert flipped == 0
     assert records[0].status == ScoringStatus.HB9_QSO
+
+
+@pytest.mark.django_db
+def test_suspected_overturns_text_mismatch_on_both_direction_match(seeded_contest):
+    """The operator swapped two contacts' callsigns: their QSO claims B, so
+    it strict-pairs with B's claim on them (wild text → TEXT_MISMATCH). But
+    C's QSO matches their texts in BOTH directions — C is the real peer.
+    Flip to SUSPECTED with C, drop the bogus mate, refresh the distance."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    b = _make_participant(seeded_contest, username="HB9ABC", callsign="HB9ABC/P")
+    c = _make_participant(seeded_contest, username="HB9XYZ", callsign="HB9XYZ/P")
+    t = seeded_contest.start_utc
+    qa = _qso(a, t=t, remote_call="HB9ABC/P", txts=TXT_A, txtr=TXT_B)
+    qb = _qso(b, t=t, remote_call="HB9TVK/P", txts=TXT_C, txtr="unrelated words here 123")
+    # C's row carries A's texts in both directions — the true pair.
+    _qso(c, t=t, remote_call="HB9DEF/P", txts=TXT_B, txtr=TXT_A)
+
+    record = ScoringRecord(
+        qso=qa, status=ScoringStatus.TEXT_MISMATCH, matched_qso=qb,
+        text_distance=15, half=_qso_half(qa, seeded_contest),
+    )
+    records = [record]
+    pbk, kbpid, qbk = _scaffold(seeded_contest, [a, b, c])
+    flipped = detect_suspected(records, qsos_by_key=qbk, participants_by_key=pbk, key_by_participant_id=kbpid)
+
+    assert flipped == 1
+    assert record.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert record.suspected_correct_call == c.callsign
+    assert record.matched_qso is None       # the strict claim wasn't our pair
+    assert record.text_distance == 0        # vs. the real sender, not the bogus mate
 
 
 # --- score_contest integration ---------------------------------------------------------------
