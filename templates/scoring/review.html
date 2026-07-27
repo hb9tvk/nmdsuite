@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n tz %}
 {% block title %}{% trans "Scoring review" %} — NMD{% endblock %}
 
 {% block content %}
@@ -69,7 +69,7 @@
                                     {% with qso=row.qso score=row.score %}
                                         <tr class="scoring-row scoring-row-{% if score %}{{ score.status }}{% else %}none{% endif %}">
                                             <td class="cell-utc">
-                                                {% if qso.utc_time %}{{ qso.utc_time|date:"H:i" }}{% else %}<span class="bad">{{ qso.utc_raw|default:"—" }}</span>{% endif %}
+                                                {% if qso.utc_time %}{{ qso.utc_time|utc|date:"H:i" }}{% else %}<span class="bad">{{ qso.utc_raw|default:"—" }}</span>{% endif %}
                                             </td>
                                             <td class="cell-peer">{{ qso.remote_call|default:"—" }}</td>
                                             <td>{{ qso.mode|default:"?" }}</td>
@@ -87,7 +87,7 @@
                                                     {% endif %}
                                                     {% if score and score.matched_qso %}
                                                         <div class="match-info">
-                                                            ↳ {% blocktrans with call=score.matched_qso.participant.callsign time=score.matched_qso.utc_time|date:"H:i" %}paired: {{ call }} @ {{ time }}{% endblocktrans %}
+                                                            ↳ {% blocktrans with call=score.matched_qso.participant.callsign time=score.matched_qso.utc_time|utc|date:"H:i" %}paired: {{ call }} @ {{ time }}{% endblocktrans %}
                                                             {% if score.matched_qso.txts %}
                                                                 <div class="text-line"><span class="text-tag">their s</span> {{ score.matched_qso.txts }}</div>
                                                             {% endif %}
