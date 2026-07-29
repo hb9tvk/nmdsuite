@@ -283,7 +283,7 @@ def classify_qso(
 _HHMM_RE = re.compile(r"^\d{4}$")
 
 
-def _parse_clock(utc_raw: str, contest: Contest) -> datetime | None:
+def parse_clock(utc_raw: str, contest: Contest) -> datetime | None:
     """Parse a raw ``HHMM`` field into a UTC datetime on the contest date,
     accepting ANY well-formed wall-clock time — including one just outside
     the contest window.
@@ -292,7 +292,8 @@ def _parse_clock(utc_raw: str, contest: Contest) -> datetime | None:
     ``QsoEntry.utc_time`` for in-window times (06:00–09:59); boundary
     stragglers like ``1002`` are stored with ``utc_time = None``. This
     reconstructs a timestamp for them so they can serve as pairing
-    candidates. Returns ``None`` for genuinely unparseable input.
+    candidates (and, in the review surfaces, be shown/sorted correctly).
+    Returns ``None`` for genuinely unparseable input.
     """
     raw = (utc_raw or "").strip()
     if not _HHMM_RE.match(raw):
@@ -309,7 +310,7 @@ def _scorable_qsos(participant: Participant, contest: Contest) -> list[QsoEntry]
 
     Rows the permissive parser left with ``utc_time = None`` purely because
     their logged time fell just outside the contest window get a TRANSIENT,
-    in-memory timestamp here (see :func:`_parse_clock`) — the row is never
+    in-memory timestamp here (see :func:`parse_clock`) — the row is never
     saved, so its stored ``utc_time`` stays null and it still shows as
     out-of-window in the log editor. This only makes it *available* as a
     pairing candidate; whether it earns points is decided by
@@ -319,7 +320,7 @@ def _scorable_qsos(participant: Participant, contest: Contest) -> list[QsoEntry]
     scorable: list[QsoEntry] = []
     for q in participant.qsos.exclude(mode="").exclude(remote_call=""):
         if q.utc_time is None:
-            q.utc_time = _parse_clock(q.utc_raw, contest)  # transient, never saved
+            q.utc_time = parse_clock(q.utc_raw, contest)  # transient, never saved
         if q.utc_time is not None:
             scorable.append(q)
     scorable.sort(key=lambda q: (q.utc_time, q.id))

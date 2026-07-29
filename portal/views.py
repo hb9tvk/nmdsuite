@@ -492,26 +492,11 @@ def scoring(request):
     rows: list[dict] = []
     breakdown = None
     if published:
-        from core.models import QsoEntry, ScoringRecord
+        from scoring.display import scored_rows
         from scoring.totals import participant_breakdown
 
         breakdown = participant_breakdown(participant)
-        qsos = (
-            QsoEntry.objects
-            .filter(participant=participant)
-            .select_related(
-                "score",
-                "score__matched_qso",
-                "score__matched_qso__participant",
-            )
-            .order_by("utc_time", "utc_raw", "id")
-        )
-        for q in qsos:
-            try:
-                score = q.score
-            except ScoringRecord.DoesNotExist:
-                score = None
-            rows.append({"qso": q, "score": score})
+        rows = scored_rows(participant, contest)
 
     return render(
         request,
