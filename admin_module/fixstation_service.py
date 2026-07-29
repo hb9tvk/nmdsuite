@@ -27,7 +27,7 @@ from core.models import (
     ScoringRecord,
     ScoringStatus,
 )
-from registration.callsigns import core_callsign, normalize_callsign
+from registration.callsigns import core_callsign, is_valid_callsign, normalize_callsign
 
 # How many distinct NMD loggers a callsign can have and still be
 # considered "suspicious enough" to surface. Three or more
@@ -101,10 +101,15 @@ def build_candidates(contest: Contest) -> list[FixstationCandidate]:
         if not core:
             continue
         if core in registered_keys:
-            # NMD station — only count loggings that omitted the /P. These
-            # missing-/P sightings are surfaced deliberately (see docstring)
-            # even though scoring flags them SUSPECTED.
-            if "/" in norm:
+            # NMD station. A properly-suffixed logging (``HB9BQB/P``, or a
+            # valid prefixed form) isn't suspicious — skip it. Surface
+            # anything else that resolves to this station: a bare call
+            # (missing /P) or a MALFORMED one like ``HB9BQB/`` (trailing
+            # slash, empty suffix) — the latter would otherwise slip past
+            # a plain "has a slash" test. These missing/broken-/P sightings
+            # are surfaced deliberately (see docstring) even though scoring
+            # flags them SUSPECTED, so an admin can notice and follow up.
+            if "/" in norm and is_valid_callsign(norm):
                 continue
         elif qso.id in suspected_qso_ids:
             # Non-NMD call already pinned to a real NMD sender the operator

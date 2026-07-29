@@ -40,6 +40,11 @@ def test_is_valid_callsign(raw, expected):
     ("OE/HB9TVK/P", "OE/HB9TVK"),
     # Final segment is not a short letter-only suffix → keep as-is.
     ("HB9XYZ/4", "HB9XYZ/4"),
+    # Sloppy log entries: trailing / (empty suffix) collapses to the base
+    # call so it still matches the participant it refers to.
+    ("HB9BQB/", "HB9BQB"),
+    ("HB9BQB//P", "HB9BQB"),
+    ("/HB9BQB", "HB9BQB"),
 ])
 def test_login_username(raw, expected):
     assert login_username(raw) == expected
