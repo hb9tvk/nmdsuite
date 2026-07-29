@@ -111,6 +111,53 @@ def test_review_unknown_participant_404s(client, seeded_contest):
 
 
 @pytest.mark.django_db
+def test_scored_rows_reconstructs_and_sorts_out_of_window_last(seeded_contest):
+    """A QSO logged at 10:02 (out of window → utc_time None in the DB) is
+    reconstructed for display and sorted AFTER the in-window rows, not first
+    as a NULL utc_time does in SQL. The reconstruction is transient."""
+    from scoring.display import scored_rows
+
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc
+    q_early = _qso(a, t=t + timedelta(minutes=90), remote_call="DL1ABC",
+                   mode="SSB", rsts="59", rstr="59")  # 07:30
+    q_late = QsoEntry.objects.create(
+        participant=a, utc_raw="1002", utc_time=None, mode="SSB",
+        remote_call="DL2ABC", rsts="59", rstr="59",
+    )
+    score_contest(seeded_contest)
+
+    rows = scored_rows(a, seeded_contest)
+    assert [r["qso"].id for r in rows] == [q_early.id, q_late.id]  # straggler last
+    late = next(r["qso"] for r in rows if r["qso"].id == q_late.id)
+    assert late.utc_time is not None
+    assert late.utc_time.strftime("%H:%M") == "10:02"
+    q_late.refresh_from_db()
+    assert q_late.utc_time is None  # never persisted
+
+
+@pytest.mark.django_db
+def test_review_out_of_window_qso_rendered_formatted_and_last(client, seeded_contest):
+    """End-to-end: the review page shows the 10:02 straggler as a formatted
+    time after the in-window row, not a raw '1002' floated to the top."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    t = seeded_contest.start_utc
+    _qso(a, t=t + timedelta(minutes=90), remote_call="DL1ABC",
+         mode="SSB", rsts="59", rstr="59")  # 07:30
+    QsoEntry.objects.create(
+        participant=a, utc_raw="1002", utc_time=None, mode="SSB",
+        remote_call="DL2ABC", rsts="59", rstr="59",
+    )
+    score_contest(seeded_contest)
+
+    client.force_login(_make_staff_user())
+    body = client.get(f"/scoring/{a.pk}/").content.decode()
+    assert "10:02" in body                 # formatted, not the raw "1002"
+    assert ">1002<" not in body            # the raw-fallback span is gone
+    assert body.index("07:30") < body.index("10:02")  # straggler sorts last
+
+
+@pytest.mark.django_db
 def test_review_participant_shows_qso_times_in_utc_not_server_tz(client, seeded_contest):
     """Regression: the column is labelled UTC, so it must render UTC even when
     the deployment's TIME_ZONE is a non-UTC zone (Europe/Zurich = UTC+2 in

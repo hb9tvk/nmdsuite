@@ -15,7 +15,8 @@ from __future__ import annotations
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, render
 
-from core.models import Contest, Participant, QsoEntry, ScoringRecord
+from core.models import Contest, Participant
+from scoring.display import scored_rows
 from scoring.totals import participant_breakdown
 
 
@@ -53,15 +54,6 @@ def _row_for_participant(p: Participant) -> dict:
     }
 
 
-def _qso_with_score(qso: QsoEntry) -> dict:
-    """Bundle a QSO with its ScoringRecord (or ``None``) for template rendering."""
-    try:
-        score = qso.score
-    except ScoringRecord.DoesNotExist:
-        score = None
-    return {"qso": qso, "score": score}
-
-
 @_staff_required
 def review(request, pk: int | None = None):
     contest = _resolve_contest(request)
@@ -84,17 +76,7 @@ def review(request, pk: int | None = None):
     rows: list[dict] = []
     if pk is not None:
         selected = get_object_or_404(Participant, pk=pk, contest=contest)
-        qsos = (
-            QsoEntry.objects
-            .filter(participant=selected)
-            .select_related(
-                "score",
-                "score__matched_qso",
-                "score__matched_qso__participant",
-            )
-            .order_by("utc_time", "utc_raw", "id")
-        )
-        rows = [_qso_with_score(q) for q in qsos]
+        rows = scored_rows(selected, contest)
 
     return render(request, "scoring/review.html", {
         "contest": contest,
