@@ -583,6 +583,25 @@ def test_score_contest_handles_portable_suffix_asymmetry(seeded_contest):
 
 
 @pytest.mark.django_db
+def test_score_contest_malformed_participant_call_not_scored_as_hb9(seeded_contest):
+    """A station logs 'HB9BQB/' (trailing slash, missing /P) for participant
+    HB9BQB/P, RST-only (no text). The malformed call still refers to a real
+    participant, so it must NOT score as a 1-pt HB9 QSO — the trailing slash
+    used to defeat callsign matching and fall through to HB9_QSO."""
+    a = _make_participant(seeded_contest, username="HB9TVK", callsign="HB9TVK/P")
+    bqb = _make_participant(seeded_contest, username="HB9BQB", callsign="HB9BQB/P")
+    t = seeded_contest.start_utc
+    qa = _qso(a, t=t, remote_call="HB9BQB/", txts="", txtr="")   # malformed, no text
+    _qso(bqb, t=t, remote_call="HB9TVK/P", txts="", txtr="")     # peer logs it back
+
+    score_contest(seeded_contest)
+    r = ScoringRecord.objects.get(qso=qa)
+    assert r.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert r.suspected_correct_call == "HB9BQB/P"
+    assert r.points == 0
+
+
+@pytest.mark.django_db
 def test_score_contest_classifies_mixed_log(seeded_contest):
     """One log with NMD-match + NMD-unmatched + Swiss-non-participant + DX, scored together.
 

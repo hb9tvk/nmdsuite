@@ -31,16 +31,22 @@ def is_valid_callsign(raw: str) -> bool:
 def login_username(raw: str) -> str:
     """Drop the trailing /-suffix so login uses the bare callsign.
 
-    ``HB9TVK/P``  → ``HB9TVK``
-    ``HB9TVK``    → ``HB9TVK``
+    ``HB9TVK/P``   → ``HB9TVK``
+    ``HB9TVK``     → ``HB9TVK``
     ``OE/HB9TVK/P`` → ``OE/HB9TVK``
+    ``HB9TVK/``    → ``HB9TVK``  (trailing/empty slash from a sloppy log
+                                  entry collapses to the base call)
     """
     call = normalize_callsign(raw)
-    parts = call.split("/")
+    # Drop empty segments first: a trailing ``/``, leading ``/``, or doubled
+    # ``//`` in a permissively-saved log entry would otherwise leave a
+    # malformed key (``HB9BQB/``) that never matches the participant it
+    # actually refers to (``HB9BQB``).
+    parts = [p for p in call.split("/") if p]
     # Drop the *final* segment only if it's a short letter-only suffix (P, M, MM…).
     if len(parts) >= 2 and parts[-1].isalpha() and len(parts[-1]) <= 2:
-        return "/".join(parts[:-1])
-    return call
+        parts = parts[:-1]
+    return "/".join(parts)
 
 
 def core_callsign(raw: str) -> str:

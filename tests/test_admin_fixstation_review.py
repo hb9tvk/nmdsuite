@@ -104,6 +104,22 @@ def test_candidates_surface_nmd_call_logged_without_p(seeded_contest):
 
 
 @pytest.mark.django_db
+def test_candidates_surface_nmd_call_with_trailing_slash(seeded_contest):
+    """A registered NMD call logged malformed as ``HB9BQB/`` (trailing slash,
+    empty suffix) is surfaced like a missing-/P typo. A plain "has a slash"
+    check used to hide it, so it could never be reviewed or invalidated."""
+    a = _make_participant(seeded_contest, username="HB9A", callsign="HB9A/P")
+    _make_participant(seeded_contest, username="HB9BQB", callsign="HB9BQB/P")
+    _add_qso(a, remote="HB9BQB/")  # malformed — missing the P after the slash
+
+    candidates = build_candidates(seeded_contest)
+    by_call = {c.callsign: c for c in candidates}
+    assert "HB9BQB" in by_call
+    assert by_call["HB9BQB"].is_nmd_call is True
+    assert by_call["HB9BQB"].logger_count == 1
+
+
+@pytest.mark.django_db
 def test_candidates_nmd_correctly_logged_does_not_inflate_typo_count(seeded_contest):
     """If HB9TVK is registered, 10 stations logging ``HB9TVK/P``
     correctly + 1 logging ``HB9TVK`` bare should surface the 1 bare
