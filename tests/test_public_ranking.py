@@ -103,12 +103,14 @@ def test_empty_contest_returns_empty_page(published_contest):
 
 
 @pytest.mark.django_db
-def test_cw_ranking_includes_only_cw_registered_participants(published_contest):
-    cw_only = _make_participant(published_contest, username="HB9CW", callsign="HB9CW/P", modes=1)
-    ssb_only = _make_participant(published_contest, username="HB9SSB", callsign="HB9SSB/P", modes=2)
+def test_ranking_partitions_participants_by_the_mode_they_scored_in(published_contest):
+    """Each mode's ranking lists the stations that scored in that mode,
+    independent of what they registered for."""
+    cw_worker = _make_participant(published_contest, username="HB9CW", callsign="HB9CW/P", modes=1)
+    ssb_worker = _make_participant(published_contest, username="HB9SSB", callsign="HB9SSB/P", modes=2)
     both = _make_participant(published_contest, username="HB9BOTH", callsign="HB9BOTH/P", modes=3)
-    _add_qso(cw_only, mode="CW", points=4)
-    _add_qso(ssb_only, mode="SSB", points=4)
+    _add_qso(cw_worker, mode="CW", points=4)
+    _add_qso(ssb_worker, mode="SSB", points=4)
     _add_qso(both, mode="CW", points=4)
     _add_qso(both, mode="SSB", points=4)
 
@@ -117,6 +119,26 @@ def test_cw_ranking_includes_only_cw_registered_participants(published_contest):
     ssb_calls = {r.callsign for r in page.ssb}
     assert cw_calls == {"HB9CW/P", "HB9BOTH/P"}
     assert ssb_calls == {"HB9SSB/P", "HB9BOTH/P"}
+
+
+@pytest.mark.django_db
+def test_ranking_includes_station_that_scored_in_unregistered_mode(published_contest):
+    """A CW-only-registered station that makes a *scoring* SSB QSO must
+    appear in the SSB ranking — the QSO's mode comes from the RST, not the
+    registration, so those points are real. But a 0-point SSB QSO from a
+    non-SSB-registered station does not pull them in."""
+    scored = _make_participant(published_contest, username="HB9CW", callsign="HB9CW/P", modes=1)
+    _add_qso(scored, mode="SSB", points=4)
+    zero = _make_participant(published_contest, username="HB9ZR", callsign="HB9ZR/P", modes=1)
+    _add_qso(zero, mode="SSB", points=0, status="text_mismatch")
+
+    page = build_ranking_page(published_contest)
+    ssb_calls = {r.callsign for r in page.ssb}
+    assert "HB9CW/P" in ssb_calls        # scored SSB → included despite CW-only reg
+    assert "HB9ZR/P" not in ssb_calls    # 0-pt SSB, not registered → still omitted
+    ssb_row = next(r for r in page.ssb if r.callsign == "HB9CW/P")
+    assert ssb_row.points == 4
+    assert ssb_row.nmd_qsos == 1
 
 
 @pytest.mark.django_db
@@ -167,18 +189,15 @@ def test_ranking_omits_cancelled_and_unsubmitted(published_contest):
 
 
 @pytest.mark.django_db
-def test_ranking_includes_zero_point_participants_who_registered_for_the_mode(published_contest):
-    """A station that registered for CW but logged no scored QSOs should
-    still appear in the CW ranking at the bottom with 0 points."""
+def test_ranking_excludes_zero_point_participants(published_contest):
+    """Ranking is by score alone: a station that registered for CW but
+    logged no scored QSOs is NOT listed (registration is only indicative)."""
     no_score = _make_participant(published_contest, username="HB9Z", callsign="HB9Z/P", modes=1)
     has_score = _make_participant(published_contest, username="HB9A", callsign="HB9A/P", modes=1)
     _add_qso(has_score, mode="CW", points=4)
 
     page = build_ranking_page(published_contest)
-    assert [(r.callsign, r.points) for r in page.cw] == [
-        ("HB9A/P", 4),
-        ("HB9Z/P", 0),
-    ]
+    assert [(r.callsign, r.points) for r in page.cw] == [("HB9A/P", 4)]
 
 
 # --- service: ranking QSO breakdown ----------------------------------------------------------

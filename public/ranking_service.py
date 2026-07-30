@@ -112,14 +112,8 @@ def build_ranking_page(contest: Contest) -> RankingPage:
     )
     scoring = _scoring_summary(contest)
 
-    cw = _ranking_for_mode(
-        participants, scoring,
-        mode_bit=Participant.Mode.CW, mode_str="CW",
-    )
-    ssb = _ranking_for_mode(
-        participants, scoring,
-        mode_bit=Participant.Mode.SSB, mode_str="SSB",
-    )
+    cw = _ranking_for_mode(participants, scoring, mode_str="CW")
+    ssb = _ranking_for_mode(participants, scoring, mode_str="SSB")
     stations = _station_data(participants, scoring)
     markers = _markers(participants)
 
@@ -174,19 +168,22 @@ def _ranking_for_mode(
     participants: list[Participant],
     scoring: dict[int, dict[str, dict[str, int]]],
     *,
-    mode_bit: int, mode_str: str,
+    mode_str: str,
 ) -> list[RankingRow]:
-    """Filter participants to those who registered for ``mode_bit`` and
-    sort by (points DESC, station weight ASC, callsign ASC).
+    """Pick the participants belonging in this mode's ranking and sort by
+    (points DESC, station weight ASC, callsign ASC).
 
-    A station registered for the mode appears in its ranking even with
-    0 points (e.g. they showed up but logged nothing valid). A station
-    not registered for the mode is omitted entirely.
+    Eligibility is by *score alone*: a station appears iff it earned points
+    in this mode. The registered mode is only indicative — operators may
+    work any mode regardless of what they registered, and the QSO's mode
+    comes from the RST length, not the registration. So a CW-only registrant
+    who makes a scoring SSB QSO is ranked in SSB, and a station that
+    registered for a mode but earned nothing in it is not listed.
     """
-    eligible = [p for p in participants if p.operating_modes & mode_bit]
-
     def per_mode(p: Participant) -> dict[str, int]:
         return scoring.get(p.id, {}).get(mode_str, dict(_EMPTY_MODE_SUMMARY))
+
+    eligible = [p for p in participants if per_mode(p)["points"] > 0]
 
     eligible.sort(
         key=lambda p: (
