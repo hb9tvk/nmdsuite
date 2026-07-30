@@ -32,6 +32,10 @@
                 <nav>
                     <a href="{% url 'admin_module:index' %}">{% trans "Administration" %}</a>
                 </nav>
+            {% elif is_editor %}
+                <nav>
+                    <a href="{% url 'admin_module:publish_index' %}">{% trans "Editorial" %}</a>
+                </nav>
             {% endif %}
         {% endif %}
         <div class="topnav-right">

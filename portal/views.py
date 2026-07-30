@@ -18,6 +18,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.models import Contest, Participant, ParticipantPicture, QsoEntry
 from core.picker import map_picker_context
+from core.roles import is_editor
 from registration.services import cancel_participation
 
 from . import qso_service, report_service, station_service, submit_service
@@ -70,6 +71,10 @@ def dashboard(request):
     # so the LOGIN_REDIRECT_URL works uniformly for both roles.
     if request.user.is_staff:
         return redirect("admin_module:index")
+    # Redaktion (club-magazine) editors aren't participants either — send
+    # them to their cut-down publication-prep portal.
+    if is_editor(request.user):
+        return redirect("admin_module:publish_index")
     contest = _active_contest()
     participant = _active_participation(request.user, contest)
     return render(

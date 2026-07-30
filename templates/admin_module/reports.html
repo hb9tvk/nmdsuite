@@ -3,7 +3,11 @@
 {% block title %}{% trans "Participant reports" %} — NMD{% endblock %}
 
 {% block content %}
-    <p><a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a></p>
+    {% if user.is_staff %}
+        <p><a href="{% url 'admin_module:index' %}">← {% trans "Administration" %}</a></p>
+    {% elif is_editor %}
+        <p><a href="{% url 'admin_module:publish_index' %}">← {% trans "Editorial" %}</a></p>
+    {% endif %}
 
     <h1>{% trans "Participant reports" %} — NMD {{ contest.year }}</h1>
     <p class="hint">

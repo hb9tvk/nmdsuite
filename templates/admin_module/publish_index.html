@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Editorial" %} — NMD{% endblock %}
+
+{% block content %}
+    <h1>{% trans "Editorial" %}{% if contest %} — NMD {{ contest.year }}{% endif %}</h1>
+
+    {% if not contest %}
+        <p>{% trans "No active contest yet." %}</p>
+    {% else %}
+        <p class="hint">{% trans "Tools for preparing the club-magazine publication." %}</p>
+        <section class="admin-tools">
+            <ul class="admin-tools-list">
+                <li><a href="{% url 'admin_module:reports_index' %}">{% trans "Participant reports" %}</a> — {% trans "post-contest writeups + photos for the magazine team" %}</li>
+                <li><a href="{% url 'admin_module:ranking_preview' %}">{% trans "Ranking preview" %}</a> — {% trans "what the public page would show right now (admin-only)" %}</li>
+                <li><a href="{% url 'admin_module:ranking_pdf' %}">{% trans "Ranking (PDF)" %}</a> — {% trans "downloadable ranking for the club magazine" %}</li>
+            </ul>
+        </section>
+    {% endif %}
+{% endblock %}
