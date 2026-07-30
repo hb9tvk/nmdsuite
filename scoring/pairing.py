@@ -51,6 +51,14 @@ Decisions encoded here:
   their QSOs matches our texts in both directions, that row is the real
   pair (FULL_MATCH). The complementary re-attribution of the peer's own
   mis-called rows happens in ``scoring.suspected``.
+- **Peer callsign typos** (stage 3): the both-directions fuzzy test can
+  fail when *we* also mis-copied a text. If the peer's row claims a
+  callsign within ``CALL_TYPO_MAX_ERRORS`` of ours that is no registered
+  station's (e.g. ``HB3XNL`` for ``HB3YNL``), and at least one text
+  direction corroborates, treat it as their record of our QSO. The
+  receiver direction then decides FULL_MATCH vs TEXT_MISMATCH as usual —
+  without this, the innocent side of such a pair showed as UNMATCHED
+  ("no log from the peer") even though the peer's log clearly has it.
 - Text tolerance: up to 2 character errors on the receiver side still
   counts as a full match (see ``scoring.text_match.DEFAULT_MAX_ERRORS``).
   The comparison is **asymmetric on purpose**: we can't tell whether a
@@ -90,6 +98,13 @@ from .text_match import DEFAULT_MAX_ERRORS, text_distance
 
 
 MATCH_WINDOW = timedelta(minutes=10)
+
+# Max edit distance for the call-typo pairing stage: how far the peer's
+# claimed dxcall may be from our callsign and still count as a typo'd claim
+# on us. Guarded by two additional conditions (claim must not be a registered
+# station; at least one text direction must corroborate), so the same
+# 2-error tolerance used for exchange texts is safe here too.
+CALL_TYPO_MAX_ERRORS = DEFAULT_MAX_ERRORS
 
 # Swiss callsign prefixes per the contest rules; used to distinguish HB9_QSO
 # (Swiss but non-participant) from DX_QSO (everything else).
@@ -162,6 +177,7 @@ def classify_qso(
     my_key: str | None = None,
     peer_callsign: str | None = None,
     max_errors: int = DEFAULT_MAX_ERRORS,
+    registered_keys: frozenset[str] | set[str] | None = None,
 ) -> Classification:
     """Classify a single QSO.
 
@@ -185,7 +201,12 @@ def classify_qso(
     ``HB3YMQ/P`` — downgrades to ``SUSPECTED_CALL_MISMATCH``. The peer's
     registered callsign goes into ``suspected_correct_call``.
 
-    Two-stage pairing:
+    ``registered_keys`` is the set of all registered participants' match
+    keys, used by the call-typo stage to make sure a near-miss claim isn't
+    actually another real station. ``None`` (test-friendly default) skips
+    that exclusion.
+
+    Three-stage pairing:
 
     - **Strict**: peer's recorded dxcall normalises to ``my_key``. Receiver-
       direction text-distance decides FULL_MATCH vs TEXT_MISMATCH (the
@@ -199,6 +220,14 @@ def classify_qso(
       swapped the callsigns of two contacts leaves their claim on us
       attached to the wrong row); only if the rescue finds nothing does
       the strict mate yield TEXT_MISMATCH.
+    - **Call-typo**: no strict claim on us, and the both-directions fuzzy
+      test fails because *we* mis-copied one text. But the peer logged a
+      dxcall that is within :data:`CALL_TYPO_MAX_ERRORS` of ours AND isn't
+      any registered station — a typo'd claim on us (e.g. ``HB3XNL`` for
+      ``HB3YNL``) — and at least one text direction corroborates. The
+      receiver direction then decides FULL_MATCH vs TEXT_MISMATCH exactly
+      as in the strict stage: the peer's call typo isn't our problem, but
+      our own text errors still are.
     """
     if peer_qsos is None:
         status = ScoringStatus.HB9_QSO if is_swiss_callsign(qso.remote_call) else ScoringStatus.DX_QSO
@@ -277,6 +306,50 @@ def classify_qso(
             matched_qso=mate,
             text_distance=_receiver_distance(qso, mate),
         )
+
+    # Stage 3 — call-typo: nobody claims us and the both-directions fuzzy
+    # test failed (we mis-copied one text), but a peer row claims a callsign
+    # that is a near-miss of ours and no real station's. One corroborating
+    # text direction is required so a bare RST-only row can't false-match.
+    if my_key is not None:
+        typo_candidates: list[tuple[int, QsoEntry]] = []
+        for c in in_window:
+            key = match_key(c.remote_call)
+            if not key:
+                continue
+            if registered_keys is not None and key in registered_keys:
+                continue  # a real station's call — not a typo for ours
+            call_distance = text_distance(key, my_key)
+            if call_distance > CALL_TYPO_MAX_ERRORS:
+                continue
+            corroborated = (
+                (qso.txtr and c.txts and text_distance(qso.txtr, c.txts) <= max_errors)
+                or (qso.txts and c.txtr and text_distance(qso.txts, c.txtr) <= max_errors)
+            )
+            if not corroborated:
+                continue
+            typo_candidates.append((call_distance, c))
+        if typo_candidates:
+            _, best = min(typo_candidates, key=lambda t: (
+                t[0],                                              # closest callsign
+                _receiver_distance(qso, t[1]),                     # then best text
+                abs((t[1].utc_time - qso.utc_time).total_seconds()),
+                t[1].id,
+            ))
+            distance = _receiver_distance(qso, best)
+            if call_mismatch:
+                return Classification(
+                    status=ScoringStatus.SUSPECTED_CALL_MISMATCH,
+                    matched_qso=best,
+                    text_distance=distance,
+                    suspected_correct_call=expected_on_air or "",
+                )
+            # Same rule as the strict stage: the peer's call typo isn't our
+            # problem, but our own text errors still are.
+            if qso.txtr and best.txts and distance <= max_errors:
+                return Classification(status=ScoringStatus.FULL_MATCH, matched_qso=best, text_distance=distance)
+            return Classification(status=ScoringStatus.TEXT_MISMATCH, matched_qso=best, text_distance=distance)
+
     return Classification(status=ScoringStatus.UNMATCHED, matched_qso=None, text_distance=0)
 
 
@@ -395,6 +468,9 @@ def score_contest(contest: Contest) -> dict[str, int]:
         k: _scorable_qsos(p, contest)
         for k, p in participants_by_key.items()
     }
+    # For the call-typo stage: a near-miss claim that IS a registered
+    # station's callsign belongs to that station, not to us.
+    registered_keys = frozenset(participants_by_key)
 
     records: list[ScoringRecord] = []
     for p_key, p in participants_by_key.items():
@@ -408,6 +484,7 @@ def score_contest(contest: Contest) -> dict[str, int]:
                 peer_callsign = participants_by_key[remote_key].callsign
             result = classify_qso(
                 qso, peer_qsos=peer_qsos, my_key=p_key, peer_callsign=peer_callsign,
+                registered_keys=registered_keys,
             )
             if not _qso_time_valid(qso, contest, result.matched_qso):
                 # Out of the contest window and not rescued by an in-window
