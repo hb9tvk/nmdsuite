@@ -53,6 +53,7 @@ from django.utils import timezone
 
 from core.audit import audit
 from core.models import Contest, Participant
+from core.roles import REDAKTION_GROUP
 
 User = get_user_model()
 
@@ -244,9 +245,15 @@ def setup_new_contest(*, year: int, actor) -> Contest:
     archived = Contest.objects.exclude(state=Contest.State.ARCHIVED).update(
         state=Contest.State.ARCHIVED,
     )
-    deactivated = User.objects.filter(
-        is_staff=False, is_superuser=False, is_active=True,
-    ).update(is_active=False)
+    # Deactivate participant accounts for the new season, but keep staff,
+    # superusers, and Redaktion (club-magazine) editors — those roles
+    # persist across contests. See core.roles.
+    deactivated = (
+        User.objects
+        .filter(is_staff=False, is_superuser=False, is_active=True)
+        .exclude(groups__name=REDAKTION_GROUP)
+        .update(is_active=False)
+    )
 
     call_command("seed_contest", "--year", str(year))
     new_contest = Contest.objects.get(year=year)

@@ -27,6 +27,7 @@ from django.views.decorators.http import require_http_methods
 from core.audit import audit
 from core.models import AuditLog, Contest, Participant, ParticipantPicture, QsoEntry
 from core.picker import map_picker_context
+from core.roles import is_editor
 from portal import qso_service, station_service, submit_service
 from portal.forms import QsoEntryForm, StationDataForm
 from portal.qso_upload import UploadParseError, parse_upload
@@ -46,6 +47,16 @@ from .forms import BulkEmailForm
 
 def _staff_required(view):
     return login_required(user_passes_test(lambda u: u.is_staff)(view))
+
+
+def _publish_tools_required(view):
+    """Gate for the publication-prep tools (participant reports, ranking
+    preview, ranking PDF). Open to full staff AND to Redaktion-group
+    editors — the only admin surface a non-staff editor may reach. Every
+    other view keeps ``_staff_required``. See :mod:`core.roles`."""
+    return login_required(
+        user_passes_test(lambda u: u.is_staff or is_editor(u))(view),
+    )
 
 
 def _active_contest() -> Contest | None:
@@ -75,6 +86,17 @@ def index(request):
         "contest": contest,
         "counts": counts,
         "recent_audit": recent_audit,
+    })
+
+
+@_publish_tools_required
+def publish_index(request):
+    """Landing page for the Redaktion (club-magazine) role: only the
+    publication-prep tools, none of the staff dashboard. Full staff can
+    reach it too, but they normally work from the main dashboard, which
+    lists these same tools among the rest."""
+    return render(request, "admin_module/publish_index.html", {
+        "contest": _active_contest(),
     })
 
 
@@ -904,7 +926,7 @@ def participant_list_csv_preview(request):
 # --- Participant reports (F3.2) ----------------------------------------------------------------
 
 
-@_staff_required
+@_publish_tools_required
 def reports_index(request):
     """List every active participant's report text + thumbnails for the
     active contest. Read-only — the magazine team uses this to harvest
@@ -935,7 +957,7 @@ def reports_index(request):
     )
 
 
-@_staff_required
+@_publish_tools_required
 def report_picture_image(request, pk: int, idx: int):
     """Stream the original bytes of one picture for any active participant.
     Staff variant of the owner-gated portal route — no owner check, used
@@ -960,7 +982,7 @@ def report_picture_image(request, pk: int, idx: int):
 # --- Ranking PDF (magazine export) -------------------------------------------------------------
 
 
-@_staff_required
+@_publish_tools_required
 def ranking_pdf(request):
     """Stream the active contest's ranking + station-data table as a PDF.
     Layout mirrors the public ranking page minus the map — intended for
@@ -984,7 +1006,7 @@ def ranking_pdf(request):
 # --- Ranking preview --------------------------------------------------------------------------
 
 
-@_staff_required
+@_publish_tools_required
 def ranking_preview(request):
     """Render the public ranking page against the active contest without
     the published-state gate. Lets staff see what the published ranking
