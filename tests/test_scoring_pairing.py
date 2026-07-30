@@ -178,14 +178,19 @@ def test_classify_strict_match_takes_precedence_over_fuzzy(seeded_contest):
 def test_classify_fuzzy_requires_both_text_directions(seeded_contest):
     """If only one direction's text matches, that's too weak — stay UNMATCHED.
     Strict-callsign-match is what justifies single-direction (receiver) text
-    scoring; without it we need both directions for confidence."""
+    scoring; without it we need both directions for confidence.
+
+    The peer's claimed dxcall here (HB9QQQ) is nowhere near ours, so the
+    call-typo stage doesn't apply either — a near-miss claim (e.g. HB9XSS
+    for HB3XSS) WOULD legitimately pair via stage 3 with exactly this
+    one-direction corroboration; see the call-typo tests."""
     a = _make_participant(seeded_contest, username="HB3XSS", callsign="HB3XSS/P")
     b = _make_participant(seeded_contest, username="HB3YRZ", callsign="HB3YRZ/P")
     t = seeded_contest.start_utc
     qa = _qso(a, t=t, mode="SSB", rsts="55", rstr="55", remote_call="HB3YRZ/P",
               txts="au clair de la lune", txtr="turbina elettrica")
-    # B's QSO has wrong dxcall AND only one direction matches — fuzzy must reject.
-    qb = _qso(b, t=t, mode="SSB", rsts="55", rstr="55", remote_call="HB9XSS/P",
+    # B's QSO has an unrelated dxcall AND only one direction matches — reject.
+    qb = _qso(b, t=t, mode="SSB", rsts="55", rstr="55", remote_call="HB9QQQ/P",
               txts="turbina elettrica", txtr="something completely different here")
 
     result = classify_qso(qa, peer_qsos=[qb], my_key="HB3XSS")
@@ -599,6 +604,98 @@ def test_score_contest_malformed_participant_call_not_scored_as_hb9(seeded_conte
     assert r.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
     assert r.suspected_correct_call == "HB9BQB/P"
     assert r.points == 0
+
+
+@pytest.mark.django_db
+def test_classify_call_typo_stage_pairs_near_miss_claim(seeded_contest):
+    """Stage 3: the peer claims a callsign 1 edit away from ours that is no
+    registered station's, one text direction corroborates, but WE mis-copied
+    the other — fuzzy (both-ways) fails, yet the pair is found and the
+    receiver direction decides: TEXT_MISMATCH."""
+    a = _make_participant(seeded_contest, username="HB3YNL", callsign="HB3YNL/P")
+    b = _make_participant(seeded_contest, username="HB9HOF", callsign="HB9HOF/P")
+    t = seeded_contest.start_utc
+    q = _qso(a, t=t, remote_call="HB9HOF/P",
+             txts="Temperatura 12 grad", txtr="Dominik schilt gerne")
+    peer = _qso(b, t=t + timedelta(minutes=1), remote_call="HB3XNL/P",  # typo: X for Y
+                txts="Dominik spielt gern", txtr="Temperatura 12 grad")
+
+    result = classify_qso(
+        q, peer_qsos=[peer], my_key=match_key(a.callsign),
+        peer_callsign=b.callsign, registered_keys=frozenset({"HB3YNL", "HB9HOF"}),
+    )
+    assert result.status == ScoringStatus.TEXT_MISMATCH
+    assert result.matched_qso == peer
+    assert result.text_distance > 2  # our own copying errors, charged to us
+
+
+@pytest.mark.django_db
+def test_classify_call_typo_stage_ignores_registered_near_miss(seeded_contest):
+    """A near-miss claim that IS another registered station's callsign is
+    that station's QSO, not a typo for ours — no rescue, UNMATCHED."""
+    a = _make_participant(seeded_contest, username="HB3YNL", callsign="HB3YNL/P")
+    b = _make_participant(seeded_contest, username="HB9HOF", callsign="HB9HOF/P")
+    t = seeded_contest.start_utc
+    q = _qso(a, t=t, remote_call="HB9HOF/P",
+             txts="Temperatura 12 grad", txtr="Dominik schilt gerne")
+    peer = _qso(b, t=t + timedelta(minutes=1), remote_call="HB3XNL/P",
+                txts="Dominik spielt gern", txtr="Temperatura 12 grad")
+
+    # Same setup, but HB3XNL is itself a registered station.
+    result = classify_qso(
+        q, peer_qsos=[peer], my_key=match_key(a.callsign),
+        peer_callsign=b.callsign,
+        registered_keys=frozenset({"HB3YNL", "HB9HOF", "HB3XNL"}),
+    )
+    assert result.status == ScoringStatus.UNMATCHED
+
+
+@pytest.mark.django_db
+def test_classify_call_typo_stage_needs_text_corroboration(seeded_contest):
+    """A near-miss claim with NO matching text in either direction is too
+    weak to pair — callsign similarity alone could be coincidence."""
+    a = _make_participant(seeded_contest, username="HB3YNL", callsign="HB3YNL/P")
+    b = _make_participant(seeded_contest, username="HB9HOF", callsign="HB9HOF/P")
+    t = seeded_contest.start_utc
+    q = _qso(a, t=t, remote_call="HB9HOF/P",
+             txts="Temperatura 12 grad", txtr="Dominik schilt gerne")
+    peer = _qso(b, t=t + timedelta(minutes=1), remote_call="HB3XNL/P",
+                txts="voellig andere woerter 999", txtr="auch keine gemeinsamkeit 888")
+
+    result = classify_qso(
+        q, peer_qsos=[peer], my_key=match_key(a.callsign),
+        peer_callsign=b.callsign, registered_keys=frozenset({"HB3YNL", "HB9HOF"}),
+    )
+    assert result.status == ScoringStatus.UNMATCHED
+
+
+@pytest.mark.django_db
+def test_score_contest_call_typo_field_report(seeded_contest):
+    """End-to-end reproduction of the HB9HOF/HB3YNL field report: HOF logged
+    HB3XNL/P (X for Y) and YNL mis-copied one text. HOF gets SUSPECTED with
+    the true call named (already worked); YNL must get a real pair with
+    TEXT_MISMATCH (0 pt — their own text errors), NOT 'no log from peer'."""
+    hof = _make_participant(seeded_contest, username="HB9HOF", callsign="HB9HOF/P")
+    ynl = _make_participant(seeded_contest, username="HB3YNL", callsign="HB3YNL/P")
+    t = seeded_contest.start_utc
+    q_hof = _qso(hof, t=t + timedelta(minutes=7), remote_call="HB3XNL/P",
+                 mode="SSB", rsts="59", rstr="59",
+                 txts="Dominik spielt gern", txtr="Temperatura 12 grad")
+    q_ynl = _qso(ynl, t=t + timedelta(minutes=8), remote_call="HB9HOF/P",
+                 mode="SSB", rsts="59", rstr="59",
+                 txts="Temperatura 12 grad", txtr="Dominik schilt gerne")
+
+    score_contest(seeded_contest)
+
+    r_hof = ScoringRecord.objects.get(qso=q_hof)
+    assert r_hof.status == ScoringStatus.SUSPECTED_CALL_MISMATCH
+    assert r_hof.suspected_correct_call == "HB3YNL/P"
+    assert r_hof.points == 0
+
+    r_ynl = ScoringRecord.objects.get(qso=q_ynl)
+    assert r_ynl.status == ScoringStatus.TEXT_MISMATCH  # not UNMATCHED
+    assert r_ynl.matched_qso == q_hof
+    assert r_ynl.points == 0  # their own mis-copied text, > 2 errors
 
 
 @pytest.mark.django_db
