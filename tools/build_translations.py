@@ -1273,6 +1273,18 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Classement téléchargeable pour la revue du club",
         "Classifica scaricabile per la rivista del club",
     ),
+    # Redaktion (editor) portal
+    "Editorial": ("Redaktion", "Rédaction", "Redazione"),
+    "Tools for preparing the club-magazine publication.": (
+        "Werkzeuge zur Vorbereitung der Publikation in der Vereinszeitschrift.",
+        "Outils pour préparer la publication dans la revue du club.",
+        "Strumenti per preparare la pubblicazione sulla rivista del club.",
+    ),
+    "No active contest yet.": (
+        "Noch kein aktiver Contest.",
+        "Aucun contest actif pour l'instant.",
+        "Ancora nessun contest attivo.",
+    ),
     "Admin preview — results not yet published. Reflects the most recent scoring run.": (
         "Admin-Vorschau — Resultate noch nicht veröffentlicht. Zeigt den Stand der letzten Wertung.",
         "Aperçu admin — résultats non encore publiés. Reflète le dernier calcul de scoring.",
