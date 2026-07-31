@@ -11,7 +11,11 @@
 
     <h1>{% trans "Participant reports" %} — NMD {{ contest.year }}</h1>
     <p class="hint">
-        {% trans "Read-only view of every active participant's report text and uploaded pictures. Participants edit on their own portal page." %}
+        {% if show_text %}
+            {% trans "Read-only view of every active participant's report text and uploaded pictures. Participants edit on their own portal page." %}
+        {% else %}
+            {% trans "Read-only view of every active participant's uploaded pictures. Participants edit on their own portal page." %}
+        {% endif %}
     </p>
 
     {% if not rows %}
@@ -24,10 +28,12 @@
                     <span class="muted">{{ row.participant.first_name }}</span>
                 </header>
 
-                {% if row.text %}
-                    <div class="admin-report-text">{{ row.text|linebreaks }}</div>
-                {% else %}
-                    <p class="hint">{% trans "No text submitted." %}</p>
+                {% if show_text %}
+                    {% if row.text %}
+                        <div class="admin-report-text">{{ row.text|linebreaks }}</div>
+                    {% else %}
+                        <p class="hint">{% trans "No text submitted." %}</p>
+                    {% endif %}
                 {% endif %}
 
                 {% if row.pictures %}

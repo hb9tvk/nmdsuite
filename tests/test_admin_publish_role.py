@@ -11,9 +11,22 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.urls import reverse
 
+from core.models import ParticipantPicture, ParticipantReport
 from core.roles import REDAKTION_GROUP
 
 User = get_user_model()
+
+REPORT_TEXT = "Sonniger Tag auf dem Niesen mit tollen Bedingungen."
+
+
+def _report(participant, *, text="", picture=False):
+    if text:
+        ParticipantReport.objects.create(participant=participant, text=text)
+    if picture:
+        ParticipantPicture.objects.create(
+            participant=participant, idx=1, extension="png",
+            original_filename="summit.png", content_type="image/png", file_size=100,
+        )
 
 
 def _editor(username="REDAKTOR"):
@@ -103,6 +116,52 @@ def test_publish_index_lists_the_three_tools(client, seeded_contest):
     # No staff-only tool leaks onto the editor's portal.
     assert reverse("admin_module:bulk_email") not in body
     assert reverse("admin_module:backup_index") not in body
+
+
+@pytest.mark.django_db
+def test_editor_reports_page_hides_text_but_shows_callsign_and_pictures(client, seeded_contest):
+    """The Redaktion role gets pictures + callsign only; the report text is
+    withheld and never reaches their browser."""
+    from tests.test_admin_fixstation_review import _make_participant
+
+    p = _make_participant(seeded_contest, username="HB9RPT", callsign="HB9RPT/P")
+    _report(p, text=REPORT_TEXT, picture=True)
+
+    client.force_login(_editor())
+    body = client.get("/admin/reports/").content.decode()
+    assert "HB9RPT/P" in body                                    # callsign visible
+    assert REPORT_TEXT not in body                              # text withheld
+    assert reverse("admin_module:report_picture_image", args=[p.pk, 1]) in body  # picture shown
+
+
+@pytest.mark.django_db
+def test_staff_reports_page_still_shows_text(client, seeded_contest):
+    from tests.test_admin_fixstation_review import _make_participant
+
+    p = _make_participant(seeded_contest, username="HB9RPT", callsign="HB9RPT/P")
+    _report(p, text=REPORT_TEXT, picture=True)
+
+    client.force_login(_staff())
+    body = client.get("/admin/reports/").content.decode()
+    assert REPORT_TEXT in body
+
+
+@pytest.mark.django_db
+def test_editor_reports_page_omits_text_only_participants(client, seeded_contest):
+    """A participant with text but no pictures has nothing for the editor to
+    see, so they don't appear; one with a picture does."""
+    from tests.test_admin_fixstation_review import _make_participant
+
+    text_only = _make_participant(seeded_contest, username="HB9TXT", callsign="HB9TXT/P")
+    _report(text_only, text=REPORT_TEXT, picture=False)
+    with_pic = _make_participant(seeded_contest, username="HB9PIC", callsign="HB9PIC/P")
+    _report(with_pic, text="", picture=True)
+
+    client.force_login(_editor())
+    body = client.get("/admin/reports/").content.decode()
+    assert "HB9PIC/P" in body        # has a picture → shown
+    assert "HB9TXT/P" not in body    # text-only → nothing for the editor
+    assert REPORT_TEXT not in body
 
 
 @pytest.mark.django_db
