@@ -930,11 +930,17 @@ def participant_list_csv_preview(request):
 def reports_index(request):
     """List every active participant's report text + thumbnails for the
     active contest. Read-only — the magazine team uses this to harvest
-    content; the participants themselves edit on the portal side."""
+    content; the participants themselves edit on the portal side.
+
+    Full staff see the report text; the Redaktion (magazine) role gets
+    pictures only. The text is withheld in the view — not merely hidden in
+    the template — so it is never sent to an editor's browser."""
     contest = _active_contest()
     if contest is None:
         messages.error(request, _("No active contest."))
         return redirect("admin_module:index")
+
+    show_text = request.user.is_staff
 
     qs = (
         Participant.objects
@@ -944,16 +950,21 @@ def reports_index(request):
     )
     rows = []
     for p in qs:
-        text = getattr(getattr(p, "report", None), "text", "")
         pictures = list(p.pictures.all())
-        if not text and not pictures:
+        text = getattr(getattr(p, "report", None), "text", "") if show_text else ""
+        # Include a row only if there's something this viewer may see:
+        # staff need text OR pictures; editors need pictures (text hidden).
+        if show_text:
+            if not text and not pictures:
+                continue
+        elif not pictures:
             continue
         rows.append({"participant": p, "text": text, "pictures": pictures})
 
     return render(
         request,
         "admin_module/reports.html",
-        {"contest": contest, "rows": rows},
+        {"contest": contest, "rows": rows, "show_text": show_text},
     )
 
 

@@ -881,6 +881,11 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Vue en lecture seule des rapports et photos de chaque participant actif. Les participants modifient leurs contenus depuis leur portail.",
         "Vista in sola lettura dei rapporti e delle foto di ogni partecipante attivo. I partecipanti modificano i propri contenuti dal portale.",
     ),
+    "Read-only view of every active participant's uploaded pictures. Participants edit on their own portal page.": (
+        "Schreibgeschützte Übersicht über die Bilder aller aktiven Teilnehmer. Die Teilnehmer selbst bearbeiten ihre Inhalte im Portal.",
+        "Vue en lecture seule des photos de chaque participant actif. Les participants modifient leurs contenus depuis leur portail.",
+        "Vista in sola lettura delle foto di ogni partecipante attivo. I partecipanti modificano i propri contenuti dal portale.",
+    ),
     "No reports submitted yet.": (
         "Bisher keine Berichte vorhanden.",
         "Aucun rapport pour l'instant.",
