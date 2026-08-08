@@ -78,13 +78,17 @@ def test_close_registration_notifies_active_participants(seeded_contest, setting
     assert "=== Deutsch ===" in sample.body
     assert "=== Français ===" in sample.body
     assert "=== Italiano ===" in sample.body
-    # Participant-list PDF is attached to every message.
+    # Participant list and map are attached to every message.
     for msg in mail.outbox:
-        assert len(msg.attachments) == 1
-        name, content, mimetype = msg.attachments[0]
-        assert name == f"nmd-{seeded_contest.year}-participants.pdf"
-        assert mimetype == "application/pdf"
-        assert content.startswith(b"%PDF-")
+        assert len(msg.attachments) == 2
+        by_name = {name: (content, mimetype) for name, content, mimetype in msg.attachments}
+        assert set(by_name) == {
+            f"nmd-{seeded_contest.year}-participants.pdf",
+            f"nmd-{seeded_contest.year}-map.pdf",
+        }
+        for content, mimetype in by_name.values():
+            assert mimetype == "application/pdf"
+            assert content.startswith(b"%PDF-")
     # Broadcast audited with counts.
     entry = AuditLog.objects.get(action="contest.notify_registration_closed")
     assert entry.payload["sent"] == 2

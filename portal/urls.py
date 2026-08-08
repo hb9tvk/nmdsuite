@@ -21,6 +21,7 @@ urlpatterns = [
     path("report/picture/<int:idx>/image", views.report_picture_image, name="report_picture_image"),
     path("participant-list.pdf", views.participant_list, name="participant_list"),
     path("participant-list.csv", views.participant_list_csv, name="participant_list_csv"),
+    path("participant-map.pdf", views.participant_map, name="participant_map"),
     path("log.adi", views.adif_download, name="adif_download"),
     path(
         "login/",

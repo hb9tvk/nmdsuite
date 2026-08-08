@@ -444,6 +444,25 @@ def participant_list_csv(request):
     return response
 
 
+@login_required
+def participant_map(request):
+    """Stream the participant map as a PDF — the same roster as the list,
+    drawn on a map of Switzerland. Same gating as the list downloads."""
+    contest = _active_contest()
+    if not _participant_list_available(contest):
+        messages.info(request, _("The participant list will be available once registration closes."))
+        return redirect("portal:dashboard")
+
+    from core.participant_map_pdf import build_participant_map_pdf
+
+    blob = build_participant_map_pdf(contest)
+    filename = f"nmd-{contest.year}-map.pdf"
+    response = HttpResponse(blob, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- ADIF export -----------------------------------------------------------------------------
 
 

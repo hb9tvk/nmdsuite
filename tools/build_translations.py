@@ -704,6 +704,21 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Mêmes données au format attendu par les logiciels de journal dédiés",
         "Stessi dati nel formato richiesto dai programmi di logging dedicati",
     ),
+    "Participant map (PDF)": (
+        "Teilnehmerkarte (PDF)",
+        "Carte des participants (PDF)",
+        "Mappa dei partecipanti (PDF)",
+    ),
+    "Participant map preview (PDF)": (
+        "Vorschau Teilnehmerkarte (PDF)",
+        "Aperçu de la carte des participants (PDF)",
+        "Anteprima mappa dei partecipanti (PDF)",
+    ),
+    "the same roster drawn on a map; check crowded areas before closing registration": (
+        "Dieselben Stationen auf der Karte; dichte Gebiete prüfen, bevor die Anmeldung geschlossen wird",
+        "Les mêmes stations sur une carte ; vérifier les zones denses avant de clore les inscriptions",
+        "Le stesse stazioni su una mappa; verifica le zone dense prima di chiudere le iscrizioni",
+    ),
     "send a message to all active participants": (
         "Eine Nachricht an alle aktiven Teilnehmer senden",
         "Envoyer un message à tous les participants actifs",

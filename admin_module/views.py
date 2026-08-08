@@ -923,6 +923,26 @@ def participant_list_csv_preview(request):
     return response
 
 
+@_staff_required
+def participant_map_preview(request):
+    """Same as :func:`participant_list_preview` but for the map. Worth a
+    look before closing registration: a crowded corner of the Mittelland
+    is the one thing that can make the generated map hard to read."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    from core.participant_map_pdf import build_participant_map_pdf
+
+    blob = build_participant_map_pdf(contest)
+    filename = f"nmd-{contest.year}-map.pdf"
+    response = HttpResponse(blob, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- Participant reports (F3.2) ----------------------------------------------------------------
 
 
