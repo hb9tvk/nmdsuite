@@ -15,6 +15,7 @@ from pypdf import PdfReader
 
 from core.models import Contest, Participant
 from core.participant_map_pdf import build_participant_map_pdf
+from public.ranking_map_pdf import LEGEND as RANKING_LEGEND
 from registration.forms import QRB_THRESHOLD_M
 
 User = get_user_model()
@@ -112,11 +113,13 @@ def test_map_carries_trilingual_title_and_legend(seeded_contest):
 
 @pytest.mark.django_db
 def test_participant_map_carries_no_ranks(seeded_contest):
-    """The pre-contest sheet predates any result — ranks belong only to
-    the ranking map, which is a separate artefact."""
+    """The pre-contest sheet predates any result — ranks, and the legend
+    explaining how to read them, belong only to the ranking map."""
     _make_participant(seeded_contest, callsign="HB9TVK")
     text = _pdf_text(build_participant_map_pdf(seeded_contest))
-    assert "QRA" not in text
+    for line in RANKING_LEGEND:
+        assert line not in text
+    assert "Rangliste" not in text
 
 
 # --- views -----------------------------------------------------------------------------------

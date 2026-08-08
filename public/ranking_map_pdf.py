@@ -45,13 +45,16 @@ SUBTITLES = (
     "Classifica e QTH",
 )
 
-# How to read a label. The German and French lines come out identical, so
-# LEGEND collapses to two lines rather than printing the same text twice.
-LEGEND = tuple(dict.fromkeys((
-    "<Rang CW> QRA <Rang SSB>",
-    "<Rang CW> QRA <Rang SSB>",
-    "<Rango CW> QRA <Rango SSB>",
-)))
+# How to read a label — one line per language, like every other block on
+# the sheet. The legacy map wrote the middle term as the Q-code "QRA",
+# which would make the German and French lines identical; spelling out
+# each language's own word for "callsign" keeps all three visible, so a
+# French reader isn't left wondering whether their line was forgotten.
+LEGEND = (
+    "<Rang CW> Rufzeichen <Rang SSB>",
+    "<Rang CW> Indicatif <Rang SSB>",
+    "<Rango CW> Nominativo <Rango SSB>",
+)
 
 
 @dataclass(frozen=True)

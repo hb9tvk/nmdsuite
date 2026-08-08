@@ -6,6 +6,8 @@ registrations always produce the same layout.
 """
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from core.label_placement import (
@@ -143,6 +145,39 @@ def test_leader_connects_circle_edge_to_label_edge():
     # Ends on the label's near edge, at the label's centre height.
     assert to_y == pytest.approx(p.rect.y + p.rect.height / 2)
     assert to_x == pytest.approx(p.rect.x) or to_x == pytest.approx(p.rect.right)
+
+
+def test_leader_points_at_the_circle_centre():
+    """A stacked label sits off its circle's centre line. Its leader must
+    aim at the centre and stop at the rim; a leader that instead started at
+    the circle's horizontal extreme would meet the rim as a tangent and
+    read as a line brushing past the circle rather than pointing at it.
+    """
+    stations = [_station(i, 300 + (i % 3) * 14, 300 + (i // 3) * 10) for i in range(9)]
+    placements = place_labels(stations, BOUNDS)
+    by_index = {s.index: s for s in stations}
+
+    stacked = 0
+    for p in placements:
+        s = by_index[p.station_index]
+        fx, fy = p.leader_from
+        tx, ty = p.leader_to
+
+        # Starts exactly on the rim — no gap, and no covering the outline.
+        assert math.dist((fx, fy), (s.x, s.y)) == pytest.approx(s.radius)
+        # Centre, rim point and label end are collinear, so extending the
+        # leader inward would arrive at the centre.
+        cross = (fx - s.x) * (ty - s.y) - (fy - s.y) * (tx - s.x)
+        assert cross == pytest.approx(0, abs=1e-6), (
+            f"leader {p.station_index} is not aimed at its circle's centre"
+        )
+        # Aimed outward, not back through the circle.
+        assert (fx - s.x) * (tx - s.x) + (fy - s.y) * (ty - s.y) > 0
+
+        if abs(ty - s.y) > 1e-9:
+            stacked += 1
+
+    assert stacked, "this cluster was supposed to force some labels off-centre"
 
 
 # --- reproducibility -------------------------------------------------------------------------
