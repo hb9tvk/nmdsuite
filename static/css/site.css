@@ -457,7 +457,7 @@ footer { color: var(--muted); padding-bottom: 2rem; }
 .scoring-qso-table .text-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .scoring-qso-table .text-tag { display: inline-block; width: 3rem; color: var(--muted); font-size: 0.75rem; }
 .scoring-qso-table .match-info { margin-top: 0.2rem; padding-top: 0.2rem; border-top: 1px dashed #ddd; color: #666; }
-.scoring-qso-table .suspect, .scoring-qso-table .admin-note { font-size: 0.75rem; color: #666; margin-top: 0.2rem; }
+.scoring-qso-table .suspect, .scoring-qso-table .admin-note, .scoring-qso-table .text-distance { font-size: 0.75rem; color: #666; margin-top: 0.2rem; }
 .scoring-qso-table .bad { color: #c0392b; }
 
 .scoring-breakdown { border-collapse: collapse; margin-bottom: 1rem; }

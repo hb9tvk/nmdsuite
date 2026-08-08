@@ -145,6 +145,64 @@ def test_scoring_published_no_qsos_shows_empty_message(client, registered_user):
     assert "No QSOs logged" in body
 
 
+# --- text errors -----------------------------------------------------------------------------
+
+
+def _peer(contest: Contest, callsign: str) -> Participant:
+    user = User.objects.create_user(username=callsign, password="x", email=f"{callsign}@x.org")
+    return Participant.objects.create(
+        contest=contest, user=user, callsign=callsign,
+        first_name="Peer", email=f"{callsign}@x.org",
+        coord_system_input="wgs84", coord_input_e="8.5", coord_input_n="46.9",
+        wgs84_lat=46.9, wgs84_lon=8.5, ch1903p_e=2_620_000, ch1903p_n=1_210_000,
+        altitude_m=1200, canton="UR", operating_modes=3,
+    )
+
+
+@pytest.mark.django_db
+def test_scoring_shows_peer_sent_text_and_distance(client, registered_user):
+    """A text error is only explicable to the operator if they can see what
+    the peer actually sent and how far off their copy was. Both are what the
+    staff review shows; the portal used to render neither."""
+    user, p = registered_user
+    peer = _peer(p.contest, "HB9PEER")
+
+    mine = _add_qso(p, t_offset_min=10, mode="CW", remote_call="HB9PEER")
+    mine.txtr = "TARGET-BRAVO"
+    mine.save(update_fields=["txtr"])
+    theirs = _add_qso(peer, t_offset_min=10, mode="CW", remote_call="HB9TVK")
+    theirs.txts = "TARGET-ALPHA"
+    theirs.save(update_fields=["txts"])
+
+    score = _score(mine, status=ScoringStatus.TEXT_MISMATCH, points=0, half=1)
+    score.matched_qso = theirs
+    score.text_distance = 4
+    score.save(update_fields=["matched_qso", "text_distance"])
+
+    _publish(p.contest)
+    client.force_login(user)
+
+    body = client.get("/submission/scoring/").content.decode()
+    assert "TARGET-ALPHA" in body  # what the peer sent — the comparison basis
+    assert "TARGET-BRAVO" in body  # what we copied
+    assert "text-distance" in body
+    assert "4 characters off" in body
+
+
+@pytest.mark.django_db
+def test_scoring_hides_distance_when_text_matched_exactly(client, registered_user):
+    """text_distance 0 is the normal case — no need to tell the operator
+    they were zero characters off."""
+    user, p = registered_user
+    q = _add_qso(p, t_offset_min=10, mode="CW", remote_call="HB9A/P")
+    _score(q, status=ScoringStatus.FULL_MATCH, points=4, half=1)
+    _publish(p.contest)
+    client.force_login(user)
+
+    body = client.get("/submission/scoring/").content.decode()
+    assert "text-distance" not in body
+
+
 # --- dashboard link --------------------------------------------------------------------------
 
 

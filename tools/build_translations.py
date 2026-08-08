@@ -1196,6 +1196,11 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     "Text": ("Text", "Texte", "Testo"),
     "Pts": ("Pkt.", "Pts", "Pt"),
     "paired: %(call)s @ %(time)s": ("gepaart: %(call)s @ %(time)s", "apparié : %(call)s @ %(time)s", "appaiato: %(call)s @ %(time)s"),
+    "%(call)s sent: %(text)s": (
+        "%(call)s sendete: %(text)s",
+        "%(call)s a envoyé : %(text)s",
+        "%(call)s ha inviato: %(text)s",
+    ),
     "not scored": ("nicht gewertet", "non scoré", "non valutato"),
     "Sufficient NMD match": ("Akzeptiertes NMD QSO", "Appariement NMD suffisant", "Appaiamento NMD sufficiente"),
     "Your log has been submitted. No further changes are possible.": (
@@ -1421,6 +1426,11 @@ PLURALS: dict[str, dict[str, tuple[str, str]]] = {
         "de": ("%(n)s Teilnehmer.", "%(n)s Teilnehmer."),
         "fr": ("%(n)s participant.", "%(n)s participants."),
         "it": ("%(n)s partecipante.", "%(n)s partecipanti."),
+    },
+    "%(n)s character off": {
+        "de": ("%(n)s Zeichen Abweichung", "%(n)s Zeichen Abweichung"),
+        "fr": ("%(n)s caractère d'écart", "%(n)s caractères d'écart"),
+        "it": ("%(n)s carattere di scarto", "%(n)s caratteri di scarto"),
     },
 }
 
