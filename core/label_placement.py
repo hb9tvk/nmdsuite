@@ -35,6 +35,10 @@ Decisions encoded here:
   knows what comes later, so afterwards each label gets one chance to move
   somewhere cheaper given the final layout. Iterated until nothing moves
   or the pass budget runs out.
+- **Leaders aim at the circle's centre**, clipped at the rim. A stacked
+  label sits above or below its circle, and a leader that started at the
+  circle's horizontal extreme would meet the rim as a tangent — it reads
+  as a line brushing past the circle rather than pointing at it.
 
 Coordinates are y-up (reportlab's convention). Nothing here depends on
 that beyond the naming of the vertical offsets, but mixing conventions in
@@ -122,7 +126,9 @@ class Placement:
     """Where one station's label ended up.
 
     ``leader_*`` are the endpoints of the connecting line: from the circle's
-    edge to the near edge of the label, both on the label's centre line.
+    rim to the near edge of the label, on the label's centre line. The rim
+    end is wherever the line *toward* the label crosses the circle, so the
+    leader always points at the centre — see :func:`_rim_point`.
 
     ``overlapping`` is tracked explicitly rather than inferred from ``cost``
     — enough leader-crossing penalties can reach the overlap threshold on
@@ -174,6 +180,23 @@ def _segment_hits_circle(
 _Candidate = tuple[Rect, tuple[float, float], tuple[float, float], float]
 
 
+def _rim_point(station: Station, toward: tuple[float, float]) -> tuple[float, float]:
+    """Where the line from the circle's centre to ``toward`` crosses the rim.
+
+    Drawing the leader from here is the same as drawing it from the centre
+    and clipping it at the circle, without covering the outline.
+    """
+    dx = toward[0] - station.x
+    dy = toward[1] - station.y
+    distance = math.hypot(dx, dy)
+    if distance == 0:
+        # Degenerate: a label centred exactly on its own circle. Any rim
+        # point will do, so keep the historical eastward one.
+        return (station.x + station.radius, station.y)
+    scale = station.radius / distance
+    return (station.x + dx * scale, station.y + dy * scale)
+
+
 def _candidates(station: Station) -> list[_Candidate]:
     """Every position we are willing to consider for one label.
 
@@ -191,6 +214,7 @@ def _candidates(station: Station) -> list[_Candidate]:
             rect_y = centre_y - half_h
             base = leader * COST_PER_LEADER_UNIT + abs(level) * COST_PER_VERTICAL_LEVEL
             # East: label sits to the right of the circle.
+            east_to = (station.x + station.radius + leader, centre_y)
             out.append((
                 Rect(
                     station.x + station.radius + leader,
@@ -198,12 +222,13 @@ def _candidates(station: Station) -> list[_Candidate]:
                     station.label_width,
                     station.label_height,
                 ),
-                (station.x + station.radius, station.y),
-                (station.x + station.radius + leader, centre_y),
+                _rim_point(station, east_to),
+                east_to,
                 base,
             ))
             # West: mirrored, so the label's right edge meets the leader.
             to_x = station.x - station.radius - leader
+            west_to = (to_x, centre_y)
             out.append((
                 Rect(
                     to_x - station.label_width,
@@ -211,8 +236,8 @@ def _candidates(station: Station) -> list[_Candidate]:
                     station.label_width,
                     station.label_height,
                 ),
-                (station.x - station.radius, station.y),
-                (to_x, centre_y),
+                _rim_point(station, west_to),
+                west_to,
                 base,
             ))
     return out

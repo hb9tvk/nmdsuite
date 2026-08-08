@@ -12,12 +12,16 @@ from io import BytesIO
 import pytest
 from pypdf import PdfReader
 from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.utils import ImageReader
 
 from core.map_render import (
     IMAGE_HEIGHT_PX,
     IMAGE_WIDTH_PX,
     LABEL_CAP_HEIGHT_RATIO,
     LABEL_HEIGHT_OF_DIAMETER,
+    LOGO_HEIGHT,
+    LOGO_MARGIN,
+    LOGO_PATH,
     GeoReference,
     MapStation,
     _label_metrics,
@@ -35,6 +39,21 @@ CAL_B_PX, CAL_B_LV03 = (755.0, 306.0), (725955.0, 221524.0)
 def _pdf_text(blob: bytes) -> str:
     reader = PdfReader(BytesIO(blob))
     return "\n".join(page.extract_text() or "" for page in reader.pages)
+
+
+def _image_count(blob: bytes) -> int:
+    """How many bitmaps the first page draws.
+
+    Read straight off the page resources rather than through pypdf's image
+    decoding, which would drag in an optional imaging dependency just to
+    count them.
+    """
+    page = PdfReader(BytesIO(blob)).pages[0]
+    xobjects = page["/Resources"].get("/XObject", {})
+    return sum(
+        1 for name in xobjects
+        if xobjects[name].get_object().get("/Subtype") == "/Image"
+    )
 
 
 # --- georeference ----------------------------------------------------------------------------
@@ -148,6 +167,31 @@ def test_render_prints_the_legend_when_given_one():
     # The heading block flows downward, so the timestamp still has to fit
     # underneath the extra line rather than being overprinted.
     assert "Stand / mise à jour / aggiornamento:" in text
+
+
+def test_render_draws_the_relief_and_the_club_emblem():
+    """Two bitmaps on the sheet: the background and the USKA logo. Both
+    assets ship in the repo, so a missing one is a packaging mistake
+    rather than an acceptable degradation."""
+    assert LOGO_PATH.exists(), "USKA logo asset is missing from static/img/"
+    blob = render_station_map(
+        year=2026,
+        stations=[MapStation(label="ALPHA-ONE", east=600_000, north=200_000)],
+        subtitles=("Titelzeile",),
+        doc_title="whatever",
+    )
+    assert _image_count(blob) == 2
+
+
+def test_logo_keeps_its_aspect_ratio():
+    """A squashed club emblem is worse than none — the drawn box has to
+    follow the asset's own proportions, not a hardcoded width."""
+    px_width, px_height = ImageReader(str(LOGO_PATH)).getSize()
+    drawn_width = LOGO_HEIGHT * px_width / px_height
+    assert drawn_width / LOGO_HEIGHT == pytest.approx(px_width / px_height)
+    # And it has to fit in the corner it is placed in.
+    assert LOGO_MARGIN + drawn_width < PAGE_W
+    assert LOGO_MARGIN + LOGO_HEIGHT < PAGE_H
 
 
 def test_render_handles_no_stations():

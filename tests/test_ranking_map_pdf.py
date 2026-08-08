@@ -16,6 +16,7 @@ from pypdf import PdfReader
 
 from core.models import Contest, Participant, QsoEntry, ScoringRecord
 from public.ranking_map_pdf import (
+    LEGEND,
     StationRanks,
     build_ranking_map_pdf,
     rank_label,
@@ -197,7 +198,16 @@ def test_map_explains_how_to_read_a_label(ranked_contest):
     assert "Rangliste und Standorte" in text
     assert "Classement et QTH" in text
     assert "Classifica e QTH" in text
-    assert "<Rang CW> QRA <Rang SSB>" in text
+    for line in LEGEND:
+        assert line in text
+
+
+def test_legend_covers_all_three_languages():
+    """DE/FR/IT each get their own line. Collapsing two of them together
+    reads as a language having been forgotten, however defensible the
+    reason — which is exactly how the first cut of this looked."""
+    assert len(LEGEND) == 3
+    assert len(set(LEGEND)) == 3
 
 
 @pytest.mark.django_db

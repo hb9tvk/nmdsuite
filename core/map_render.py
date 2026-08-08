@@ -43,6 +43,7 @@ from django.conf import settings
 from django.utils import timezone
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas as pdfcanvas
 
 from registration.forms import QRB_THRESHOLD_M
@@ -136,6 +137,16 @@ LABEL_LINE_SPACING = 1.17
 TITLE_FONT = "Helvetica-Bold"
 FOOT_FONT = "Helvetica"
 
+# The club emblem, top right, as on the hand-drawn maps.
+LOGO_PATH: Path = Path(settings.BASE_DIR) / "static" / "img" / "USKA_Logo.jpg"
+LOGO_HEIGHT = 72.0
+LOGO_MARGIN = 28.0
+# The emblem is a JPEG, so it carries no alpha and would otherwise paint
+# its white background over the map and the grid rulers. Key the near-white
+# pixels out instead; the tolerance absorbs the JPEG ringing that would
+# leave a halo around the diamond at an exact-white threshold.
+LOGO_WHITE_KEY = [245, 255, 245, 255, 245, 255]
+
 # Keep labels off the very edge of the sheet.
 PLACEMENT_INSET = 4.0
 
@@ -199,6 +210,28 @@ def _draw_grid(c: pdfcanvas.Canvas, geo: GeoReference) -> None:
         c.drawString(4, y + 3, str(north // 1000))
 
     c.restoreState()
+
+
+def _draw_logo(c: pdfcanvas.Canvas, geo: GeoReference) -> None:
+    """Club emblem in the top-right corner.
+
+    Width follows the file's own aspect ratio, so replacing the asset
+    cannot squash it. Missing file is not an error — same as the relief
+    background, the sheet is still worth producing without it.
+    """
+    if not LOGO_PATH.exists():
+        return
+    image = ImageReader(str(LOGO_PATH))
+    px_width, px_height = image.getSize()
+    width = LOGO_HEIGHT * px_width / px_height
+    c.drawImage(
+        image,
+        geo.canvas_width - LOGO_MARGIN - width,
+        geo.canvas_height - LOGO_MARGIN - LOGO_HEIGHT,
+        width=width,
+        height=LOGO_HEIGHT,
+        mask=LOGO_WHITE_KEY,
+    )
 
 
 def _draw_titles(
@@ -288,6 +321,11 @@ def render_station_map(
         )
 
     _draw_grid(c, geo)
+    # Before the stations, so a label that does land in that corner stays
+    # legible on top of the emblem rather than under it. The placer has no
+    # notion of the logo; the corner is beyond the country's north-east
+    # tip, so nothing should be drawn there in practice.
+    _draw_logo(c, geo)
 
     font_size, line_height = _label_metrics(geo)
     radius = geo.metres_to_canvas(QRB_THRESHOLD_M / 2.0)
