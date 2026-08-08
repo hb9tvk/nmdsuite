@@ -37,3 +37,16 @@ htmlcov/
 
 # Local validation fixtures (e.g. legacy SQLite dumps for `import_legacy`).
 /testdata/
+
+# Personal scratch notes and throwaway test output — not part of the project.
+/cheatsheet.txt
+/reset.txt
+/test_out.txt
+
+# Knowledge pack for the NMD meeting talk — written to be uploaded to a
+# Claude.ai project, not part of the application or its documentation.
+/presentation/
+
+# Local deploy wrapper. Carries the operator's own Docker host and data path,
+# so it lives on the dev box rather than in the repo.
+/deploy-local.sh
