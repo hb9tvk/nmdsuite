@@ -127,21 +127,25 @@ def send_registration_closed_broadcast(
     *, contest: Contest, actor: Any,
 ) -> BroadcastResult:
     """Notify every active participant that registration has closed.
-    The current participant-list PDF is attached so recipients don't
-    need to log in just to grab it. Fired from
+    The current participant list and map are attached so recipients don't
+    need to log in just to grab them. Fired from
     :func:`admin_module.services.close_registration`."""
-    # Local import — pulling reportlab into every admin import path is
+    # Local imports — pulling reportlab into every admin import path is
     # wasteful, and this is the only caller right now.
     from core.participant_list_pdf import build_participant_list_pdf
+    from core.participant_map_pdf import build_participant_map_pdf
 
-    pdf_bytes = build_participant_list_pdf(contest)
-    pdf_name = f"nmd-{contest.year}-participants.pdf"
+    list_bytes = build_participant_list_pdf(contest)
+    map_bytes = build_participant_map_pdf(contest)
     return _broadcast(
         contest=contest,
         template_base="registration_closed",
         audit_action="contest.notify_registration_closed",
         actor=actor,
-        attachments=[(pdf_name, pdf_bytes, "application/pdf")],
+        attachments=[
+            (f"nmd-{contest.year}-participants.pdf", list_bytes, "application/pdf"),
+            (f"nmd-{contest.year}-map.pdf", map_bytes, "application/pdf"),
+        ],
     )
 
 
