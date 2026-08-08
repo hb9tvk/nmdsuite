@@ -139,8 +139,13 @@ FOOT_FONT = "Helvetica"
 
 # The club emblem, top right, as on the hand-drawn maps.
 LOGO_PATH: Path = Path(settings.BASE_DIR) / "static" / "img" / "USKA_Logo.jpg"
-LOGO_HEIGHT = 72.0
-LOGO_MARGIN = 28.0
+LOGO_HEIGHT = 108.0
+# Horizontally the emblem is placed against the *map*, not the sheet: it
+# straddles the 800 km easting ruler, where the hand-drawn maps had it.
+# Anchoring it to the georeference keeps it on that line if the page size
+# ever changes, which a fixed right margin would not.
+LOGO_CENTRE_EAST = 800_000
+LOGO_TOP_MARGIN = 60.0
 # The emblem is a JPEG, so it carries no alpha and would otherwise paint
 # its white background over the map and the grid rulers. Key the near-white
 # pixels out instead; the tolerance absorbs the JPEG ringing that would
@@ -212,24 +217,40 @@ def _draw_grid(c: pdfcanvas.Canvas, geo: GeoReference) -> None:
     c.restoreState()
 
 
-def _draw_logo(c: pdfcanvas.Canvas, geo: GeoReference) -> None:
-    """Club emblem in the top-right corner.
+def _logo_rect(geo: GeoReference) -> tuple[float, float, float, float]:
+    """``(x, y, width, height)`` of the emblem on the sheet.
 
     Width follows the file's own aspect ratio, so replacing the asset
-    cannot squash it. Missing file is not an error — same as the relief
-    background, the sheet is still worth producing without it.
+    cannot squash it. Split out from the drawing so the placement can be
+    checked without rendering.
+    """
+    px_width, px_height = ImageReader(str(LOGO_PATH)).getSize()
+    width = LOGO_HEIGHT * px_width / px_height
+    # to_canvas' x depends only on the easting; the northing passed here
+    # is irrelevant and discarded.
+    ruler_x, _ = geo.to_canvas(LOGO_CENTRE_EAST, 0)
+    return (
+        ruler_x - width / 2.0,
+        geo.canvas_height - LOGO_TOP_MARGIN - LOGO_HEIGHT,
+        width,
+        LOGO_HEIGHT,
+    )
+
+
+def _draw_logo(c: pdfcanvas.Canvas, geo: GeoReference) -> None:
+    """Club emblem, straddling the 800 km easting ruler.
+
+    Missing file is not an error — same as the relief background, the
+    sheet is still worth producing without it.
     """
     if not LOGO_PATH.exists():
         return
-    image = ImageReader(str(LOGO_PATH))
-    px_width, px_height = image.getSize()
-    width = LOGO_HEIGHT * px_width / px_height
+    x, y, width, height = _logo_rect(geo)
     c.drawImage(
-        image,
-        geo.canvas_width - LOGO_MARGIN - width,
-        geo.canvas_height - LOGO_MARGIN - LOGO_HEIGHT,
+        ImageReader(str(LOGO_PATH)),
+        x, y,
         width=width,
-        height=LOGO_HEIGHT,
+        height=height,
         mask=LOGO_WHITE_KEY,
     )
 

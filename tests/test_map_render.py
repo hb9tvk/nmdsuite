@@ -19,12 +19,12 @@ from core.map_render import (
     IMAGE_WIDTH_PX,
     LABEL_CAP_HEIGHT_RATIO,
     LABEL_HEIGHT_OF_DIAMETER,
-    LOGO_HEIGHT,
-    LOGO_MARGIN,
+    LOGO_CENTRE_EAST,
     LOGO_PATH,
     GeoReference,
     MapStation,
     _label_metrics,
+    _logo_rect,
     render_station_map,
 )
 from registration.forms import QRB_THRESHOLD_M
@@ -186,12 +186,27 @@ def test_render_draws_the_relief_and_the_club_emblem():
 def test_logo_keeps_its_aspect_ratio():
     """A squashed club emblem is worse than none — the drawn box has to
     follow the asset's own proportions, not a hardcoded width."""
+    geo = GeoReference(canvas_width=PAGE_W, canvas_height=PAGE_H)
+    _x, _y, width, height = _logo_rect(geo)
+
     px_width, px_height = ImageReader(str(LOGO_PATH)).getSize()
-    drawn_width = LOGO_HEIGHT * px_width / px_height
-    assert drawn_width / LOGO_HEIGHT == pytest.approx(px_width / px_height)
-    # And it has to fit in the corner it is placed in.
-    assert LOGO_MARGIN + drawn_width < PAGE_W
-    assert LOGO_MARGIN + LOGO_HEIGHT < PAGE_H
+    assert width / height == pytest.approx(px_width / px_height)
+
+
+def test_logo_straddles_the_800_easting():
+    """Placed against the map rather than the sheet edge, matching the
+    hand-drawn original. Checked through the georeference, so a page-size
+    change has to keep it on the ruler rather than drift off it."""
+    geo = GeoReference(canvas_width=PAGE_W, canvas_height=PAGE_H)
+    x, y, width, height = _logo_rect(geo)
+
+    ruler_x, _ = geo.to_canvas(LOGO_CENTRE_EAST, 0)
+    assert x + width / 2 == pytest.approx(ruler_x, abs=0.5)
+    # Wholly on the sheet, and in its upper half.
+    assert x > 0
+    assert x + width < PAGE_W
+    assert y > PAGE_H / 2
+    assert y + height < PAGE_H
 
 
 def test_render_handles_no_stations():
