@@ -1303,6 +1303,11 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Le classement sur une carte ; envoyé avec les résultats",
         "La classifica su una mappa; inviata con i risultati",
     ),
+    "The ranking will be available once the results are published.": (
+        "Die Rangliste ist verfügbar, sobald die Resultate veröffentlicht sind.",
+        "Le classement sera disponible dès la publication des résultats.",
+        "La classifica sarà disponibile dopo la pubblicazione dei risultati.",
+    ),
     "The ranking map will be available once the results are published.": (
         "Die Ranglistenkarte ist verfügbar, sobald die Resultate veröffentlicht sind.",
         "La carte du classement sera disponible dès la publication des résultats.",

@@ -463,6 +463,12 @@ def participant_map(request):
     return response
 
 
+def _results_published(contest: Contest | None) -> bool:
+    """Gate for everything that only exists once there is a result. The
+    admin flips this via M4.2's ``publish_results`` transition."""
+    return contest is not None and contest.results_published_at is not None
+
+
 @login_required
 def ranking_map(request):
     """Stream the ranking map as a PDF — the participant map redrawn with
@@ -472,7 +478,7 @@ def ranking_map(request):
     scoring view: before the admin publishes there are no ranks to draw.
     """
     contest = _active_contest()
-    if contest is None or contest.results_published_at is None:
+    if not _results_published(contest):
         messages.info(request, _("The ranking map will be available once the results are published."))
         return redirect("portal:dashboard")
 
@@ -480,6 +486,30 @@ def ranking_map(request):
 
     blob = build_ranking_map_pdf(contest)
     filename = f"nmd-{contest.year}-ranking-map.pdf"
+    response = HttpResponse(blob, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
+@login_required
+def ranking_pdf(request):
+    """Stream the full ranking + station-data tables as a PDF.
+
+    Built for the club magazine and initially admin-only, but it is the
+    same data the public ranking page already shows to anyone — the PDF
+    is just the readable-on-paper form of it — so there is no reason to
+    make operators go hunting through the admin UI for their own results.
+    """
+    contest = _active_contest()
+    if not _results_published(contest):
+        messages.info(request, _("The ranking will be available once the results are published."))
+        return redirect("portal:dashboard")
+
+    from public.ranking_pdf import build_ranking_pdf
+
+    blob = build_ranking_pdf(contest)
+    filename = f"nmd-{contest.year}-ranking.pdf"
     response = HttpResponse(blob, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     response["Content-Length"] = str(len(blob))
