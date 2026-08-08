@@ -172,14 +172,23 @@ def send_results_published_broadcast(
 ) -> BroadcastResult:
     """Notify every active participant that the contest results are
     public. The body links the year-indexed public ranking page and
-    each participant's own portal scoring page. Fired from
-    :func:`admin_module.services.publish_results`."""
+    each participant's own portal scoring page, and the ranking map is
+    attached — the one artefact that shows the whole field at once. Fired
+    from :func:`admin_module.services.publish_results`."""
+    # Local import — pulling reportlab into every admin import path is
+    # wasteful, and this is the only caller right now.
+    from public.ranking_map_pdf import build_ranking_map_pdf
+
     base = settings.NMD_BASE_URL.rstrip("/")
+    map_bytes = build_ranking_map_pdf(contest)
     return _broadcast(
         contest=contest,
         template_base="results_published",
         audit_action="contest.notify_results_published",
         actor=actor,
+        attachments=[
+            (f"nmd-{contest.year}-ranking-map.pdf", map_bytes, "application/pdf"),
+        ],
         extra_context={
             "public_ranking_url": f"{base}/ranking/{contest.year}/",
             "portal_scoring_url": f"{base}/submission/scoring/",

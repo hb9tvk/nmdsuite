@@ -243,8 +243,13 @@ def test_publish_results_notifies_active_participants(seeded_contest, settings):
     # Both navigation links surface in the body.
     assert f"/ranking/{seeded_contest.year}/" in sample.body
     assert "/submission/scoring/" in sample.body
-    # No attachments on this one (unlike F2a).
-    assert sample.attachments == []
+    # The ranking map rides along, so nobody has to log in to see the field.
+    for msg in mail.outbox:
+        assert len(msg.attachments) == 1
+        name, content, mimetype = msg.attachments[0]
+        assert name == f"nmd-{seeded_contest.year}-ranking-map.pdf"
+        assert mimetype == "application/pdf"
+        assert content.startswith(b"%PDF-")
     entry = AuditLog.objects.get(action="contest.notify_results_published")
     assert entry.payload["sent"] == 2
     assert entry.payload["failed"] == 0

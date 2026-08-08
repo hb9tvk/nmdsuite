@@ -463,6 +463,29 @@ def participant_map(request):
     return response
 
 
+@login_required
+def ranking_map(request):
+    """Stream the ranking map as a PDF — the participant map redrawn with
+    each station's placing in its label.
+
+    Gated on publication rather than on registration closing, like the
+    scoring view: before the admin publishes there are no ranks to draw.
+    """
+    contest = _active_contest()
+    if contest is None or contest.results_published_at is None:
+        messages.info(request, _("The ranking map will be available once the results are published."))
+        return redirect("portal:dashboard")
+
+    from public.ranking_map_pdf import build_ranking_map_pdf
+
+    blob = build_ranking_map_pdf(contest)
+    filename = f"nmd-{contest.year}-ranking-map.pdf"
+    response = HttpResponse(blob, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- ADIF export -----------------------------------------------------------------------------
 
 

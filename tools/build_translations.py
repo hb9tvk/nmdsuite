@@ -1293,6 +1293,21 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Cosa mostrerebbe la pagina pubblica adesso (solo admin)",
     ),
     "Ranking (PDF)": ("Rangliste (PDF)", "Classement (PDF)", "Classifica (PDF)"),
+    "Ranking map (PDF)": (
+        "Ranglistenkarte (PDF)",
+        "Carte du classement (PDF)",
+        "Mappa della classifica (PDF)",
+    ),
+    "the ranking drawn on a map; sent out with the results": (
+        "Die Rangliste auf der Karte; wird mit den Resultaten verschickt",
+        "Le classement sur une carte ; envoyé avec les résultats",
+        "La classifica su una mappa; inviata con i risultati",
+    ),
+    "The ranking map will be available once the results are published.": (
+        "Die Ranglistenkarte ist verfügbar, sobald die Resultate veröffentlicht sind.",
+        "La carte du classement sera disponible dès la publication des résultats.",
+        "La mappa della classifica sarà disponibile dopo la pubblicazione dei risultati.",
+    ),
     "downloadable ranking for the club magazine": (
         "Herunterladbare Rangliste für die Vereinszeitschrift",
         "Classement téléchargeable pour la revue du club",

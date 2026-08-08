@@ -11,6 +11,7 @@ urlpatterns = [
     path("reports/<int:pk>/picture/<int:idx>/", views.report_picture_image, name="report_picture_image"),
     path("ranking-preview/", views.ranking_preview, name="ranking_preview"),
     path("ranking.pdf", views.ranking_pdf, name="ranking_pdf"),
+    path("ranking-map.pdf", views.ranking_map_preview, name="ranking_map_preview"),
     path("participant-list-preview/", views.participant_list_preview, name="participant_list_preview"),
     path("participant-list-preview.csv", views.participant_list_csv_preview, name="participant_list_csv_preview"),
     path("participant-map-preview.pdf", views.participant_map_preview, name="participant_map_preview"),

@@ -1034,6 +1034,26 @@ def ranking_pdf(request):
     return response
 
 
+@_publish_tools_required
+def ranking_map_preview(request):
+    """Stream the ranking map ahead of publication. Same audience as the
+    ranking PDF: the sheet goes out with the results, so it wants a look
+    first — a mode with few entrants packs its ranks into a corner."""
+    contest = _active_contest()
+    if contest is None:
+        messages.error(request, _("No active contest."))
+        return redirect("admin_module:index")
+
+    from public.ranking_map_pdf import build_ranking_map_pdf
+
+    blob = build_ranking_map_pdf(contest)
+    filename = f"nmd-{contest.year}-ranking-map.pdf"
+    response = HttpResponse(blob, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = str(len(blob))
+    return response
+
+
 # --- Ranking preview --------------------------------------------------------------------------
 
 
