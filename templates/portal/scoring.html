@@ -99,6 +99,16 @@
                                             {% if score and score.matched_qso %}
                                                 <div class="match-info">
                                                     ↳ {% blocktrans with call=score.matched_qso.participant.callsign time=score.matched_qso.utc_time|utc|date:"H:i" %}paired: {{ call }} @ {{ time }}{% endblocktrans %}
+                                                    {% comment %}
+                                                        The peer's sent text is what our received text is judged
+                                                        against, so an operator can only make sense of a text
+                                                        error by seeing it. Sender is assumed correct.
+                                                    {% endcomment %}
+                                                    {% if score.matched_qso.txts %}
+                                                        <div class="text-line">
+                                                            {% blocktrans with call=score.matched_qso.participant.callsign text=score.matched_qso.txts %}{{ call }} sent: {{ text }}{% endblocktrans %}
+                                                        </div>
+                                                    {% endif %}
                                                 </div>
                                             {% endif %}
                                         {% endif %}
@@ -111,6 +121,11 @@
                                                 <span class="badge badge-sufficient_match">{% trans "Sufficient NMD match" %}</span>
                                             {% else %}
                                                 <span class="badge badge-{{ score.status }}">{{ score.get_status_display }}</span>
+                                            {% endif %}
+                                            {% if score.text_distance %}
+                                                <div class="text-distance">
+                                                    {% blocktrans count n=score.text_distance %}{{ n }} character off{% plural %}{{ n }} characters off{% endblocktrans %}
+                                                </div>
                                             {% endif %}
                                             {% if score.suspected_correct_call %}
                                                 <div class="suspect">→ {{ score.suspected_correct_call }}</div>
