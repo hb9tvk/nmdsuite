@@ -23,6 +23,7 @@ urlpatterns = [
     path("participant-list.csv", views.participant_list_csv, name="participant_list_csv"),
     path("participant-map.pdf", views.participant_map, name="participant_map"),
     path("ranking-map.pdf", views.ranking_map, name="ranking_map"),
+    path("ranking.pdf", views.ranking_pdf, name="ranking_pdf"),
     path("log.adi", views.adif_download, name="adif_download"),
     path(
         "login/",
