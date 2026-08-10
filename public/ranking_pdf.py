@@ -4,11 +4,16 @@ For publishing the contest results in the USKA/HTC club magazine, the
 admin UI exposes a downloadable version of the same data the public
 ranking page shows — minus the interactive map — laid out for paper.
 
-Layout: A4 portrait, three tables stacked vertically.
+Layout: A4, three tables, in two orientations.
 
-    CW ranking
-    SSB ranking
-    Station data
+    CW ranking       ┐ portrait
+    SSB ranking      ┘
+    Station data     — landscape, from a fresh page, over as many
+                       pages as it needs
+
+The station table carries the operator's whole kit list, which does not
+fit across a portrait sheet, so it turns the paper rather than shrinking
+the type.
 
 Uses the same :class:`~public.ranking_service.RankingPage` payload the
 ranking template renders, so the PDF and the live page can never
@@ -17,16 +22,22 @@ drift on what counts as which category.
 from __future__ import annotations
 
 from io import BytesIO
+from typing import NamedTuple
+from xml.sax.saxutils import escape
 
 from django.utils import timezone
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
+    BaseDocTemplate,
+    Frame,
+    NextPageTemplate,
     PageBreak,
+    PageTemplate,
     Paragraph,
-    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
@@ -36,11 +47,24 @@ from core.models import Contest
 
 from .ranking_service import (
     ANTENNA_LABEL,
+    FEEDLINE_LABEL,
+    GUYING_LABEL,
+    MASTS_LABEL,
     PSU_LABEL,
     TRX_LABEL,
     RankingPage,
     build_ranking_page,
 )
+
+MARGIN = 12 * mm
+
+
+class _CellStyles(NamedTuple):
+    """The paragraph styles the table builders draw cells with."""
+
+    body: ParagraphStyle
+    header: ParagraphStyle
+    header_right: ParagraphStyle
 
 
 def build_ranking_pdf(contest: Contest, *, page: RankingPage | None = None) -> bytes:
@@ -54,13 +78,7 @@ def build_ranking_pdf(contest: Contest, *, page: RankingPage | None = None) -> b
         page = build_ranking_page(contest)
 
     buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        leftMargin=12 * mm, rightMargin=12 * mm,
-        topMargin=12 * mm, bottomMargin=12 * mm,
-        title=f"NMD {contest.year} — Ranking",
-    )
+    doc = _document(buffer, title=f"NMD {contest.year} — Ranking")
 
     styles = getSampleStyleSheet()
     h1 = ParagraphStyle(
@@ -78,6 +96,19 @@ def build_ranking_pdf(contest: Contest, *, page: RankingPage | None = None) -> b
     cell_wrap = ParagraphStyle(
         "NMDCellWrap", parent=styles["Normal"], fontSize=8, leading=9,
     )
+    # Header cells are paragraphs, not plain strings: the component labels
+    # come from the operator's own edit form and run long once translated,
+    # so they have to wrap inside their column instead of over it.
+    header_wrap = ParagraphStyle(
+        "NMDHeaderWrap", parent=cell_wrap, fontName="Helvetica-Bold",
+    )
+    cells = _CellStyles(
+        body=cell_wrap,
+        header=header_wrap,
+        header_right=ParagraphStyle(
+            "NMDHeaderWrapRight", parent=header_wrap, alignment=TA_RIGHT,
+        ),
+    )
 
     story: list = []
     story.append(Paragraph(
@@ -91,14 +122,17 @@ def build_ranking_pdf(contest: Contest, *, page: RankingPage | None = None) -> b
     story.append(Spacer(1, 4 * mm))
 
     story.append(Paragraph("CW", h2))
-    story.append(_ranking_table(page.cw, cell_wrap))
+    story.append(_ranking_table(page.cw, cells))
 
     story.append(Paragraph("SSB", h2))
-    story.append(_ranking_table(page.ssb, cell_wrap))
+    story.append(_ranking_table(page.ssb, cells))
 
+    # The station table turns the sheet, so it always starts a page of its
+    # own; the template switch only takes effect at the next page break.
+    story.append(NextPageTemplate("landscape"))
     story.append(PageBreak())
     story.append(Paragraph("Station data", h2))
-    story.append(_station_data_table(page.stations, cell_wrap))
+    story.append(_station_data_table(page.stations, cells))
 
     story.append(Spacer(1, 6 * mm))
     story.append(Paragraph(
@@ -110,20 +144,56 @@ def build_ranking_pdf(contest: Contest, *, page: RankingPage | None = None) -> b
     return buffer.getvalue()
 
 
+# --- page setup ------------------------------------------------------------------------------
+
+
+def _document(buffer: BytesIO, *, title: str) -> BaseDocTemplate:
+    """A4 with two page templates the story switches between.
+
+    ``SimpleDocTemplate`` would fix one orientation for the whole
+    document; reportlab takes the page size from whichever
+    :class:`PageTemplate` a page begins under, so the rankings can print
+    portrait and the station data landscape in the same file.
+    """
+    doc = BaseDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=MARGIN, rightMargin=MARGIN,
+        topMargin=MARGIN, bottomMargin=MARGIN,
+        title=title,
+    )
+    doc.addPageTemplates([
+        _page_template("portrait", A4),
+        _page_template("landscape", landscape(A4)),
+    ])
+    return doc
+
+
+def _page_template(name: str, pagesize: tuple[float, float]) -> PageTemplate:
+    width, height = pagesize
+    frame = Frame(
+        MARGIN, MARGIN,
+        width - 2 * MARGIN, height - 2 * MARGIN,
+        id=name,
+    )
+    return PageTemplate(id=name, frames=[frame], pagesize=pagesize)
+
+
 # --- table builders --------------------------------------------------------------------------
 
 
-def _ranking_table(rows, cell_wrap) -> Table:
-    header = [
+def _ranking_table(rows, cells: _CellStyles) -> Table:
+    labels = [
         "Rang", "Rufzeichen", "Standort", "QAH (m)",
         "NMD", "HB", "EU", "QSO", "Punkte",
     ]
-    data: list[list] = [header]
+    num_cols = {0, 3, 4, 5, 6, 7, 8}
+    data: list[list] = [_header_row(labels, cells, num_cols)]
     for r in rows:
         data.append([
             str(r.rank),
             r.callsign,
-            Paragraph(r.location_text or "", cell_wrap) if r.location_text else "",
+            _cell(r.location_text, cells),
             str(r.altitude_m),
             str(r.nmd_qsos),
             str(r.hb_qsos),
@@ -132,7 +202,7 @@ def _ranking_table(rows, cell_wrap) -> Table:
             str(r.points),
         ])
     if len(data) == 1:
-        data.append(["—"] * len(header))
+        data.append(["—"] * len(labels))
 
     table = Table(
         data,
@@ -142,39 +212,66 @@ def _ranking_table(rows, cell_wrap) -> Table:
         ],
         repeatRows=1,
     )
-    table.setStyle(_table_style(num_cols={0, 3, 4, 5, 6, 7, 8}))
+    table.setStyle(_table_style(num_cols=num_cols))
     return table
 
 
-def _station_data_table(rows, cell_wrap) -> Table:
-    header = [
+def _station_data_table(rows, cells: _CellStyles) -> Table:
+    labels = [
         "Rufzeichen", "Punkte",
         str(TRX_LABEL), "Watt", str(PSU_LABEL), str(ANTENNA_LABEL),
+        str(FEEDLINE_LABEL), str(MASTS_LABEL), str(GUYING_LABEL),
         "Gewicht (g)",
     ]
-    data: list[list] = [header]
+    num_cols = {1, 9}
+    data: list[list] = [_header_row(labels, cells, num_cols)]
     for s in rows:
         data.append([
             s.callsign,
             str(s.points_total),
-            Paragraph(s.trx or "", cell_wrap) if s.trx else "",
+            _cell(s.trx, cells),
             s.watt or "",
-            Paragraph(s.psu or "", cell_wrap) if s.psu else "",
-            Paragraph(s.antenna or "", cell_wrap) if s.antenna else "",
+            _cell(s.psu, cells),
+            _cell(s.antenna, cells),
+            _cell(s.feedline, cells),
+            _cell(s.masts, cells),
+            _cell(s.guying, cells),
             str(s.total_weight_g),
         ])
     if len(data) == 1:
-        data.append(["—"] * len(header))
+        data.append(["—"] * len(labels))
 
+    # Sums to the landscape frame's usable width (its own 6pt padding on
+    # each side included), so the widest columns go to the free-text kit
+    # descriptions.
     table = Table(
         data,
         colWidths=[
-            24 * mm, 14 * mm, 38 * mm, 16 * mm, 32 * mm, 38 * mm, 18 * mm,
+            23 * mm, 13 * mm, 34 * mm, 13 * mm, 30 * mm, 34 * mm,
+            32 * mm, 32 * mm, 32 * mm, 16 * mm,
         ],
         repeatRows=1,
     )
-    table.setStyle(_table_style(num_cols={1, 6}))
+    table.setStyle(_table_style(num_cols=num_cols))
     return table
+
+
+def _header_row(labels, cells: _CellStyles, num_cols: set[int]) -> list:
+    return [
+        Paragraph(label, cells.header_right if i in num_cols else cells.header)
+        for i, label in enumerate(labels)
+    ]
+
+
+def _cell(text: str, cells: _CellStyles):
+    """A wrapping free-text cell.
+
+    Empty string when there's nothing to say, so a blank slot costs no row
+    height. Operator-typed kit descriptions are escaped: a paragraph reads
+    its text as mini-HTML, and an ``&`` in "Dipol & Balun" would otherwise
+    abort the whole render.
+    """
+    return Paragraph(escape(text), cells.body) if text else ""
 
 
 def _table_style(*, num_cols: set[int]) -> TableStyle:

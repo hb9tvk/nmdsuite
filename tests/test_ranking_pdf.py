@@ -28,6 +28,24 @@ def _pdf_text(blob: bytes) -> str:
     return "\n".join(page.extract_text() or "" for page in reader.pages)
 
 
+def _squashed(blob: bytes) -> str:
+    """Extracted text with every whitespace run removed.
+
+    A cell wraps inside its column, so a long value comes back out of the
+    extractor broken across lines. Whether a value reached the page is a
+    separate question from where it happened to break.
+    """
+    return "".join(_pdf_text(blob).split())
+
+
+def _pages(blob: bytes) -> list[tuple[str, bool]]:
+    """One ``(text, is_landscape)`` pair per page, in order."""
+    return [
+        (page.extract_text() or "", page.mediabox.width > page.mediabox.height)
+        for page in PdfReader(BytesIO(blob)).pages
+    ]
+
+
 _GENERATED_AT = re.compile(r"Stand \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC")
 
 
@@ -90,6 +108,85 @@ def test_build_pdf_omits_cancelled_participants(seeded_contest):
     text = _pdf_text(build_ranking_pdf(seeded_contest))
     assert "HB9OK/P" in text
     assert "HB9CX/P" not in text
+
+
+# --- service: the station-data section ---------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_station_data_starts_a_new_landscape_page(seeded_contest):
+    """Ten columns don't fit portrait, so the section turns the sheet — and
+    a turned sheet can't share a page with the rankings above it."""
+    p = _make_participant(seeded_contest, username="HB9A", callsign="HB9A/P")
+    _add_qso(p, mode="CW", points=4)
+
+    pages = _pages(build_ranking_pdf(seeded_contest))
+    ranking = [(text, landscape) for text, landscape in pages if "Rang" in text]
+    station = [(text, landscape) for text, landscape in pages if "Station data" in text]
+
+    assert ranking and station
+    assert all(not landscape for _text, landscape in ranking)
+    assert all(landscape for _text, landscape in station)
+    # The rankings and the station data never share a sheet.
+    assert all("Rang" not in text for text, _landscape in station)
+
+
+@pytest.mark.django_db
+def test_station_data_carries_feedline_masts_and_guying(seeded_contest):
+    p = _make_participant(
+        seeded_contest, username="HB9A", callsign="HB9A/P",
+        components={
+            1: "TRX-DESCRIPTION",
+            6: "FEEDLINE-DESCRIPTION",
+            7: "MASTS-DESCRIPTION",
+            8: "GUYING-DESCRIPTION",
+        },
+    )
+    _add_qso(p, mode="CW", points=4)
+
+    text = _squashed(build_ranking_pdf(seeded_contest))
+    for value in (
+        "TRX-DESCRIPTION", "FEEDLINE-DESCRIPTION",
+        "MASTS-DESCRIPTION", "GUYING-DESCRIPTION",
+    ):
+        assert value in text
+
+
+@pytest.mark.django_db
+def test_station_data_survives_markup_characters(seeded_contest):
+    """Kit descriptions are operator free text and land in a reportlab
+    paragraph, which reads its content as mini-HTML."""
+    p = _make_participant(
+        seeded_contest, username="HB9A", callsign="HB9A/P",
+        components={5: "Balun & <1:4>"},
+    )
+    _add_qso(p, mode="CW", points=4)
+
+    text = _pdf_text(build_ranking_pdf(seeded_contest))
+    assert "Balun & <1:4>" in text
+
+
+@pytest.mark.django_db
+def test_station_data_may_span_several_pages(seeded_contest, settings):
+    """A large field must flow onto further landscape pages rather than
+    being cut off at the first."""
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+    field = 60
+    for i in range(field):
+        p = _make_participant(
+            seeded_contest, username=f"HB9X{i:02d}", callsign=f"HB9X{i:02d}/P",
+        )
+        _add_qso(p, mode="CW", points=4)
+
+    pages = _pages(build_ranking_pdf(seeded_contest))
+    station = [text for text, landscape in pages if landscape]
+    assert len(station) > 1
+    # Each continuation page repeats the header row, and every station made
+    # it onto one of them.
+    assert all("Rufzeichen" in text for text in station)
+    joined = "\n".join(station)
+    for i in range(field):
+        assert f"HB9X{i:02d}/P" in joined
 
 
 # --- view: gating ----------------------------------------------------------------------------

@@ -256,8 +256,8 @@ def test_ranking_qso_breakdown_partitioned_by_mode(published_contest):
 
 @pytest.mark.django_db
 def test_station_data_uses_legacy_slot_mapping(published_contest):
-    """TRX = slot 1, PSU = slot 2, Antenna = slot 5. Verifies the
-    convention agreed for M4A.2."""
+    """TRX = slot 1, PSU = slot 2, Antenna = slot 5, Feedline = 6,
+    Masts = 7, Guying = 8. Verifies the convention agreed for M4A.2."""
     p = _make_participant(
         published_contest, username="HB9A", callsign="HB9A/P", modes=3,
         watt="100W", weight_g=4200,
@@ -265,7 +265,10 @@ def test_station_data_uses_legacy_slot_mapping(published_contest):
             1: "FT-857",            # TRX
             2: "LiFePO4 12V",       # PSU
             5: "Linked dipole",     # Antenna
-            6: "RG-174 10m",        # Feedline — should NOT be on station data
+            6: "RG-174 10m",        # Feedline
+            7: "GFK-Mast 6m",       # Masts / counterweights
+            8: "Dyneema 3x8m",      # Guying / insulators
+            9: "Netbook",           # PC — not on station data
         },
     )
     _add_qso(p, mode="CW", points=8)
@@ -277,8 +280,12 @@ def test_station_data_uses_legacy_slot_mapping(published_contest):
     assert s.trx == "FT-857"
     assert s.psu == "LiFePO4 12V"
     assert s.antenna == "Linked dipole"
+    assert s.feedline == "RG-174 10m"
+    assert s.masts == "GFK-Mast 6m"
+    assert s.guying == "Dyneema 3x8m"
     assert s.watt == "100W"
     assert s.total_weight_g == 4200
+    assert "Netbook" not in (s.trx, s.psu, s.antenna, s.feedline, s.masts, s.guying)
 
 
 @pytest.mark.django_db
