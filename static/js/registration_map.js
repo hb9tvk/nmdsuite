@@ -264,8 +264,12 @@
 
     /** Try every plausible attribute key from the Swisstopo identify response. */
     function extractCantonCode(attrs) {
-        // Common abbreviation keys, lowercased values normalised to upper.
-        const abbrKeys = ["kanton", "abbreviation", "ktkz", "ktz", "code", "abbr"];
+        // `ak` is what the live layer actually returns; the rest are kept as
+        // cheap insurance. Without `ak` this fell all the way through to the
+        // name table below, which is how the server-side copy in
+        // registration/swisstopo.py — lacking that table — silently returned
+        // nothing for every .nmd upload.
+        const abbrKeys = ["ak", "kanton", "abbreviation", "ktkz", "ktz", "code", "abbr"];
         for (const k of abbrKeys) {
             const v = attrs[k];
             if (typeof v === "string" && /^[A-Za-z]{2}$/.test(v)) {

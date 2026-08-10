@@ -9,7 +9,9 @@ ignored).
 
 Both functions return ``None`` on any failure (network, parse, no-match).
 Callers should treat None as "keep the previous value" rather than
-clearing the field.
+clearing the field — which makes a parsing gap here invisible rather than
+loud, so :func:`_extract_canton_code` is covered against a recorded copy
+of the real response in ``tests/test_swisstopo.py``.
 """
 from __future__ import annotations
 
@@ -34,6 +36,26 @@ CANTON_BY_FSO: Final[dict[int, str]] = {
     8: "GL", 9: "ZG", 10: "FR", 11: "SO", 12: "BS", 13: "BL", 14: "SH",
     15: "AR", 16: "AI", 17: "SG", 18: "GR", 19: "AG", 20: "TG", 21: "TI",
     22: "VD", 23: "VS", 24: "NE", 25: "GE", 26: "JU",
+}
+
+# Canton name → code, for the backstop below. Accented and unaccented
+# spellings both appear depending on the response encoding, and the layer
+# is served in German with French/Italian names for the Romandie and
+# Ticino, so several spellings map to one code.
+CODE_BY_NAME: Final[dict[str, str]] = {
+    "zürich": "ZH", "zurich": "ZH", "bern": "BE", "berne": "BE",
+    "luzern": "LU", "lucerne": "LU", "uri": "UR", "schwyz": "SZ",
+    "obwalden": "OW", "nidwalden": "NW", "glarus": "GL", "zug": "ZG",
+    "fribourg": "FR", "freiburg": "FR", "solothurn": "SO",
+    "basel-stadt": "BS", "basel-landschaft": "BL", "schaffhausen": "SH",
+    "appenzell ausserrhoden": "AR", "appenzell innerrhoden": "AI",
+    "st. gallen": "SG", "sankt gallen": "SG", "saint-gall": "SG",
+    "graubünden": "GR", "graubunden": "GR", "grigioni": "GR",
+    "grischun": "GR", "aargau": "AG", "thurgau": "TG",
+    "ticino": "TI", "tessin": "TI", "vaud": "VD", "waadt": "VD",
+    "valais": "VS", "wallis": "VS", "neuchâtel": "NE", "neuchatel": "NE",
+    "neuenburg": "NE", "genève": "GE", "geneve": "GE", "genf": "GE",
+    "jura": "JU",
 }
 
 
@@ -93,7 +115,20 @@ def lookup_canton(ch1903p_e: float, ch1903p_n: float) -> str | None:
 
 
 def _extract_canton_code(attrs: dict) -> str | None:
-    for k in ("kanton", "abbreviation", "ktkz", "ktz", "code", "abbr"):
+    """Pull a 2-letter canton code out of an identify feature's attributes.
+
+    The live ``swissboundaries3d-kanton-flaeche`` layer answers with
+
+        {"ak": "GR", "name": "Graubünden", "flaeche": ..., "label": "Graubünden"}
+
+    so ``ak`` is the field that actually matters; it is checked first. The
+    other abbreviation keys and the FSO numbers are kept because the layer
+    has carried them at various times and they cost nothing. The name
+    table is a genuine last resort — before ``ak`` was recognised it was
+    the *only* thing making the client-side lookup work, which is why the
+    server-side copy, lacking it, returned None for every upload.
+    """
+    for k in ("ak", "kanton", "abbreviation", "ktkz", "ktz", "code", "abbr"):
         v = attrs.get(k)
         if isinstance(v, str) and len(v) == 2 and v.isalpha():
             return v.upper()
@@ -104,4 +139,10 @@ def _extract_canton_code(attrs: dict) -> str | None:
             continue
         if num in CANTON_BY_FSO:
             return CANTON_BY_FSO[num]
+    for k in ("name", "label", "NAME"):
+        v = attrs.get(k)
+        if isinstance(v, str):
+            code = CODE_BY_NAME.get(v.strip().lower())
+            if code:
+                return code
     return None

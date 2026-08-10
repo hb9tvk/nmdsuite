@@ -10,6 +10,42 @@ from registration import swisstopo
 # --- canton code extraction (pure function — no network) -------------------------------------
 
 
+# Recorded verbatim from api3.geo.admin.ch for LV95 2727686/1172904
+# (WGS84 46.69513/9.108104, Safiental GR) — the .nmd upload that exposed
+# the parser gap. `ak` and `name`/`label` are the only canton-bearing
+# fields the live layer returns; the original key list knew none of them,
+# so every upload silently kept the participant's registered canton.
+REAL_IDENTIFY_RESPONSE = {
+    "results": [
+        {
+            "layerBodId": "ch.swisstopo.swissboundaries3d-kanton-flaeche.fill",
+            "layerName": "Kantonsgrenzen",
+            "featureId": 18,
+            "id": 18,
+            "properties": {
+                "ak": "GR",
+                "name": "Graubünden",
+                "flaeche": 710530.0,
+                "label": "Graubünden",
+            },
+        },
+    ],
+}
+
+
+def test_lookup_canton_reads_the_real_swisstopo_payload():
+    """The regression that matters: the whole path, against what the live
+    API actually answers."""
+    with patch.object(swisstopo, "_http_get_json", return_value=REAL_IDENTIFY_RESPONSE):
+        assert swisstopo.lookup_canton(2_727_686, 1_172_904) == "GR"
+
+
+def test_extract_canton_from_ak_key():
+    """`ak` is the field the live layer uses — checked before anything else."""
+    assert swisstopo._extract_canton_code({"ak": "GR"}) == "GR"
+    assert swisstopo._extract_canton_code({"ak": "gr"}) == "GR"
+
+
 def test_extract_canton_from_abbreviation_key():
     assert swisstopo._extract_canton_code({"kanton": "be"}) == "BE"
 
@@ -19,10 +55,26 @@ def test_extract_canton_from_fso_number():
     assert swisstopo._extract_canton_code({"ktnr": 2}) == "BE"
 
 
+def test_extract_canton_falls_back_to_the_full_name():
+    """Last resort, for a response carrying no code at all."""
+    assert swisstopo._extract_canton_code({"name": "Graubünden"}) == "GR"
+    assert swisstopo._extract_canton_code({"label": "Ticino"}) == "TI"
+    # Unaccented and non-German spellings of the same canton.
+    assert swisstopo._extract_canton_code({"name": "graubunden"}) == "GR"
+    assert swisstopo._extract_canton_code({"name": "Tessin"}) == "TI"
+
+
+def test_extract_canton_prefers_the_code_over_the_name():
+    """Both are present in every real response; disagreement should never
+    happen, but the authoritative field is the code."""
+    assert swisstopo._extract_canton_code({"ak": "GR", "name": "Ticino"}) == "GR"
+
+
 def test_extract_canton_returns_none_for_garbage():
     assert swisstopo._extract_canton_code({}) is None
     assert swisstopo._extract_canton_code({"kanton": "BEE"}) is None  # too long
     assert swisstopo._extract_canton_code({"ktnr": "abc"}) is None
+    assert swisstopo._extract_canton_code({"name": "Bavaria"}) is None
 
 
 # --- HTTP wrappers ---------------------------------------------------------------------------
