@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n tz %}
 {% block title %}{{ participant.callsign }} — {% trans "Administration" %}{% endblock %}
 
 {% block extra_head %}{% include "partials/_location_head.html" %}{% endblock %}
@@ -45,17 +45,17 @@
                 {% elif participant.operating_modes == 3 %}CW + SSB
                 {% endif %}
             </dd>
-            <dt>{% trans "Registered at" %}</dt><dd>{{ participant.registered_at|date:"Y-m-d H:i" }} UTC</dd>
+            <dt>{% trans "Registered at" %}</dt><dd>{{ participant.registered_at|utc|date:"Y-m-d H:i" }} UTC</dd>
             <dt>{% trans "Status" %}</dt><dd>{{ status }}</dd>
             {% if participant.submitted_at %}
                 <dt>{% trans "Submitted at" %}</dt>
                 <dd>
-                    {{ participant.submitted_at|date:"Y-m-d H:i" }} UTC
+                    {{ participant.submitted_at|utc|date:"Y-m-d H:i" }} UTC
                     {% if participant.auto_submitted %}({% trans "auto-submitted" %}){% endif %}
                 </dd>
             {% endif %}
             {% if participant.cancelled_at %}
-                <dt>{% trans "Cancelled at" %}</dt><dd>{{ participant.cancelled_at|date:"Y-m-d H:i" }} UTC</dd>
+                <dt>{% trans "Cancelled at" %}</dt><dd>{{ participant.cancelled_at|utc|date:"Y-m-d H:i" }} UTC</dd>
             {% endif %}
         </dl>
 

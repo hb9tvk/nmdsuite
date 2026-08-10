@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static tz %}
 {% block title %}{% trans "Log entry" %} {{ participant.callsign }} — {% trans "Administration" %}{% endblock %}
 
 {% block extra_head %}
@@ -22,7 +22,7 @@
 
     {% if participant.submitted_at %}
         <div class="banner banner-info">
-            {% blocktrans with when=participant.submitted_at|date:"d.m.Y H:i" %}
+            {% blocktrans with when=participant.submitted_at|utc|date:"d.m.Y H:i" %}
                 Log was submitted on {{ when }} UTC. Edits will alter the submitted log.
             {% endblocktrans %}
         </div>

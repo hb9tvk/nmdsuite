@@ -218,3 +218,23 @@ def test_cancel_post_marks_participant_cancelled_and_logs_out(client, registered
     assert b"not registered" in response.content.lower() or b"register" in response.content.lower()
 
     assert AuditLog.objects.filter(action="registration.cancel", target="HB9TVK/P").exists()
+
+
+@pytest.mark.django_db
+def test_dashboard_submitted_banner_shows_utc(client, registered_user):
+    """The banner says UTC, so it must print UTC whatever TIME_ZONE the
+    deployment runs on (Europe/Zurich = UTC+2 in July)."""
+    from datetime import datetime, timezone as dt_timezone
+
+    from django.test import override_settings
+
+    user, p = registered_user
+    stamp = datetime(2026, 7, 19, 6, 23, tzinfo=dt_timezone.utc)  # 08:23 in Zurich
+    Participant.objects.filter(pk=p.pk).update(submitted_at=stamp)
+
+    client.force_login(user)
+    with override_settings(TIME_ZONE="Europe/Zurich"):
+        body = client.get("/submission/").content.decode()
+
+    assert "06:23" in body
+    assert "08:23" not in body

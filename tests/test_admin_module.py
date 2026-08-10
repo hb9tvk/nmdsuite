@@ -194,3 +194,40 @@ def test_audit_log_action_filter_options_only_show_observed_actions(client, seed
     response = client.get("/admin/audit/")
     body = response.content.decode()
     assert "only.this.one" in body
+
+
+# --- time zone -------------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_admin_pages_show_utc_not_the_deployment_time_zone(client, seeded_contest):
+    """Regression: every column and label that says UTC must render UTC, even
+    when the deployment sets a non-UTC TIME_ZONE.
+
+    Europe/Zurich is UTC+2 in July, which was printing CEST under headings
+    that promised UTC. Same bug class as the scoring review's QSO times
+    (see tests/test_scoring_review_view.py).
+    """
+    from datetime import datetime, timezone as dt_timezone
+
+    from django.test import override_settings
+
+    stamp = datetime(2026, 7, 19, 6, 23, tzinfo=dt_timezone.utc)  # 08:23 in Zurich
+    actor = _make_staff_user()
+    p = _make_participant(
+        seeded_contest, username="HB9TVK", callsign="HB9TVK/P", submitted=True,
+    )
+    Participant.objects.filter(pk=p.pk).update(registered_at=stamp, submitted_at=stamp)
+    audit(actor=actor, action="test.action", target="HB9TVK/P", contest=seeded_contest)
+    AuditLog.objects.all().update(timestamp=stamp)
+
+    client.force_login(actor)
+    with override_settings(TIME_ZONE="Europe/Zurich"):
+        bodies = {
+            url: client.get(url).content.decode()
+            for url in ("/admin/", "/admin/audit/", f"/admin/participants/{p.pk}/")
+        }
+
+    for url, body in bodies.items():
+        assert "06:23" in body, f"{url} lost the UTC time"
+        assert "08:23" not in body, f"{url} rendered the server's local time"

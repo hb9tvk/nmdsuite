@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n tz %}
 {% block title %}{% trans "Administration" %} — NMD{% endblock %}
 
 {% block content %}
@@ -16,7 +16,7 @@
                 <dt>{% trans "State" %}</dt><dd>{{ contest.get_state_display }}</dd>
                 {% if contest.results_published_at %}
                     <dt>{% trans "Results published" %}</dt>
-                    <dd>{{ contest.results_published_at|date:"d.m.Y H:i" }} UTC</dd>
+                    <dd>{{ contest.results_published_at|utc|date:"d.m.Y H:i" }} UTC</dd>
                 {% endif %}
             </dl>
         </section>
@@ -137,7 +137,7 @@
                 <tbody>
                     {% for entry in recent_audit %}
                         <tr>
-                            <td>{{ entry.timestamp|date:"Y-m-d H:i" }}</td>
+                            <td>{{ entry.timestamp|utc|date:"Y-m-d H:i" }}</td>
                             <td>{{ entry.actor.username|default:entry.actor_label|default:"—" }}</td>
                             <td>{{ entry.action }}</td>
                             <td>{{ entry.target|default:"—" }}</td>
