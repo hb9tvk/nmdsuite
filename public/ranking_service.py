@@ -38,6 +38,9 @@ from portal.station_service import COMPONENT_LABELS
 _TRX_IDX = 1
 _PSU_IDX = 2
 _ANTENNA_IDX = 5
+_FEEDLINE_IDX = 6
+_MASTS_IDX = 7
+_GUYING_IDX = 8
 
 _NMD_STATUSES = frozenset({ScoringStatus.FULL_MATCH, ScoringStatus.ADMIN_ACCEPTED})
 
@@ -66,6 +69,9 @@ class StationDataRow:
     watt: str
     psu: str
     antenna: str
+    feedline: str
+    masts: str
+    guying: str
     total_weight_g: int
 
 
@@ -239,6 +245,9 @@ def _station_data(
             watt=p.watt,
             psu=comps.get(_PSU_IDX, ""),
             antenna=comps.get(_ANTENNA_IDX, ""),
+            feedline=comps.get(_FEEDLINE_IDX, ""),
+            masts=comps.get(_MASTS_IDX, ""),
+            guying=comps.get(_GUYING_IDX, ""),
             total_weight_g=p.total_weight_g,
         ))
     return rows
@@ -277,3 +286,6 @@ def _components_by_idx(p: Participant) -> dict[int, str]:
 TRX_LABEL = COMPONENT_LABELS[_TRX_IDX - 1]
 PSU_LABEL = COMPONENT_LABELS[_PSU_IDX - 1]
 ANTENNA_LABEL = COMPONENT_LABELS[_ANTENNA_IDX - 1]
+FEEDLINE_LABEL = COMPONENT_LABELS[_FEEDLINE_IDX - 1]
+MASTS_LABEL = COMPONENT_LABELS[_MASTS_IDX - 1]
+GUYING_LABEL = COMPONENT_LABELS[_GUYING_IDX - 1]

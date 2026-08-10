@@ -21,10 +21,12 @@ from core.map_render import (
     LABEL_HEIGHT_OF_DIAMETER,
     LOGO_CENTRE_EAST,
     LOGO_PATH,
+    TEXT_ANCHOR_EAST,
     GeoReference,
     MapStation,
     _label_metrics,
     _logo_rect,
+    _text_left,
     render_station_map,
 )
 from registration.forms import QRB_THRESHOLD_M
@@ -207,6 +209,19 @@ def test_logo_straddles_the_800_easting():
     assert x + width < PAGE_W
     assert y > PAGE_H / 2
     assert y + height < PAGE_H
+
+
+def test_corner_text_clears_the_500_km_ruler():
+    """The heading and the circle legend sit in the left corners, where the
+    500 km easting ruler used to strike through them."""
+    geo = GeoReference(canvas_width=PAGE_W, canvas_height=PAGE_H)
+    ruler_x, _ = geo.to_canvas(TEXT_ANCHOR_EAST, 0)
+
+    left = _text_left(geo)
+    assert left > ruler_x
+    # Clear of the line, but still a corner block rather than an indent.
+    assert left - ruler_x < 10
+    assert left < PAGE_W / 10
 
 
 def test_render_handles_no_stations():

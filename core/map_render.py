@@ -158,6 +158,14 @@ PLACEMENT_INSET = 4.0
 # Grid every 100 km, matching the legacy maps' 500/600/700/800 rulers.
 GRID_STEP_M = 100_000
 
+# The corner text blocks — heading top-left, circle legend bottom-left —
+# start just right of the 500 km easting ruler, which otherwise strikes
+# through them. Anchored to the georeference like the emblem, so the
+# clearance holds if the page size changes instead of drifting back onto
+# the line.
+TEXT_ANCHOR_EAST = 500_000
+TEXT_ANCHOR_GAP = 3.0
+
 
 @dataclass(frozen=True)
 class MapStation:
@@ -182,6 +190,13 @@ def _label_metrics(geo: GeoReference) -> tuple[float, float]:
     diameter = geo.metres_to_canvas(QRB_THRESHOLD_M)
     font_size = diameter * LABEL_HEIGHT_OF_DIAMETER / LABEL_CAP_HEIGHT_RATIO
     return font_size, font_size * LABEL_LINE_SPACING
+
+
+def _text_left(geo: GeoReference) -> float:
+    """Left edge of the corner text blocks, in canvas points."""
+    # to_canvas' x depends only on the easting; the northing is discarded.
+    x, _ = geo.to_canvas(TEXT_ANCHOR_EAST, 0)
+    return x + TEXT_ANCHOR_GAP
 
 
 def _grid_values(low: float, high: float) -> list[int]:
@@ -272,27 +287,28 @@ def _draw_titles(
     c.saveState()
     c.setFillColor(colors.black)
 
+    left = _text_left(geo)
     y = geo.canvas_height - 34
     c.setFont(TITLE_FONT, 15)
-    c.drawString(28, y, f"National Mountain Day {year}")
+    c.drawString(left, y, f"National Mountain Day {year}")
 
     y -= 16
     c.setFont(TITLE_FONT, 9)
     for line in subtitles:
-        c.drawString(28, y, line)
+        c.drawString(left, y, line)
         y -= 11
 
     if legend:
         y -= 3
         c.setFont(FOOT_FONT, 8)
         for line in legend:
-            c.drawString(28, y, line)
+            c.drawString(left, y, line)
             y -= 10
 
     y -= 4
     c.setFont(FOOT_FONT, 7)
     c.drawString(
-        28, y,
+        left, y,
         "Stand / mise à jour / aggiornamento: "
         + timezone.now().strftime("%Y-%m-%d %H:%M UTC"),
     )
@@ -305,9 +321,10 @@ def _draw_footer(c: pdfcanvas.Canvas, geo: GeoReference) -> None:
     c.saveState()
     c.setFillColor(colors.black)
     c.setFont(FOOT_FONT, 7)
-    c.drawString(28, 32, f"Stationskreise Ø {diameter}")
-    c.drawString(28, 24, f"Cercles des stations Ø {diameter}")
-    c.drawString(28, 16, f"Cerchi delle stazioni Ø {diameter}")
+    left = _text_left(geo)
+    c.drawString(left, 32, f"Stationskreise Ø {diameter}")
+    c.drawString(left, 24, f"Cercles des stations Ø {diameter}")
+    c.drawString(left, 16, f"Cerchi delle stazioni Ø {diameter}")
     c.setFillColor(colors.grey)
     c.drawRightString(geo.canvas_width - 12, 16, "© swisstopo")
     c.restoreState()
