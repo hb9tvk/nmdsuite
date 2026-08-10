@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static tz %}
 
 {% block title %}{% blocktrans with year=contest.year %}NMD {{ year }} — Ranking{% endblocktrans %}{% endblock %}
 
@@ -32,7 +32,7 @@
     <p>
         {% blocktrans with date=contest.contest_date %}Contest held {{ date }}.{% endblocktrans %}
         {% if contest.results_published_at %}
-            {% blocktrans with when=contest.results_published_at|date:"d.m.Y H:i" %}Results published {{ when }} UTC.{% endblocktrans %}
+            {% blocktrans with when=contest.results_published_at|utc|date:"d.m.Y H:i" %}Results published {{ when }} UTC.{% endblocktrans %}
         {% endif %}
     </p>
 

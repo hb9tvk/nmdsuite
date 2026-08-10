@@ -120,6 +120,33 @@ def test_submit_post_locks_participant_and_sends_email(client, participant, sett
 
 
 @pytest.mark.django_db
+def test_confirmation_email_stamps_the_submission_in_utc(participant, settings):
+    """The receipt says UTC in all three languages, so it must print UTC even
+    when the deployment runs a non-UTC TIME_ZONE (Europe/Zurich = UTC+2 in
+    July). The mail is rendered outside a request, so nothing activates a
+    time zone for it and it falls straight through to settings.TIME_ZONE.
+    """
+    from datetime import datetime, timezone as dt_timezone
+
+    from django.test import override_settings
+
+    from portal.emails import send_log_submitted_confirmation
+
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    _user, p = participant
+    stamp = datetime(2026, 7, 19, 6, 23, tzinfo=dt_timezone.utc)  # 08:23 in Zurich
+    Participant.objects.filter(pk=p.pk).update(submitted_at=stamp)
+    p.refresh_from_db()
+
+    with override_settings(TIME_ZONE="Europe/Zurich"):
+        send_log_submitted_confirmation(participant=p)
+
+    body = mail.outbox[0].body
+    assert body.count("06:23") == 3  # once per language block
+    assert "08:23" not in body
+
+
+@pytest.mark.django_db
 def test_submit_when_already_submitted_redirects_and_keeps_timestamp(client, participant):
     user, p = participant
     _force_submitted(p)

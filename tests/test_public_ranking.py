@@ -431,3 +431,22 @@ def test_view_serves_swisstopo_tile_attribution(client, published_contest):
     body = response.content.decode()
     assert "leaflet" in body.lower()
     assert "ranking_map.js" in body
+
+
+@pytest.mark.django_db
+def test_published_line_shows_utc(client, published_contest):
+    """The published-at line is labelled UTC, so it must print UTC even when
+    the deployment runs a non-UTC TIME_ZONE."""
+    from datetime import datetime
+    from datetime import timezone as dt_timezone
+
+    from django.test import override_settings
+
+    stamp = datetime(2026, 7, 19, 6, 23, tzinfo=dt_timezone.utc)  # 08:23 in Zurich
+    Contest.objects.filter(pk=published_contest.pk).update(results_published_at=stamp)
+
+    with override_settings(TIME_ZONE="Europe/Zurich"):
+        body = client.get(f"/ranking/{published_contest.year}/").content.decode()
+
+    assert "06:23" in body
+    assert "08:23" not in body

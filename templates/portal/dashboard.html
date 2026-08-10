@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n tz %}
 {% block title %}{% trans "Portal" %} — NMD{% endblock %}
 
 {% block content %}
@@ -29,7 +29,7 @@
 
         {% if participant.submitted_at %}
             <div class="banner banner-info">
-                {% blocktrans with when=participant.submitted_at|date:"d.m.Y H:i" %}
+                {% blocktrans with when=participant.submitted_at|utc|date:"d.m.Y H:i" %}
                     Your log was submitted on {{ when }} UTC. No further changes are possible.
                 {% endblocktrans %}
             </div>

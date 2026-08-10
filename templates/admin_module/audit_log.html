@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n tz %}
 {% block title %}{% trans "Audit log" %} — NMD{% endblock %}
 
 {% block content %}
@@ -47,7 +47,7 @@
             <tbody>
                 {% for entry in page_obj %}
                     <tr>
-                        <td class="cell-when">{{ entry.timestamp|date:"Y-m-d H:i:s" }}</td>
+                        <td class="cell-when">{{ entry.timestamp|utc|date:"Y-m-d H:i:s" }}</td>
                         <td>{{ entry.actor.username|default:entry.actor_label|default:"—" }}</td>
                         <td><code>{{ entry.action }}</code></td>
                         <td>{{ entry.target|default:"—" }}</td>

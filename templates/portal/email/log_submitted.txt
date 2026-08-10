@@ -1,8 +1,8 @@
-{% load i18n %}=== Deutsch ===
+{% load i18n tz %}=== Deutsch ===
 
 Hallo {{ participant.first_name }}
 
-Dein Log für den NMD {{ contest.year }} wurde am {{ submitted_at|date:"d.m.Y H:i" }} UTC erfolgreich eingereicht.
+Dein Log für den NMD {{ contest.year }} wurde am {{ submitted_at|utc|date:"d.m.Y H:i" }} UTC erfolgreich eingereicht.
 
 Rufzeichen:        {{ participant.callsign }}
 QSOs im Log:       {{ qso_count }}
@@ -19,7 +19,7 @@ Log-Download (ADIF): {{ adif_url }}
 
 Bonjour {{ participant.first_name }}
 
-Votre journal pour le NMD {{ contest.year }} a été soumis avec succès le {{ submitted_at|date:"d.m.Y H:i" }} UTC.
+Votre journal pour le NMD {{ contest.year }} a été soumis avec succès le {{ submitted_at|utc|date:"d.m.Y H:i" }} UTC.
 
 Indicatif :        {{ participant.callsign }}
 QSO dans le log :  {{ qso_count }}
@@ -36,7 +36,7 @@ Téléchargement (ADIF) :    {{ adif_url }}
 
 Ciao {{ participant.first_name }}
 
-Il tuo log per il NMD {{ contest.year }} è stato inviato con successo il {{ submitted_at|date:"d.m.Y H:i" }} UTC.
+Il tuo log per il NMD {{ contest.year }} è stato inviato con successo il {{ submitted_at|utc|date:"d.m.Y H:i" }} UTC.
 
 Nominativo:        {{ participant.callsign }}
 QSO nel log:       {{ qso_count }}
