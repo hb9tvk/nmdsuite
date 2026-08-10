@@ -31,6 +31,11 @@ This file is read automatically by Claude Code when working in this repo. Keep i
 - Coordinates: store CH1903+ (LV95) E/N and WGS84 lat/lon in canonical columns; keep the
   user's original input in the `*_input_*` columns for display.
 - All datetimes are UTC. The contest start/end times in `Contest` are timezone-aware UTC.
+- Translations: the `TRANSLATIONS` / `PLURALS` tables in `tools/build_translations.py` are the
+  source of truth. `locale/*/LC_MESSAGES/*.po` are generated and gitignored — never hand-edit
+  them. A msgid missing from the table is written as an empty `msgstr` and ships as its English
+  source string, so add the entry in the same PR as the `{% trans %}` marker. `blocktrans`
+  renders `{{ var }}` as `%(var)s` in the msgid — key the table in that form.
 
 ## Commands
 
@@ -40,6 +45,10 @@ python manage.py runserver
 python manage.py makemigrations
 python manage.py migrate
 python manage.py seed_contest --year <YYYY>
-python manage.py makemessages -l de -l fr -l it
-python manage.py compilemessages
+
+# Translation chain — run in this order; the script warns on stderr about any
+# msgid it has no entry for. Same chain the image build runs.
+python manage.py makemessages -l de -l fr -l it --ignore reference
+python tools/build_translations.py
+python manage.py compilemessages -l de -l fr -l it
 ```

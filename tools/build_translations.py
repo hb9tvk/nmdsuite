@@ -583,6 +583,29 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
     ),
     "Send now": ("Jetzt senden", "Envoyer maintenant", "Invia ora"),
 
+    # Log reminder email
+    "Log reminder email": (
+        "Log-Erinnerungsmail",
+        "E-mail de rappel pour le journal",
+        "Email di promemoria log",
+    ),
+    "Log reminder email — NMD %(year)s": (
+        "Log-Erinnerungsmail — NMD %(year)s",
+        "E-mail de rappel pour le journal — NMD %(year)s",
+        "Email di promemoria log — NMD %(year)s",
+    ),
+    "prewritten trilingual reminder to submit log and station data": (
+        "vorformulierte dreisprachige Erinnerung, Log und Stationsdaten einzureichen",
+        "rappel trilingue prérédigé pour soumettre le journal et les données de station",
+        "promemoria trilingue predefinito per inviare log e dati stazione",
+    ),
+    "Sends the fixed trilingual (DE/FR/IT) reminder below to submit log and station data. The text contains no dates, so it can be reused unchanged every year.": (
+        "Sendet die unten stehende feste dreisprachige (DE/FR/IT) Erinnerung, Log und Stationsdaten einzureichen. Der Text enthält keine Datumsangaben und kann daher jedes Jahr unverändert wiederverwendet werden.",
+        "Envoie le rappel trilingue (DE/FR/IT) fixe ci-dessous pour soumettre le journal et les données de station. Le texte ne contient aucune date et peut donc être réutilisé tel quel chaque année.",
+        "Invia il promemoria trilingue (DE/FR/IT) fisso qui sotto per inviare log e dati stazione. Il testo non contiene date e può quindi essere riutilizzato invariato ogni anno.",
+    ),
+    "Preview": ("Vorschau", "Aperçu", "Anteprima"),
+
     # Fixstation Review
     "Fixstation Review": ("Fixstation-Überprüfung", "Vérification des fixstations", "Verifica fixstation"),
     "\n            Non-NMD remote callsigns that were logged by only 1 or 2 participants.\n            Use the external lookups to verify each callsign. Tick the ones that\n            don't check out — flagged callsigns score as <strong>0 points</strong>\n            (deducted from every NMD station that logged them).\n        ": (
@@ -645,6 +668,12 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "Pubblicare i risultati? I partecipanti potranno vedere il dettaglio del proprio punteggio.",
     ),
     "Publish results": ("Resultate veröffentlichen", "Publier les résultats", "Pubblicare i risultati"),
+    "Re-run scoring": ("Wertung neu berechnen", "Relancer le scoring", "Ricalcola punteggio"),
+    "Re-runs the full scoring pipeline. Use after on-behalf edits or any time you want a fresh pass.": (
+        "Berechnet die gesamte Wertung neu. Verwende dies nach stellvertretenden Bearbeitungen oder wann immer du einen frischen Durchgang möchtest.",
+        "Relance tout le scoring. À utiliser après des modifications pour le compte d'un opérateur ou dès que tu veux un nouveau passage.",
+        "Ricalcola l'intero punteggio. Da usare dopo modifiche per conto o ogni volta che vuoi un nuovo passaggio.",
+    ),
     "Contest published. Use the 'Setup new contest' form at the bottom of this page when ready to start a new edition.": (
         "Contest veröffentlicht. Verwende das Formular 'Neuen Contest einrichten' unten auf dieser Seite, wenn du eine neue Ausgabe starten möchtest.",
         "Contest publié. Utilise le formulaire « Nouveau contest » au bas de cette page quand tu es prêt à démarrer une nouvelle édition.",
@@ -1379,6 +1408,21 @@ TRANSLATIONS: dict[str, tuple[str, str, str]] = {
         "NMD %(year)s — Anmeldebestätigung",
         "NMD %(year)s — Confirmation d'inscription",
         "NMD %(year)s — Conferma di iscrizione",
+    ),
+    "NMD %(year)s — Submit your log and station data": (
+        "NMD %(year)s — Log und Stationsdaten einreichen",
+        "NMD %(year)s — Soumets ton journal et tes données de station",
+        "NMD %(year)s — Invia il tuo log e i dati stazione",
+    ),
+    "NMD %(year)s — Registration closed": (
+        "NMD %(year)s — Anmeldung geschlossen",
+        "NMD %(year)s — Inscription fermée",
+        "NMD %(year)s — Iscrizione chiusa",
+    ),
+    "NMD %(year)s — Results published": (
+        "NMD %(year)s — Resultate veröffentlicht",
+        "NMD %(year)s — Résultats publiés",
+        "NMD %(year)s — Risultati pubblicati",
     ),
     "Register for the NMD": ("Für den NMD anmelden", "S'inscrire au NMD", "Iscriviti al NMD"),
     "Register for NMD %(year)s": ("Für den NMD %(year)s anmelden", "S'inscrire au NMD %(year)s", "Iscrizione al NMD %(year)s"),
