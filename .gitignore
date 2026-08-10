@@ -17,6 +17,11 @@ data/
 
 staticfiles/
 media/
+# Both are build output. The image build runs makemessages →
+# tools/build_translations.py → compilemessages, and build_translations.py
+# rewrites every msgstr from its TRANSLATIONS table — anything not in that
+# table is blanked. Add new strings there; a checked-in .po only goes stale.
+locale/*/LC_MESSAGES/*.po
 locale/*/LC_MESSAGES/*.mo
 
 .coverage
